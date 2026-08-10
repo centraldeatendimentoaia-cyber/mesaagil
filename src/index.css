@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-marca: #C4372A;
+  --color-marca-escura: #A02D22;
+  --color-marca-texto: #FFFFFF;
+
+  --color-sinal-verde: #16A34A;
+  --color-sinal-amarelo: #EAB308;
+  --color-sinal-vermelho: #DC2626;
+  --color-sinal-pronto: #475569;
+  --color-cozinha-fundo: #0D0D0D;
+}

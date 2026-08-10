@@ -1,42 +1,25 @@
-import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
-import type { Barraca } from './types/database'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { LayoutBarraca } from './layouts/LayoutBarraca'
+import { LancarPedido } from './pages/LancarPedido'
+import { Cozinha } from './pages/Cozinha'
+import { TelaChamada } from './pages/TelaChamada'
+import { Ajustes } from './pages/Ajustes'
+import { NaoEncontrado } from './pages/NaoEncontrado'
 
 function App() {
-  const [barracas, setBarracas] = useState<Barraca[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    supabase
-      .from('barracas')
-      .select('*')
-      .then(({ data, error }) => {
-        if (error) {
-          setError(error.message)
-        } else {
-          setBarracas(data as Barraca[])
-        }
-      })
-  }, [])
-
   return (
-    <div style={{ fontFamily: 'monospace', padding: 24 }}>
-      <h1>Teste de conexão Supabase</h1>
-
-      {error && (
-        <pre style={{ color: 'red', whiteSpace: 'pre-wrap' }}>
-          Erro: {error}
-        </pre>
-      )}
-
-      {!error && barracas === null && <p>Carregando...</p>}
-
-      {!error && barracas !== null && (
-        <pre style={{ whiteSpace: 'pre-wrap' }}>
-          {JSON.stringify(barracas, null, 2)}
-        </pre>
-      )}
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/kawashima" replace />} />
+        <Route path="/:slug" element={<LayoutBarraca />}>
+          <Route index element={<LancarPedido />} />
+          <Route path="cozinha" element={<Cozinha />} />
+          <Route path="chamada" element={<TelaChamada />} />
+          <Route path="ajustes" element={<Ajustes />} />
+        </Route>
+        <Route path="*" element={<NaoEncontrado />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
