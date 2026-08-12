@@ -342,7 +342,7 @@ export function Cozinha() {
     }
   }
 
-  function desfazerFinalizacao() {
+  async function desfazerFinalizacao() {
     if (!pedidoFinalizado) return
     const pedido = pedidoFinalizado
 
@@ -353,7 +353,14 @@ export function Cozinha() {
       ordenarPorCriadoEm([...atual, { ...pedido, status: 'pronto', entregue_em: null }]),
     )
 
-    supabase.from('pedidos').update({ status: 'pronto', entregue_em: null }).eq('id', pedido.id)
+    const { error } = await supabase
+      .from('pedidos')
+      .update({ status: 'pronto', entregue_em: null })
+      .eq('id', pedido.id)
+
+    if (error) {
+      setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
+    }
   }
 
   async function confirmarRemocaoItem() {
