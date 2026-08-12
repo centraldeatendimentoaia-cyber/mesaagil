@@ -1,22 +1,13 @@
-import { createContext, useContext } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 import { useBarraca } from '../hooks/useBarraca'
+import { useSincronizacao } from '../hooks/useSincronizacao'
 import { NaoEncontrado } from '../pages/NaoEncontrado'
-import type { Barraca } from '../types/database'
-
-const BarracaContext = createContext<Barraca | null>(null)
-
-export function useBarracaAtual(): Barraca {
-  const barraca = useContext(BarracaContext)
-  if (!barraca) {
-    throw new Error('useBarracaAtual precisa ser usado dentro de LayoutBarraca')
-  }
-  return barraca
-}
+import { BarracaContext, SincronizacaoContext } from './contextoBarraca'
 
 export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
+  const sincronizacao = useSincronizacao()
 
   if (carregando) {
     return (
@@ -32,7 +23,9 @@ export function LayoutBarraca() {
 
   return (
     <BarracaContext.Provider value={barraca}>
-      <Outlet />
+      <SincronizacaoContext.Provider value={sincronizacao}>
+        <Outlet />
+      </SincronizacaoContext.Provider>
     </BarracaContext.Provider>
   )
 }

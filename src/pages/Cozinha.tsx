@@ -1,31 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { useBarracaAtual } from '../layouts/LayoutBarraca'
-import type { Barraca, ItemDoPedido, Pedido } from '../types/database'
+import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
+import { enfileirar } from '../lib/fila'
+import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
+import type { PedidoComItens, StatusConexao } from '../hooks/useRealtimePedidos'
+import type { Barraca, ItemDoPedido } from '../types/database'
 
-type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
 type Coluna = 'a_fazer' | 'pronto'
 type CorSinal = 'verde' | 'amarelo' | 'vermelho' | 'pronto'
 
-const INTERVALO_POLLING_MS = 5000
 const DURACAO_LONGO_TOQUE_MS = 1000
 const DURACAO_FAIXA_FINALIZADO_MS = 5000
-
-function dataOperacaoAtual(): string {
-  const agora = new Date()
-  const ano = agora.getFullYear()
-  const mes = String(agora.getMonth() + 1).padStart(2, '0')
-  const dia = String(agora.getDate()).padStart(2, '0')
-  return `${ano}-${mes}-${dia}`
-}
-
-function ordenarPorCriadoEm(lista: PedidoComItens[]): PedidoComItens[] {
-  return [...lista].sort(
-    (a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime(),
-  )
-}
 
 function minutosDecorridos(pedido: PedidoComItens): number {
   const inicio = new Date(pedido.criado_em).getTime()
@@ -225,11 +211,34 @@ function CardPedido({
   )
 }
 
+const CORES_PONTO_STATUS: Record<StatusConexao, string> = {
+  conectado: 'bg-sinal-verde',
+  reconectando: 'bg-sinal-amarelo',
+  offline: 'bg-sinal-vermelho',
+}
+
+function PontoStatus({ status }: { status: StatusConexao }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={`h-2.5 w-2.5 shrink-0 rounded-full ${CORES_PONTO_STATUS[status]}`}
+        aria-hidden
+      />
+      {status !== 'conectado' && (
+        <span className="text-xs font-medium text-neutral-400">
+          {status === 'reconectando' ? 'reconectando' : 'offline'}
+        </span>
+      )}
+      <span className="sr-only">Conexão em tempo real: {status}</span>
+    </div>
+  )
+}
+
 export function Cozinha() {
   const barraca = useBarracaAtual()
-  const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
-  const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState<string | null>(null)
+  const { pedidos, status: statusConexao, aplicarPatchPedido, aplicarPatchItem } =
+    useRealtimePedidos(barraca.id)
+  const { pendentes, online } = useSincronizacaoAtual()
   const [aba, setAba] = useState<Coluna>('a_fazer')
 
   const [itemParaRemover, setItemParaRemover] = useState<{
@@ -241,105 +250,35 @@ export function Cozinha() {
   const [pedidoFinalizado, setPedidoFinalizado] = useState<PedidoComItens | null>(null)
   const faixaTimeoutRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    let cancelado = false
-
-    async function buscar() {
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('*, itens_do_pedido(*)')
-        .eq('barraca_id', barraca.id)
-        .eq('data_operacao', dataOperacaoAtual())
-        .in('status', ['a_fazer', 'pronto'])
-        .order('criado_em', { ascending: true })
-
-      if (cancelado) return
-
-      if (error) {
-        setErro(error.message)
-      } else {
-        setErro(null)
-        setPedidos((data ?? []) as PedidoComItens[])
-      }
-      setCarregando(false)
-    }
-
-    buscar()
-    const intervalo = window.setInterval(buscar, INTERVALO_POLLING_MS)
-
-    return () => {
-      cancelado = true
-      window.clearInterval(intervalo)
-    }
-  }, [barraca.id])
-
-  function atualizarPedidoLocal(id: string, patch: Partial<Pedido>) {
-    setPedidos((atual) => atual.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-  }
-
-  function atualizarItemLocal(pedidoId: string, itemId: string, patch: Partial<ItemDoPedido>) {
-    setPedidos((atual) =>
-      atual.map((p) =>
-        p.id === pedidoId
-          ? {
-              ...p,
-              itens_do_pedido: p.itens_do_pedido.map((i) =>
-                i.id === itemId ? { ...i, ...patch } : i,
-              ),
-            }
-          : p,
-      ),
-    )
-  }
-
   async function moverParaPronto(pedido: PedidoComItens) {
     const agora = new Date().toISOString()
-    atualizarPedidoLocal(pedido.id, { status: 'pronto', pronto_em: agora })
-
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'pronto', pronto_em: agora })
-      .eq('id', pedido.id)
-
-    if (error) {
-      atualizarPedidoLocal(pedido.id, { status: 'a_fazer', pronto_em: null })
-    }
+    aplicarPatchPedido(pedido.id, { status: 'pronto', pronto_em: agora })
+    await enfileirar('mudar_status', { pedido_id: pedido.id, status: 'pronto', pronto_em: agora })
   }
 
   async function voltarParaFazer(pedido: PedidoComItens) {
-    atualizarPedidoLocal(pedido.id, { status: 'a_fazer', pronto_em: null })
-
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'a_fazer', pronto_em: null })
-      .eq('id', pedido.id)
-
-    if (error) {
-      atualizarPedidoLocal(pedido.id, { status: 'pronto', pronto_em: pedido.pronto_em })
-    }
+    aplicarPatchPedido(pedido.id, { status: 'a_fazer', pronto_em: null })
+    await enfileirar('mudar_status', {
+      pedido_id: pedido.id,
+      status: 'a_fazer',
+      pronto_em: null,
+    })
   }
 
   async function finalizarPedido(pedido: PedidoComItens) {
-    const agora = new Date().toISOString()
-
-    setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
-
     if (faixaTimeoutRef.current !== null) window.clearTimeout(faixaTimeoutRef.current)
     setPedidoFinalizado(pedido)
     faixaTimeoutRef.current = window.setTimeout(() => {
       setPedidoFinalizado(null)
     }, DURACAO_FAIXA_FINALIZADO_MS)
 
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'entregue', entregue_em: agora })
-      .eq('id', pedido.id)
-
-    if (error) {
-      if (faixaTimeoutRef.current !== null) window.clearTimeout(faixaTimeoutRef.current)
-      setPedidoFinalizado(null)
-      setPedidos((atual) => ordenarPorCriadoEm([...atual, pedido]))
-    }
+    const agora = new Date().toISOString()
+    aplicarPatchPedido(pedido.id, { status: 'entregue', entregue_em: agora })
+    await enfileirar('mudar_status', {
+      pedido_id: pedido.id,
+      status: 'entregue',
+      entregue_em: agora,
+    })
   }
 
   async function desfazerFinalizacao() {
@@ -349,18 +288,12 @@ export function Cozinha() {
     if (faixaTimeoutRef.current !== null) window.clearTimeout(faixaTimeoutRef.current)
     setPedidoFinalizado(null)
 
-    setPedidos((atual) =>
-      ordenarPorCriadoEm([...atual, { ...pedido, status: 'pronto', entregue_em: null }]),
-    )
-
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'pronto', entregue_em: null })
-      .eq('id', pedido.id)
-
-    if (error) {
-      setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
-    }
+    aplicarPatchPedido(pedido.id, { status: 'pronto', entregue_em: null })
+    await enfileirar('mudar_status', {
+      pedido_id: pedido.id,
+      status: 'pronto',
+      entregue_em: null,
+    })
   }
 
   async function confirmarRemocaoItem() {
@@ -369,16 +302,8 @@ export function Cozinha() {
     const agora = new Date().toISOString()
 
     setRemovendoItem(true)
-    atualizarItemLocal(pedido.id, item.id, { removido: true, removido_em: agora })
-
-    const { error } = await supabase
-      .from('itens_do_pedido')
-      .update({ removido: true, removido_em: agora })
-      .eq('id', item.id)
-
-    if (error) {
-      atualizarItemLocal(pedido.id, item.id, { removido: false, removido_em: null })
-    }
+    aplicarPatchItem(pedido.id, item.id, { removido: true, removido_em: agora })
+    await enfileirar('remover_item', { item_id: item.id, removido_em: agora })
 
     setRemovendoItem(false)
     setItemParaRemover(null)
@@ -388,12 +313,6 @@ export function Cozinha() {
   const pedidosProntos = pedidos.filter((p) => p.status === 'pronto')
 
   function renderLista(lista: PedidoComItens[], coluna: Coluna) {
-    if (carregando) {
-      return <p className="py-8 text-center text-neutral-500">Carregando...</p>
-    }
-    if (erro) {
-      return <p className="py-8 text-center text-sinal-vermelho">Não foi possível carregar os pedidos.</p>
-    }
     if (lista.length === 0) {
       return <p className="py-8 text-center text-neutral-500">Nenhum pedido.</p>
     }
@@ -417,8 +336,22 @@ export function Cozinha() {
 
   return (
     <div className="min-h-screen bg-cozinha-fundo pb-24">
+      {!online && (
+        <div className="bg-sinal-amarelo px-4 py-2 text-center text-sm font-semibold text-neutral-900">
+          Sem conexão — os pedidos serão enviados quando a rede voltar
+        </div>
+      )}
+
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <span className="text-sm font-semibold text-white">Cozinha</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-white">Cozinha</span>
+          <PontoStatus status={statusConexao} />
+          {pendentes > 0 && (
+            <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-semibold text-neutral-300">
+              {pendentes} pendente{pendentes === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
         <Link
           to={`/${barraca.slug}/historico`}
           className="flex min-h-11 items-center rounded-2xl bg-neutral-800 px-4 text-sm font-semibold text-white active:bg-neutral-700"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useBarracaAtual } from '../layouts/LayoutBarraca'
+import { useBarracaAtual } from '../layouts/contextoBarraca'
 import type { ItemDoPedido, Pedido } from '../types/database'
 
 type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }

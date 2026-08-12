@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { aplicarTema, PRESETS } from '../lib/tema'
-import { useBarracaAtual } from '../layouts/LayoutBarraca'
+import { useBarracaAtual } from '../layouts/contextoBarraca'
 import type { Barraca, Item } from '../types/database'
 
 function SecaoAjustes({ titulo, children }: { titulo: string; children: ReactNode }) {
