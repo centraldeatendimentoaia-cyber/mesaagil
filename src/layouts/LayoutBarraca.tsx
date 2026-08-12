@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
@@ -8,6 +9,22 @@ export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
   const sincronizacao = useSincronizacao()
+
+  useEffect(() => {
+    if (!barraca) return
+
+    document.title = barraca.nome
+
+    document
+      .getElementById('app-manifest')
+      ?.setAttribute('href', `/${barraca.slug}/manifest.webmanifest`)
+
+    document.getElementById('app-theme-color')?.setAttribute('content', barraca.cor_primaria)
+
+    document
+      .getElementById('app-apple-icon')
+      ?.setAttribute('href', barraca.logo_url ?? '/icons/apple-touch-icon.png')
+  }, [barraca])
 
   if (carregando) {
     return (
