@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/LayoutBarraca'
 import type { Barraca, ItemDoPedido, Pedido } from '../types/database'
@@ -409,6 +410,16 @@ export function Cozinha() {
 
   return (
     <div className="min-h-screen bg-cozinha-fundo pb-24">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <span className="text-sm font-semibold text-white">Cozinha</span>
+        <Link
+          to={`/${barraca.slug}/historico`}
+          className="flex min-h-11 items-center rounded-2xl bg-neutral-800 px-4 text-sm font-semibold text-white active:bg-neutral-700"
+        >
+          Histórico
+        </Link>
+      </div>
+
       <div className="flex border-b border-white/10 md:hidden">
         <button
           type="button"
