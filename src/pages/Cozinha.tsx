@@ -12,7 +12,7 @@ type CorSinal = 'verde' | 'amarelo' | 'vermelho' | 'pronto'
 
 const DURACAO_LONGO_TOQUE_MS = 1000
 const DURACAO_FAIXA_FINALIZADO_MS = 5000
-const INTERVALO_RELOGIO_MS = 30000
+const INTERVALO_RELOGIO_MS = 10000
 
 function minutosDecorridos(pedido: PedidoComItens): number {
   const inicio = new Date(pedido.criado_em).getTime()
