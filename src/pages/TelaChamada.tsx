@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { X } from 'lucide-react'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 
@@ -15,6 +17,7 @@ function tamanhoGrade(quantidade: number): { colunas: string; texto: string } {
 
 export function TelaChamada() {
   const barraca = useBarracaAtual()
+  const navigate = useNavigate()
   const { pedidos } = useRealtimePedidos(barraca.id)
   const [destacados, setDestacados] = useState<Set<string>>(new Set())
 
@@ -70,7 +73,18 @@ export function TelaChamada() {
   const { colunas, texto } = tamanhoGrade(pedidosProntos.length)
 
   return (
-    <div className="flex min-h-screen flex-col bg-cozinha-fundo">
+    <div className="relative flex min-h-screen flex-col bg-cozinha-fundo">
+      <button
+        type="button"
+        onClick={() => navigate(`/${barraca.slug}`)}
+        aria-label="Sair da tela de chamada"
+        className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-full">
+          <X size={20} className="text-neutral-400/40" />
+        </span>
+      </button>
+
       <header className="flex items-center gap-3 border-b border-white/10 px-6 py-4">
         {barraca.logo_url && (
           <img
