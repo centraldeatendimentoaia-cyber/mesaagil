@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
@@ -12,6 +12,7 @@ type CorSinal = 'verde' | 'amarelo' | 'vermelho' | 'pronto'
 
 const DURACAO_LONGO_TOQUE_MS = 1000
 const DURACAO_FAIXA_FINALIZADO_MS = 5000
+const INTERVALO_RELOGIO_MS = 30000
 
 function minutosDecorridos(pedido: PedidoComItens): number {
   const inicio = new Date(pedido.criado_em).getTime()
@@ -249,6 +250,21 @@ export function Cozinha() {
 
   const [pedidoFinalizado, setPedidoFinalizado] = useState<PedidoComItens | null>(null)
   const faixaTimeoutRef = useRef<number | null>(null)
+
+  // Relógio global: minutosDecorridos/corPorTempo são calculados em tempo de
+  // render usando Date.now(). Sem isso, os cards só recalculam quando
+  // `pedidos` muda por outro motivo (evento realtime, etc.) e o cronômetro
+  // fica congelado no valor do último render real. Um único timer aqui
+  // força esse re-render — não é por card, pra não multiplicar timers.
+  const [, forcarAtualizacaoDoRelogio] = useState(0)
+
+  useEffect(() => {
+    const intervalo = window.setInterval(() => {
+      forcarAtualizacaoDoRelogio((atual) => atual + 1)
+    }, INTERVALO_RELOGIO_MS)
+
+    return () => window.clearInterval(intervalo)
+  }, [])
 
   async function moverParaPronto(pedido: PedidoComItens) {
     const agora = new Date().toISOString()
