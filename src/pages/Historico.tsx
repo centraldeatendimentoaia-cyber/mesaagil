@@ -298,7 +298,7 @@ export function Historico() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-12 dark:bg-neutral-950">
+    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-950">
       <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 p-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
         <Link
           to={`/${barraca.slug}/cozinha`}

@@ -1,14 +1,17 @@
 import { useEffect } from 'react'
-import { Outlet, useParams } from 'react-router-dom'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
 import { NaoEncontrado } from '../pages/NaoEncontrado'
+import { BarraNavegacao } from '../components/BarraNavegacao'
 import { BarracaContext, SincronizacaoContext } from './contextoBarraca'
 
 export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
   const sincronizacao = useSincronizacao()
+  const location = useLocation()
+  const emTelaDeChamada = location.pathname.endsWith('/chamada')
 
   useEffect(() => {
     if (!barraca) return
@@ -42,6 +45,7 @@ export function LayoutBarraca() {
     <BarracaContext.Provider value={barraca}>
       <SincronizacaoContext.Provider value={sincronizacao}>
         <Outlet />
+        {!emTelaDeChamada && <BarraNavegacao />}
       </SincronizacaoContext.Provider>
     </BarracaContext.Provider>
   )

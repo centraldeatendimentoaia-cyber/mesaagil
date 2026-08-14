@@ -680,7 +680,7 @@ export function Ajustes() {
   const barraca = useBarracaAtual()
 
   return (
-    <div className="min-h-screen bg-white pb-12 dark:bg-neutral-950">
+    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-950">
       <div className="border-b border-neutral-200 p-4 dark:border-neutral-800">
         <Link
           to={`/${barraca.slug}`}

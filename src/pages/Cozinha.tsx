@@ -335,7 +335,7 @@ export function Cozinha() {
   }
 
   return (
-    <div className="min-h-screen bg-cozinha-fundo pb-24">
+    <div className="min-h-screen bg-cozinha-fundo pb-40">
       {!online && (
         <div className="bg-sinal-amarelo px-4 py-2 text-center text-sm font-semibold text-neutral-900">
           Sem conexão — os pedidos serão enviados quando a rede voltar
@@ -427,7 +427,7 @@ export function Cozinha() {
       )}
 
       {pedidoFinalizado && (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-neutral-800 px-6 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="fixed inset-x-0 bottom-16 z-40 flex items-center justify-between gap-4 bg-neutral-800 px-6 py-4">
           <span className="text-base font-medium text-white">
             Pedido {pedidoFinalizado.senha} finalizado
           </span>
