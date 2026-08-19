@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { enfileirar } from '../lib/fila'
 import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 import type { PedidoComItens, StatusConexao } from '../hooks/useRealtimePedidos'
+import { ModalCancelamento } from '../components/ModalCancelamento'
+import type { MotivoCancelamento } from '../lib/cancelamento'
 import type { Barraca, ItemDoPedido } from '../types/database'
 
 type Coluna = 'a_fazer' | 'pronto'
@@ -167,6 +169,7 @@ function CardPedido({
   onEntregar,
   onSolicitarRemocao,
   onAlternarEntregue,
+  onCancelar,
 }: {
   pedido: PedidoComItens
   barraca: Barraca
@@ -176,6 +179,7 @@ function CardPedido({
   onEntregar: (pedido: PedidoComItens) => void
   onSolicitarRemocao: (pedido: PedidoComItens, item: ItemDoPedido) => void
   onAlternarEntregue: (pedido: PedidoComItens, item: ItemDoPedido) => void
+  onCancelar: (pedido: PedidoComItens) => void
 }) {
   const minutos = minutosDecorridos(pedido)
   const cor = corPorTempo(pedido, minutos, barraca)
@@ -184,10 +188,29 @@ function CardPedido({
   const tudoEntregue =
     pedido.status !== 'entregue' && itensAtivos.length > 0 && itensAtivos.every((i) => i.entregue)
 
+  const podeCancelar = pedido.status === 'a_fazer' || pedido.status === 'pronto'
+
   const conteudo = (
     <>
+      {podeCancelar && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onCancelar(pedido)
+          }}
+          aria-label={`Cancelar comanda ${pedido.senha}`}
+          className="group absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center"
+        >
+          <X
+            size={18}
+            className="text-neutral-400 opacity-40 transition-opacity group-hover:opacity-100 group-active:opacity-100"
+          />
+        </button>
+      )}
+
       {tudoEntregue && (
-        <div className="mb-3 flex h-8 items-center justify-center gap-2 rounded-xl bg-sinal-verde/15">
+        <div className="mb-3 mr-11 flex h-8 items-center justify-center gap-2 rounded-xl bg-sinal-verde/15">
           <Check size={16} strokeWidth={3} className="text-sinal-verde" />
           <span className="text-sm font-medium text-sinal-verde">Tudo entregue — finalizar?</span>
         </div>
@@ -231,7 +254,7 @@ function CardPedido({
     </>
   )
 
-  const classeCartao = `w-full rounded-2xl border-4 ${CORES_BORDA[cor]} ${CORES_FUNDO[cor]} bg-neutral-900 p-4`
+  const classeCartao = `relative w-full rounded-2xl border-4 ${CORES_BORDA[cor]} ${CORES_FUNDO[cor]} bg-neutral-900 p-4`
 
   if (coluna === 'a_fazer') {
     return (
@@ -313,6 +336,9 @@ export function Cozinha() {
 
   const [pedidoFinalizado, setPedidoFinalizado] = useState<PedidoComItens | null>(null)
   const faixaTimeoutRef = useRef<number | null>(null)
+
+  const [pedidoParaCancelar, setPedidoParaCancelar] = useState<PedidoComItens | null>(null)
+  const [cancelando, setCancelando] = useState(false)
 
   // Relógio global: minutosDecorridos/corPorTempo são calculados em tempo de
   // render usando Date.now(). Sem isso, os cards só recalculam quando
@@ -407,6 +433,33 @@ export function Cozinha() {
     }
   }
 
+  async function cancelarPedido(motivo: MotivoCancelamento) {
+    if (!pedidoParaCancelar) return
+    const pedido = pedidoParaCancelar
+    const agora = new Date().toISOString()
+
+    setCancelando(true)
+    aplicarPatchPedido(pedido.id, {
+      status: 'cancelado',
+      motivo_cancelamento: motivo,
+      cancelado_em: agora,
+    })
+
+    // mesmo padrão das outras mudanças de status: via fila offline, sem
+    // reversão síncrona aqui — enfileirar não expõe um erro imediato pra
+    // reverter contra (a fila resolve/retenta em segundo plano), igual
+    // moverParaPronto/voltarParaFazer/finalizarPedido já fazem hoje.
+    await enfileirar('mudar_status', {
+      pedido_id: pedido.id,
+      status: 'cancelado',
+      motivo_cancelamento: motivo,
+      cancelado_em: agora,
+    })
+
+    setCancelando(false)
+    setPedidoParaCancelar(null)
+  }
+
   const pedidosAFazer = pedidos.filter((p) => p.status === 'a_fazer')
   const pedidosProntos = pedidos.filter((p) => p.status === 'pronto')
 
@@ -427,6 +480,7 @@ export function Cozinha() {
             onEntregar={finalizarPedido}
             onSolicitarRemocao={(p, item) => setItemParaRemover({ pedido: p, item })}
             onAlternarEntregue={alternarEntregueItem}
+            onCancelar={setPedidoParaCancelar}
           />
         ))}
       </div>
@@ -538,6 +592,15 @@ export function Cozinha() {
             Desfazer
           </button>
         </div>
+      )}
+
+      {pedidoParaCancelar && (
+        <ModalCancelamento
+          senha={pedidoParaCancelar.senha}
+          cancelando={cancelando}
+          onFechar={() => setPedidoParaCancelar(null)}
+          onConfirmar={cancelarPedido}
+        />
       )}
     </div>
   )

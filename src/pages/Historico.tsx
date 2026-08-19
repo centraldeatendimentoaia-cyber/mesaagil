@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import type { ItemDoPedido, Pedido } from '../types/database'
+
+function motivoHumanizado(motivo: string | null): string {
+  return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
+}
 
 type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
 type Periodo = 'hoje' | 'ontem' | '7dias' | 'data'
@@ -88,8 +93,10 @@ function gerarCsv(pedidos: PedidoComItens[]): string {
 
 function ordenarPorEntregueEmDesc(lista: PedidoComItens[]): PedidoComItens[] {
   return [...lista].sort((a, b) => {
-    const tempoA = a.entregue_em ? new Date(a.entregue_em).getTime() : 0
-    const tempoB = b.entregue_em ? new Date(b.entregue_em).getTime() : 0
+    const finalizacaoA = a.entregue_em ?? a.cancelado_em
+    const finalizacaoB = b.entregue_em ?? b.cancelado_em
+    const tempoA = finalizacaoA ? new Date(finalizacaoA).getTime() : 0
+    const tempoB = finalizacaoB ? new Date(finalizacaoB).getTime() : 0
     return tempoB - tempoA
   })
 }
@@ -127,6 +134,23 @@ function CardHistorico({
             {tempoTotal !== null ? `${tempoTotal} min de preparo` : '—'}
           </p>
         </div>
+      </div>
+
+      <div className="mt-2">
+        {pedido.status === 'cancelado' ? (
+          <>
+            <span className="inline-block rounded-full bg-sinal-vermelho/15 px-2.5 py-1 text-xs font-bold tracking-wide text-sinal-vermelho">
+              CANCELADO
+            </span>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              Motivo: {motivoHumanizado(pedido.motivo_cancelamento)}
+            </p>
+          </>
+        ) : (
+          <span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold tracking-wide text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+            ENTREGUE
+          </span>
+        )}
       </div>
 
       {pedido.observacao && (
@@ -167,13 +191,15 @@ function CardHistorico({
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={() => onRestaurar(pedido)}
-        className="mt-4 min-h-11 w-full rounded-2xl bg-marca text-base font-semibold text-marca-texto active:bg-marca-escura"
-      >
-        Restaurar
-      </button>
+      {pedido.status !== 'cancelado' && (
+        <button
+          type="button"
+          onClick={() => onRestaurar(pedido)}
+          className="mt-4 min-h-11 w-full rounded-2xl bg-marca text-base font-semibold text-marca-texto active:bg-marca-escura"
+        >
+          Restaurar
+        </button>
+      )}
     </div>
   )
 }
@@ -212,17 +238,21 @@ export function Historico() {
       .from('pedidos')
       .select('*, itens_do_pedido(*)')
       .eq('barraca_id', barraca.id)
-      .eq('status', 'entregue')
+      .in('status', ['entregue', 'cancelado'])
       .gte('data_operacao', intervalo.inicio)
       .lte('data_operacao', intervalo.fim)
-      .order('entregue_em', { ascending: false })
+      .order('criado_em', { ascending: false })
       .then(({ data, error }) => {
         if (cancelado) return
         if (error) {
           setErro(error.message)
         } else {
           setErro(null)
-          setPedidos((data ?? []) as PedidoComItens[])
+          // ordena no cliente (entregue_em ou cancelado_em, o que existir) —
+          // um ORDER BY entregue_em no servidor jogaria os cancelados (que
+          // não têm entregue_em) todos pro topo por causa do NULLS FIRST
+          // padrão do Postgres em DESC, fora de ordem cronológica real
+          setPedidos(ordenarPorEntregueEmDesc((data ?? []) as PedidoComItens[]))
         }
         setCarregando(false)
       })

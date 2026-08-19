@@ -18,7 +18,7 @@ export type Item = {
   ordem: number
 }
 
-export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue'
+export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'
 
 export type Pedido = {
   id: string
@@ -33,6 +33,8 @@ export type Pedido = {
   pronto_em: string | null
   entregue_em: string | null
   client_uuid: string | null
+  motivo_cancelamento: string | null
+  cancelado_em: string | null
 }
 
 export type ItemDoPedido = {
