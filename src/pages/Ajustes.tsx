@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { aplicarTema, PRESETS } from '../lib/tema'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { useAuth } from '../hooks/useAuth'
 import type { Barraca, Item } from '../types/database'
 
 function SecaoAjustes({ titulo, children }: { titulo: string; children: ReactNode }) {
@@ -676,6 +677,51 @@ function SecaoAparencia({ barraca }: { barraca: Barraca }) {
   )
 }
 
+function SecaoSair() {
+  const navigate = useNavigate()
+  const { sair } = useAuth()
+  const [confirmando, setConfirmando] = useState(false)
+
+  if (confirmando) {
+    return (
+      <div className="rounded-2xl bg-neutral-100 p-4 text-center dark:bg-neutral-900">
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          Tem certeza que deseja sair?
+        </p>
+        <div className="mt-3 flex gap-3">
+          <button
+            type="button"
+            onClick={() => setConfirmando(false)}
+            className="min-h-11 flex-1 rounded-2xl bg-neutral-200 text-base font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            Não
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await sair()
+              navigate('/login')
+            }}
+            className="min-h-11 flex-1 rounded-2xl bg-neutral-200 text-base font-semibold text-sinal-vermelho/70 dark:bg-neutral-800"
+          >
+            Sim, sair
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirmando(true)}
+      className="min-h-11 w-full rounded-2xl bg-neutral-100 text-base font-medium text-sinal-vermelho/70 dark:bg-neutral-900"
+    >
+      Sair
+    </button>
+  )
+}
+
 export function Ajustes() {
   const barraca = useBarracaAtual()
 
@@ -695,6 +741,7 @@ export function Ajustes() {
         <SecaoItens barracaId={barraca.id} />
         <SecaoFaixas barraca={barraca} />
         <SecaoAparencia barraca={barraca} />
+        <SecaoSair />
       </div>
     </div>
   )
