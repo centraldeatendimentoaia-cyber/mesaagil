@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Check } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { enfileirar } from '../lib/fila'
 import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
@@ -53,9 +55,11 @@ const CORES_TEXTO: Record<CorSinal, string> = {
 function LinhaItem({
   item,
   onSolicitarRemocao,
+  onAlternarEntregue,
 }: {
   item: ItemDoPedido
   onSolicitarRemocao: (item: ItemDoPedido) => void
+  onAlternarEntregue: (item: ItemDoPedido) => void
 }) {
   const timerRef = useRef<number | null>(null)
   const disparouRef = useRef(false)
@@ -82,6 +86,8 @@ function LinhaItem({
     }
   }
 
+  const entregue = item.entregue && !item.removido
+
   return (
     <li
       onPointerDown={(e: PointerEvent<HTMLLIElement>) => {
@@ -93,17 +99,60 @@ function LinhaItem({
       onPointerCancel={cancelarToque}
       onContextMenu={(e) => e.preventDefault()}
       onClick={aoClicar}
-      className={`flex select-none items-center justify-between gap-3 py-1.5 text-lg ${
+      className={`flex select-none items-center gap-2 py-1.5 text-lg ${
         item.removido ? 'opacity-40' : ''
       }`}
     >
-      <span className={item.removido ? 'text-neutral-400 line-through' : 'text-white'}>
+      {!item.removido && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            onAlternarEntregue(item)
+          }}
+          aria-label={
+            item.entregue
+              ? `Desmarcar ${item.nome_item} como entregue`
+              : `Marcar ${item.nome_item} como entregue`
+          }
+          className="flex h-11 w-11 shrink-0 items-center justify-center"
+        >
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-md border-2 ${
+              item.entregue ? 'border-sinal-verde bg-sinal-verde' : 'border-white/30'
+            }`}
+          >
+            {item.entregue && <Check size={16} strokeWidth={3} className="text-white" />}
+          </span>
+        </button>
+      )}
+
+      <span
+        className={`flex-1 ${
+          item.removido
+            ? 'text-neutral-400 line-through'
+            : entregue
+              ? 'text-white opacity-60'
+              : 'text-white'
+        }`}
+      >
         {item.nome_item}
       </span>
-      <span
-        className={`font-semibold ${item.removido ? 'text-neutral-400 line-through' : 'text-white'}`}
-      >
-        {item.quantidade}×
+
+      <span className="flex shrink-0 items-center gap-2">
+        <span
+          className={`font-semibold ${
+            item.removido
+              ? 'text-neutral-400 line-through'
+              : entregue
+                ? 'text-white opacity-60'
+                : 'text-white'
+          }`}
+        >
+          {item.quantidade}×
+        </span>
+        {entregue && <span className="text-xs text-neutral-400">✓ entregue</span>}
       </span>
     </li>
   )
@@ -117,6 +166,7 @@ function CardPedido({
   onVoltar,
   onEntregar,
   onSolicitarRemocao,
+  onAlternarEntregue,
 }: {
   pedido: PedidoComItens
   barraca: Barraca
@@ -125,12 +175,24 @@ function CardPedido({
   onVoltar: (pedido: PedidoComItens) => void
   onEntregar: (pedido: PedidoComItens) => void
   onSolicitarRemocao: (pedido: PedidoComItens, item: ItemDoPedido) => void
+  onAlternarEntregue: (pedido: PedidoComItens, item: ItemDoPedido) => void
 }) {
   const minutos = minutosDecorridos(pedido)
   const cor = corPorTempo(pedido, minutos, barraca)
 
+  const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
+  const tudoEntregue =
+    pedido.status !== 'entregue' && itensAtivos.length > 0 && itensAtivos.every((i) => i.entregue)
+
   const conteudo = (
     <>
+      {tudoEntregue && (
+        <div className="mb-3 flex h-8 items-center justify-center gap-2 rounded-xl bg-sinal-verde/15">
+          <Check size={16} strokeWidth={3} className="text-sinal-verde" />
+          <span className="text-sm font-medium text-sinal-verde">Tudo entregue — finalizar?</span>
+        </div>
+      )}
+
       <p className={`text-center text-6xl font-black leading-none ${CORES_TEXTO[cor]}`}>
         {pedido.senha}
       </p>
@@ -160,6 +222,7 @@ function CardPedido({
             key={item.id}
             item={item}
             onSolicitarRemocao={(itemAlvo) => onSolicitarRemocao(pedido, itemAlvo)}
+            onAlternarEntregue={(itemAlvo) => onAlternarEntregue(pedido, itemAlvo)}
           />
         ))}
       </ul>
@@ -319,10 +382,29 @@ export function Cozinha() {
 
     setRemovendoItem(true)
     aplicarPatchItem(pedido.id, item.id, { removido: true, removido_em: agora })
-    await enfileirar('remover_item', { item_id: item.id, removido_em: agora })
+    await enfileirar('remover_item', { item_id: item.id, removido: true, removido_em: agora })
 
     setRemovendoItem(false)
     setItemParaRemover(null)
+  }
+
+  async function alternarEntregueItem(pedido: PedidoComItens, item: ItemDoPedido) {
+    const novoValor = !item.entregue
+    const novoEntregueEm = novoValor ? new Date().toISOString() : null
+
+    aplicarPatchItem(pedido.id, item.id, { entregue: novoValor, entregue_em: novoEntregueEm })
+
+    const { error } = await supabase
+      .from('itens_do_pedido')
+      .update({ entregue: novoValor, entregue_em: novoEntregueEm })
+      .eq('id', item.id)
+
+    if (error) {
+      aplicarPatchItem(pedido.id, item.id, {
+        entregue: item.entregue,
+        entregue_em: item.entregue_em,
+      })
+    }
   }
 
   const pedidosAFazer = pedidos.filter((p) => p.status === 'a_fazer')
@@ -344,6 +426,7 @@ export function Cozinha() {
             onVoltar={voltarParaFazer}
             onEntregar={finalizarPedido}
             onSolicitarRemocao={(p, item) => setItemParaRemover({ pedido: p, item })}
+            onAlternarEntregue={alternarEntregueItem}
           />
         ))}
       </div>

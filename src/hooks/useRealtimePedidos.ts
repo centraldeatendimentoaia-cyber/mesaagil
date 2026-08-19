@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
@@ -30,15 +30,29 @@ function ordenarPorCriadoEm(lista: PedidoComItens[]): PedidoComItens[] {
  * filtrada no servidor — eventos de pedidos de outras barracas são
  * descartados no cliente (ok na escala atual do produto).
  */
+const JANELA_IGNORAR_ECO_MS = 4000
+
 export function useRealtimePedidos(barracaId: string) {
   const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
   const [status, setStatus] = useState<StatusConexao>('reconectando')
 
+  // Um patch otimista local (aplicarPatchPedido/aplicarPatchItem) pode ser
+  // seguido por um segundo patch antes do eco do PRIMEIRO voltar via
+  // realtime (ex.: marcar e desmarcar um item rápido, em sequência). Sem
+  // isso, o eco atrasado do primeiro patch sobrescreve o estado local mais
+  // recente do segundo, mesmo com o banco já correto — a UI mostra um
+  // valor errado enquanto o banco tem o certo. Ignoramos ecos que chegam
+  // dentro da janela após uma escrita local naquele id específico.
+  const ignorarEcoPedidoRef = useRef<Map<string, number>>(new Map())
+  const ignorarEcoItemRef = useRef<Map<string, number>>(new Map())
+
   function aplicarPatchPedido(id: string, patch: Partial<Pedido>) {
+    ignorarEcoPedidoRef.current.set(id, Date.now() + JANELA_IGNORAR_ECO_MS)
     setPedidos((atual) => atual.map((p) => (p.id === id ? { ...p, ...patch } : p)))
   }
 
   function aplicarPatchItem(pedidoId: string, itemId: string, patch: Partial<ItemDoPedido>) {
+    ignorarEcoItemRef.current.set(itemId, Date.now() + JANELA_IGNORAR_ECO_MS)
     setPedidos((atual) =>
       atual.map((p) =>
         p.id === pedidoId
@@ -127,6 +141,9 @@ export function useRealtimePedidos(barracaId: string) {
         return
       }
 
+      const ignorarAte = ignorarEcoPedidoRef.current.get(novo.id) ?? 0
+      if (Date.now() < ignorarAte) return
+
       setPedidos((atual) => atual.map((p) => (p.id === novo.id ? { ...p, ...novo } : p)))
     }
 
@@ -140,6 +157,10 @@ export function useRealtimePedidos(barracaId: string) {
 
       const pedidoId = novo?.pedido_id ?? antigo?.pedido_id
       if (!pedidoId) return
+
+      const idItem = novo?.id ?? antigo?.id
+      const ignorarAte = (idItem ? ignorarEcoItemRef.current.get(idItem) : undefined) ?? 0
+      if (Date.now() < ignorarAte) return
 
       setPedidos((atual) => {
         const indice = atual.findIndex((p) => p.id === pedidoId)

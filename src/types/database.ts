@@ -44,4 +44,6 @@ export type ItemDoPedido = {
   removido: boolean
   removido_em: string | null
   motivo_remocao: string | null
+  entregue: boolean
+  entregue_em: string | null
 }
