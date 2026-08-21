@@ -9,6 +9,8 @@ export type Barraca = {
   amarelo_ate: number
   criada_em: string
   metodos_pagamento_ativos: string[]
+  taxa_debito_bps: number | null
+  taxa_credito_bps: number | null
 }
 
 export type Item = {

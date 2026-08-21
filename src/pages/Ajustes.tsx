@@ -8,6 +8,7 @@ import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
+import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
 import type { Barraca, Item } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
@@ -486,7 +487,6 @@ function SecaoMetodosPagamento({ barraca }: { barraca: Barraca }) {
     if (debounceRef.current === null && barraca.metodos_pagamento_ativos) {
       setAtivos(barraca.metodos_pagamento_ativos)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barraca.metodos_pagamento_ativos])
 
   function persistir(lista: string[]) {
@@ -566,6 +566,184 @@ function SecaoMetodosPagamento({ barraca }: { barraca: Barraca }) {
           </>
         )}
       </span>
+    </SecaoAjustes>
+  )
+}
+
+function CampoTaxa({
+  label,
+  texto,
+  invalido,
+  salvo,
+  onMudar,
+}: {
+  label: string
+  texto: string
+  invalido: boolean
+  salvo: boolean
+  onMudar: (valor: string) => void
+}) {
+  return (
+    <div className="min-w-[140px] flex-1">
+      <span className="text-sm text-neutral-600 dark:text-neutral-400">{label}</span>
+      <div
+        className={`mt-1 flex h-11 items-center rounded-xl border px-3 ${
+          invalido
+            ? 'border-red-500'
+            : 'border-neutral-300 dark:border-neutral-700'
+        }`}
+        title={invalido ? 'Entre 0 e 50%' : undefined}
+      >
+        <input
+          type="text"
+          inputMode="decimal"
+          value={texto}
+          onChange={(e) => onMudar(e.target.value)}
+          placeholder="0,00"
+          aria-label={`Taxa de ${label.replace(':', '')}`}
+          aria-invalid={invalido}
+          className="h-11 min-w-0 flex-1 bg-transparent text-base text-neutral-900 dark:text-neutral-100"
+        />
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">%</span>
+      </div>
+      <span className="mt-1 flex h-4 items-center gap-1 text-xs font-medium text-sinal-verde">
+        {salvo && (
+          <>
+            <Check size={14} />
+            Salvo
+          </>
+        )}
+      </span>
+    </div>
+  )
+}
+
+function SecaoTaxas({ barraca }: { barraca: Barraca }) {
+  const [textoDebito, setTextoDebito] = useState(() => bpsParaPercentual(barraca.taxa_debito_bps ?? null))
+  const [textoCredito, setTextoCredito] = useState(() =>
+    bpsParaPercentual(barraca.taxa_credito_bps ?? null),
+  )
+  const [invalidoDebito, setInvalidoDebito] = useState(false)
+  const [invalidoCredito, setInvalidoCredito] = useState(false)
+  const [salvoDebito, setSalvoDebito] = useState(false)
+  const [salvoCredito, setSalvoCredito] = useState(false)
+
+  const debounceDebitoRef = useRef<number | null>(null)
+  const debounceCreditoRef = useRef<number | null>(null)
+  const salvoDebitoTimerRef = useRef<number | null>(null)
+  const salvoCreditoTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceDebitoRef.current !== null) window.clearTimeout(debounceDebitoRef.current)
+      if (debounceCreditoRef.current !== null) window.clearTimeout(debounceCreditoRef.current)
+      if (salvoDebitoTimerRef.current !== null) window.clearTimeout(salvoDebitoTimerRef.current)
+      if (salvoCreditoTimerRef.current !== null) window.clearTimeout(salvoCreditoTimerRef.current)
+    }
+  }, [])
+
+  // mesmo problema de cache desatualizado corrigido em SecaoMetodosPagamento:
+  // useBarraca mostra o cache local na hora e só troca pela barraca de
+  // verdade quando a rede responde. Resincroniza quando o valor de verdade
+  // chega, mas nunca durante uma edição em voo (debounce pendente) — senão
+  // o dono edita logo após um reload e sobrescreve o valor real do banco.
+  useEffect(() => {
+    if (debounceDebitoRef.current === null) {
+      setTextoDebito(bpsParaPercentual(barraca.taxa_debito_bps ?? null))
+      setInvalidoDebito(false)
+    }
+  }, [barraca.taxa_debito_bps])
+
+  useEffect(() => {
+    if (debounceCreditoRef.current === null) {
+      setTextoCredito(bpsParaPercentual(barraca.taxa_credito_bps ?? null))
+      setInvalidoCredito(false)
+    }
+  }, [barraca.taxa_credito_bps])
+
+  function aoMudarDebito(valor: string) {
+    setTextoDebito(valor)
+
+    const temCaracterInvalido = /[^\d.,\s-]/.test(valor)
+    const bps = percentualParaBps(valor)
+    const foraDoIntervalo = bps !== null && (bps < 0 || bps > BPS_MAX)
+    const invalido = temCaracterInvalido || foraDoIntervalo
+    setInvalidoDebito(invalido)
+
+    if (debounceDebitoRef.current !== null) {
+      window.clearTimeout(debounceDebitoRef.current)
+      debounceDebitoRef.current = null
+    }
+    if (invalido) return
+
+    debounceDebitoRef.current = window.setTimeout(async () => {
+      debounceDebitoRef.current = null
+      const { error } = await supabase
+        .from('barracas')
+        .update({ taxa_debito_bps: bps })
+        .eq('id', barraca.id)
+
+      if (!error) {
+        setSalvoDebito(true)
+        if (salvoDebitoTimerRef.current !== null) window.clearTimeout(salvoDebitoTimerRef.current)
+        salvoDebitoTimerRef.current = window.setTimeout(() => setSalvoDebito(false), 1000)
+      }
+    }, 500)
+  }
+
+  function aoMudarCredito(valor: string) {
+    setTextoCredito(valor)
+
+    const temCaracterInvalido = /[^\d.,\s-]/.test(valor)
+    const bps = percentualParaBps(valor)
+    const foraDoIntervalo = bps !== null && (bps < 0 || bps > BPS_MAX)
+    const invalido = temCaracterInvalido || foraDoIntervalo
+    setInvalidoCredito(invalido)
+
+    if (debounceCreditoRef.current !== null) {
+      window.clearTimeout(debounceCreditoRef.current)
+      debounceCreditoRef.current = null
+    }
+    if (invalido) return
+
+    debounceCreditoRef.current = window.setTimeout(async () => {
+      debounceCreditoRef.current = null
+      const { error } = await supabase
+        .from('barracas')
+        .update({ taxa_credito_bps: bps })
+        .eq('id', barraca.id)
+
+      if (!error) {
+        setSalvoCredito(true)
+        if (salvoCreditoTimerRef.current !== null) window.clearTimeout(salvoCreditoTimerRef.current)
+        salvoCreditoTimerRef.current = window.setTimeout(() => setSalvoCredito(false), 1000)
+      }
+    }, 500)
+  }
+
+  return (
+    <SecaoAjustes titulo="Taxas da maquininha">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        Preencha as taxas que sua maquininha cobra por transação. Usadas apenas para estimar o
+        valor líquido no relatório. Se deixar em branco, o relatório mostra só o total bruto.
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <CampoTaxa
+          label="Débito:"
+          texto={textoDebito}
+          invalido={invalidoDebito}
+          salvo={salvoDebito}
+          onMudar={aoMudarDebito}
+        />
+        <CampoTaxa
+          label="Crédito:"
+          texto={textoCredito}
+          invalido={invalidoCredito}
+          salvo={salvoCredito}
+          onMudar={aoMudarCredito}
+        />
+      </div>
     </SecaoAjustes>
   )
 }
@@ -934,6 +1112,7 @@ export function Ajustes() {
       <div className="flex flex-col gap-4 p-4">
         <SecaoItens barracaId={barraca.id} />
         <SecaoMetodosPagamento barraca={barraca} />
+        <SecaoTaxas barraca={barraca} />
         <SecaoFaixas barraca={barraca} />
         <SecaoAparencia barraca={barraca} />
         <SecaoSair />
