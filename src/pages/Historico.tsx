@@ -3,10 +3,17 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
+import { formatarPrecoBR } from '../lib/preco'
 import type { ItemDoPedido, Pedido } from '../types/database'
 
 function motivoHumanizado(motivo: string | null): string {
   return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
+}
+
+function totalPedidoCentavos(pedido: PedidoComItens): number {
+  return pedido.itens_do_pedido
+    .filter((item) => !item.removido)
+    .reduce((soma, item) => soma + item.preco_centavos_unitario * item.quantidade, 0)
 }
 
 type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
@@ -116,6 +123,15 @@ function CardHistorico({
         <div>
           <p className="text-3xl font-black leading-none text-neutral-900 dark:text-neutral-100">
             {pedido.senha}
+          </p>
+          <p
+            className={`mt-1 text-base font-semibold ${
+              pedido.status === 'cancelado'
+                ? 'text-neutral-400 line-through opacity-50 dark:text-neutral-600'
+                : 'text-neutral-700 dark:text-neutral-300'
+            }`}
+          >
+            {formatarPrecoBR(totalPedidoCentavos(pedido))}
           </p>
           {pedido.viagem && (
             <p className="mt-1 text-xs font-bold tracking-widest text-neutral-500 dark:text-neutral-400">

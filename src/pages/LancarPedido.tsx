@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido, enfileirar } from '../lib/fila'
+import { formatarPrecoBR } from '../lib/preco'
 import type { Item } from '../types/database'
 
 type Carrinho = Record<string, number>
@@ -92,6 +93,26 @@ export function LancarPedido() {
     [carrinho],
   )
 
+  const totalCentavos = useMemo(
+    () =>
+      Object.entries(carrinho).reduce((soma, [itemId, quantidade]) => {
+        const item = itens.find((i) => i.id === itemId)
+        if (!item || item.preco_centavos <= 0) return soma
+        return soma + item.preco_centavos * quantidade
+      }, 0),
+    [carrinho, itens],
+  )
+
+  const itensSemPreco = useMemo(
+    () =>
+      Object.entries(carrinho).filter(([itemId, quantidade]) => {
+        if (quantidade <= 0) return false
+        const item = itens.find((i) => i.id === itemId)
+        return item !== undefined && item.preco_centavos <= 0
+      }).length,
+    [carrinho, itens],
+  )
+
   function incrementar(itemId: string) {
     setCarrinho((atual) => ({ ...atual, [itemId]: (atual[itemId] ?? 0) + 1 }))
   }
@@ -122,11 +143,15 @@ export function LancarPedido() {
     const clientUuid = crypto.randomUUID()
     const itensPedido = Object.entries(carrinho)
       .filter(([, quantidade]) => quantidade > 0)
-      .map(([itemId, quantidade]) => ({
-        item_id: itemId,
-        nome_item: itens.find((item) => item.id === itemId)?.nome ?? '',
-        quantidade,
-      }))
+      .map(([itemId, quantidade]) => {
+        const item = itens.find((i) => i.id === itemId)
+        return {
+          item_id: itemId,
+          nome_item: item?.nome ?? '',
+          quantidade,
+          preco_centavos_unitario: item?.preco_centavos ?? 0,
+        }
+      })
 
     const operacao = await enfileirar('criar_pedido', {
       p_barraca_id: barraca.id,
@@ -258,9 +283,12 @@ export function LancarPedido() {
                     key={item.id}
                     type="button"
                     onClick={() => incrementar(item.id)}
-                    className="min-h-16 w-full rounded-2xl bg-neutral-100 px-3 py-3 text-center text-base font-medium text-neutral-900 transition-colors active:bg-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:active:bg-neutral-800"
+                    className="flex min-h-16 w-full items-center gap-2 rounded-2xl bg-neutral-100 py-3 pl-4 pr-3 text-base font-medium text-neutral-900 transition-colors active:bg-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:active:bg-neutral-800"
                   >
-                    {item.nome}
+                    <span className="flex-1 text-left">{item.nome}</span>
+                    <span className="shrink-0 min-w-[56px] text-right text-sm font-normal text-neutral-500 dark:text-neutral-400">
+                      {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
+                    </span>
                   </button>
                 )
               }
@@ -282,8 +310,13 @@ export function LancarPedido() {
                   <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-marca-texto/20 px-1.5 text-xs font-bold">
                     {quantidade}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-center text-base font-medium">
+                  <span className="min-w-0 flex-1 truncate text-left text-base font-medium">
                     {item.nome}
+                  </span>
+                  <span className="shrink-0 text-right text-sm font-semibold">
+                    {item.preco_centavos > 0
+                      ? formatarPrecoBR(item.preco_centavos * quantidade)
+                      : '—'}
                   </span>
                   <button
                     type="button"
@@ -310,22 +343,31 @@ export function LancarPedido() {
         />
       </div>
 
-      <div className="fixed inset-x-0 bottom-16 flex gap-3 border-t border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-        <button
-          type="button"
-          onClick={limparFormulario}
-          className="min-h-11 basis-1/4 rounded-2xl bg-neutral-200 px-4 text-base font-medium text-neutral-800 active:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-100 dark:active:bg-neutral-700"
-        >
-          Limpar
-        </button>
-        <button
-          type="button"
-          onClick={enviarPedido}
-          disabled={totalItens === 0}
-          className="min-h-11 basis-3/4 rounded-2xl bg-marca px-4 text-base font-semibold text-marca-texto active:bg-marca-escura disabled:opacity-40"
-        >
-          {`Enviar Pedido (${totalItens})`}
-        </button>
+      <div className="fixed inset-x-0 bottom-16 flex flex-col gap-1 border-t border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={limparFormulario}
+            className="min-h-11 basis-1/4 rounded-2xl bg-neutral-200 px-4 text-base font-medium text-neutral-800 active:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-100 dark:active:bg-neutral-700"
+          >
+            Limpar
+          </button>
+          <button
+            type="button"
+            onClick={enviarPedido}
+            disabled={totalItens === 0}
+            className="min-h-11 basis-3/4 rounded-2xl bg-marca px-4 text-base font-semibold text-marca-texto active:bg-marca-escura disabled:opacity-40"
+          >
+            {totalItens === 0
+              ? 'Enviar Pedido (0)'
+              : `Enviar Pedido (${totalItens}) — ${formatarPrecoBR(totalCentavos)}`}
+          </button>
+        </div>
+        {itensSemPreco > 0 && (
+          <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
+            {itensSemPreco === 1 ? '1 item sem preço' : `${itensSemPreco} itens sem preço`}
+          </p>
+        )}
       </div>
     </div>
   )

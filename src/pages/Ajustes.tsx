@@ -1,11 +1,71 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { aplicarTema, PRESETS } from '../lib/tema'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
+import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import type { Barraca, Item } from '../types/database'
+
+function textoPrecoInicial(centavos: number): string {
+  return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
+}
+
+function InputPreco({ item }: { item: Item }) {
+  const [texto, setTexto] = useState(() => textoPrecoInicial(item.preco_centavos))
+  const [salvo, setSalvo] = useState(false)
+  const debounceRef = useRef<number | null>(null)
+  const salvoTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
+      if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
+    }
+  }, [])
+
+  function aoMudar(valor: string) {
+    const limpo = valor.replace(/[^\d.,]/g, '')
+    setTexto(limpo)
+
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
+    debounceRef.current = window.setTimeout(async () => {
+      const centavos = reaisParaCentavos(limpo)
+      const { error } = await supabase
+        .from('itens')
+        .update({ preco_centavos: centavos })
+        .eq('id', item.id)
+
+      if (!error) {
+        setSalvo(true)
+        if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
+        salvoTimerRef.current = window.setTimeout(() => setSalvo(false), 1000)
+      }
+    }, 500)
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <div className="flex h-11 items-center rounded-xl border border-neutral-300 dark:border-neutral-700">
+        <span className="pl-2 text-sm text-neutral-500 dark:text-neutral-400">R$</span>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={texto}
+          onChange={(e) => aoMudar(e.target.value)}
+          placeholder="0,00"
+          aria-label={`Preço de ${item.nome}`}
+          className="h-11 w-16 rounded-xl bg-transparent px-2 text-base text-neutral-900 dark:text-neutral-100"
+        />
+      </div>
+      <span className="flex w-4 shrink-0 items-center justify-center">
+        {salvo && <Check size={16} className="text-sinal-verde" aria-label="Salvo" />}
+      </span>
+    </div>
+  )
+}
 
 function SecaoAjustes({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
@@ -65,6 +125,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
 
   const [criandoItem, setCriandoItem] = useState(false)
   const [novoNome, setNovoNome] = useState('')
+  const [novoPreco, setNovoPreco] = useState('')
   const [salvandoNovo, setSalvandoNovo] = useState(false)
 
   const [editandoId, setEditandoId] = useState<string | null>(null)
@@ -142,10 +203,17 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
 
     setSalvandoNovo(true)
     const proximaOrdem = itens.length > 0 ? Math.max(...itens.map((i) => i.ordem)) + 1 : 1
+    const precoCentavos = reaisParaCentavos(novoPreco)
 
     const { data, error } = await supabase
       .from('itens')
-      .insert({ barraca_id: barracaId, nome, ativo: true, ordem: proximaOrdem })
+      .insert({
+        barraca_id: barracaId,
+        nome,
+        ativo: true,
+        ordem: proximaOrdem,
+        preco_centavos: precoCentavos,
+      })
       .select()
       .single()
 
@@ -154,6 +222,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
     if (!error && data) {
       setItens((atual) => [...atual, data as Item])
       setNovoNome('')
+      setNovoPreco('')
       setCriandoItem(false)
     }
   }
@@ -243,7 +312,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
                 key={item.id}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => aoSoltar(item.id)}
-                className={`flex items-center gap-1 rounded-2xl border border-neutral-200 p-2 dark:border-neutral-800 ${
+                className={`flex flex-wrap items-center gap-1 rounded-2xl border border-neutral-200 p-2 dark:border-neutral-800 ${
                   item.ativo ? '' : 'opacity-50'
                 }`}
               >
@@ -299,6 +368,8 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
                   </button>
                 )}
 
+                <InputPreco item={item} />
+
                 <button
                   type="button"
                   onClick={() => alternarAtivo(item)}
@@ -323,7 +394,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
           </ul>
 
           {criandoItem ? (
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <input
                 autoFocus
                 value={novoNome}
@@ -332,6 +403,18 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
                 placeholder="Nome do item"
                 className="h-11 flex-1 rounded-2xl border border-neutral-300 px-4 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
               />
+              <div className="flex h-11 items-center rounded-2xl border border-neutral-300 dark:border-neutral-700">
+                <span className="pl-3 text-sm text-neutral-500 dark:text-neutral-400">R$</span>
+                <input
+                  value={novoPreco}
+                  onChange={(e) => setNovoPreco(e.target.value.replace(/[^\d.,]/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && criarItem()}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  aria-label="Preço do novo item"
+                  className="h-11 w-20 rounded-2xl bg-transparent px-2 text-base text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
               <button
                 type="button"
                 onClick={criarItem}
@@ -345,6 +428,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
                 onClick={() => {
                   setCriandoItem(false)
                   setNovoNome('')
+                  setNovoPreco('')
                 }}
                 className="min-h-11 rounded-2xl bg-neutral-200 px-4 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
               >

@@ -16,6 +16,7 @@ export type Item = {
   nome: string
   ativo: boolean
   ordem: number
+  preco_centavos: number
 }
 
 export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'
@@ -48,4 +49,5 @@ export type ItemDoPedido = {
   motivo_remocao: string | null
   entregue: boolean
   entregue_em: string | null
+  preco_centavos_unitario: number
 }
