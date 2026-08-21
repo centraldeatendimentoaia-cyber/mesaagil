@@ -16,6 +16,14 @@ function totalPedidoCentavos(pedido: PedidoComItens): number {
     .reduce((soma, item) => soma + item.preco_centavos_unitario * item.quantidade, 0)
 }
 
+function ehEntregaDireta(pedido: PedidoComItens): boolean {
+  if (!pedido.pronto_em || !pedido.entregue_em) return false
+  const diferencaMs = Math.abs(
+    new Date(pedido.entregue_em).getTime() - new Date(pedido.pronto_em).getTime(),
+  )
+  return diferencaMs < 1000
+}
+
 type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
 type Periodo = 'hoje' | 'ontem' | '7dias' | 'data'
 
@@ -163,9 +171,14 @@ function CardHistorico({
             </p>
           </>
         ) : (
-          <span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold tracking-wide text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-            ENTREGUE
-          </span>
+          <>
+            <span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold tracking-wide text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              ENTREGUE
+            </span>
+            {ehEntregaDireta(pedido) && (
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Entrega direta</p>
+            )}
+          </>
         )}
       </div>
 

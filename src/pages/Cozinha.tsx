@@ -8,6 +8,7 @@ import { enfileirar } from '../lib/fila'
 import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 import type { PedidoComItens, StatusConexao } from '../hooks/useRealtimePedidos'
 import { ModalCancelamento } from '../components/ModalCancelamento'
+import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
 import type { MotivoCancelamento } from '../lib/cancelamento'
 import type { Barraca, ItemDoPedido } from '../types/database'
 
@@ -170,6 +171,7 @@ function CardPedido({
   onSolicitarRemocao,
   onAlternarEntregue,
   onCancelar,
+  onAtalhoEntregar,
 }: {
   pedido: PedidoComItens
   barraca: Barraca
@@ -180,6 +182,7 @@ function CardPedido({
   onSolicitarRemocao: (pedido: PedidoComItens, item: ItemDoPedido) => void
   onAlternarEntregue: (pedido: PedidoComItens, item: ItemDoPedido) => void
   onCancelar: (pedido: PedidoComItens) => void
+  onAtalhoEntregar: (pedido: PedidoComItens) => void
 }) {
   const minutos = minutosDecorridos(pedido)
   const cor = corPorTempo(pedido, minutos, barraca)
@@ -250,7 +253,25 @@ function CardPedido({
         ))}
       </ul>
 
-      <p className={`mt-3 text-center text-4xl font-bold ${CORES_TEXTO[cor]}`}>{minutos} min</p>
+      {pedido.status === 'a_fazer' ? (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className={`text-4xl font-bold ${CORES_TEXTO[cor]}`}>{minutos} min</p>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onAtalhoEntregar(pedido)
+            }}
+            aria-label={`Marcar comanda ${pedido.senha} como entregue direto`}
+            className="flex min-h-11 items-center gap-1.5 rounded-xl bg-sinal-verde/15 px-3 text-base font-semibold text-sinal-verde active:opacity-70"
+          >
+            <Check size={18} strokeWidth={2.5} />
+            Entregue
+          </button>
+        </div>
+      ) : (
+        <p className={`mt-3 text-center text-4xl font-bold ${CORES_TEXTO[cor]}`}>{minutos} min</p>
+      )}
     </>
   )
 
@@ -339,6 +360,11 @@ export function Cozinha() {
 
   const [pedidoParaCancelar, setPedidoParaCancelar] = useState<PedidoComItens | null>(null)
   const [cancelando, setCancelando] = useState(false)
+
+  const [pedidoParaEntregaDireta, setPedidoParaEntregaDireta] = useState<PedidoComItens | null>(
+    null,
+  )
+  const [confirmandoEntregaDireta, setConfirmandoEntregaDireta] = useState(false)
 
   // Relógio global: minutosDecorridos/corPorTempo são calculados em tempo de
   // render usando Date.now(). Sem isso, os cards só recalculam quando
@@ -460,6 +486,28 @@ export function Cozinha() {
     setPedidoParaCancelar(null)
   }
 
+  async function confirmarEntregaDireta() {
+    if (!pedidoParaEntregaDireta) return
+    const pedido = pedidoParaEntregaDireta
+    const agora = new Date().toISOString()
+
+    setConfirmandoEntregaDireta(true)
+    aplicarPatchPedido(pedido.id, { status: 'entregue', pronto_em: agora, entregue_em: agora })
+
+    // mesmo padrão de moverParaPronto/cancelarPedido: via fila offline, sem
+    // reversão síncrona aqui — enfileirar não expõe um erro imediato pra
+    // reverter contra (a fila resolve/retenta em segundo plano)
+    await enfileirar('mudar_status', {
+      pedido_id: pedido.id,
+      status: 'entregue',
+      pronto_em: agora,
+      entregue_em: agora,
+    })
+
+    setConfirmandoEntregaDireta(false)
+    setPedidoParaEntregaDireta(null)
+  }
+
   const pedidosAFazer = pedidos.filter((p) => p.status === 'a_fazer')
   const pedidosProntos = pedidos.filter((p) => p.status === 'pronto')
 
@@ -481,6 +529,7 @@ export function Cozinha() {
             onSolicitarRemocao={(p, item) => setItemParaRemover({ pedido: p, item })}
             onAlternarEntregue={alternarEntregueItem}
             onCancelar={setPedidoParaCancelar}
+            onAtalhoEntregar={setPedidoParaEntregaDireta}
           />
         ))}
       </div>
@@ -600,6 +649,15 @@ export function Cozinha() {
           cancelando={cancelando}
           onFechar={() => setPedidoParaCancelar(null)}
           onConfirmar={cancelarPedido}
+        />
+      )}
+
+      {pedidoParaEntregaDireta && (
+        <ModalEntregaDireta
+          senha={pedidoParaEntregaDireta.senha}
+          confirmando={confirmandoEntregaDireta}
+          onFechar={() => setPedidoParaEntregaDireta(null)}
+          onConfirmar={confirmarEntregaDireta}
         />
       )}
     </div>
