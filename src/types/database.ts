@@ -8,6 +8,7 @@ export type Barraca = {
   verde_ate: number
   amarelo_ate: number
   criada_em: string
+  metodos_pagamento_ativos: string[]
 }
 
 export type Item = {
@@ -36,6 +37,7 @@ export type Pedido = {
   client_uuid: string | null
   motivo_cancelamento: string | null
   cancelado_em: string | null
+  metodo_pagamento: string | null
 }
 
 export type ItemDoPedido = {

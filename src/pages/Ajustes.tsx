@@ -7,6 +7,7 @@ import { aplicarTema, PRESETS } from '../lib/tema'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
+import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import type { Barraca, Item } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
@@ -460,6 +461,115 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
   )
 }
 
+function SecaoMetodosPagamento({ barraca }: { barraca: Barraca }) {
+  const [ativos, setAtivos] = useState<string[]>(
+    barraca.metodos_pagamento_ativos ?? ['dinheiro', 'debito', 'credito'],
+  )
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [salvo, setSalvo] = useState(false)
+  const debounceRef = useRef<number | null>(null)
+  const salvoTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
+      if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
+    }
+  }, [])
+
+  // useBarraca mostra a barraca em cache (localStorage) na hora e só troca
+  // pela versão de verdade quando a busca de rede volta — sem isso, um
+  // metodos_pagamento_ativos desatualizado do cache fica preso na tela até
+  // um segundo reload. Só resincroniza se não há edição pendente (debounce
+  // em voo), pra não sobrescrever um toque recém-feito pelo dono.
+  useEffect(() => {
+    if (debounceRef.current === null && barraca.metodos_pagamento_ativos) {
+      setAtivos(barraca.metodos_pagamento_ativos)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barraca.metodos_pagamento_ativos])
+
+  function persistir(lista: string[]) {
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
+    debounceRef.current = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from('barracas')
+        .update({ metodos_pagamento_ativos: lista })
+        .eq('id', barraca.id)
+
+      if (!error) {
+        setSalvo(true)
+        if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
+        salvoTimerRef.current = window.setTimeout(() => setSalvo(false), 1000)
+      }
+    }, 500)
+  }
+
+  function alternar(chave: string) {
+    const estaAtivo = ativos.includes(chave)
+
+    if (estaAtivo && ativos.length === 1) {
+      setAviso('Você precisa ter ao menos um método de pagamento ativo.')
+      return
+    }
+
+    setAviso(null)
+    const novaLista = estaAtivo ? ativos.filter((m) => m !== chave) : [...ativos, chave]
+    setAtivos(novaLista)
+    persistir(novaLista)
+  }
+
+  return (
+    <SecaoAjustes titulo="Métodos de pagamento aceitos">
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        Marque os métodos que sua barraca aceita. O popup ao enviar pedido só mostra os
+        marcados. Se marcar apenas um, o popup pula.
+      </p>
+
+      {aviso && (
+        <p className="mt-3 rounded-xl bg-sinal-amarelo/15 p-3 text-sm font-medium text-sinal-amarelo">
+          {aviso}
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-col gap-3">
+        {METODOS_DISPONIVEIS.map((metodo) => (
+          <div key={metodo.chave} className="flex items-center justify-between gap-3">
+            <span className="text-base text-neutral-900 dark:text-neutral-100">
+              {metodo.icone} {metodo.label}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={ativos.includes(metodo.chave)}
+              aria-label={metodo.label}
+              onClick={() => alternar(metodo.chave)}
+              className={`relative h-11 w-[72px] shrink-0 rounded-full p-1 transition-colors ${
+                ativos.includes(metodo.chave) ? 'bg-marca' : 'bg-neutral-300 dark:bg-neutral-700'
+              }`}
+            >
+              <span
+                className={`block h-9 w-9 rounded-full bg-white shadow transition-transform ${
+                  ativos.includes(metodo.chave) ? 'translate-x-7' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <span className="mt-3 flex h-4 items-center gap-1 text-xs font-medium text-sinal-verde">
+        {salvo && (
+          <>
+            <Check size={14} />
+            Salvo
+          </>
+        )}
+      </span>
+    </SecaoAjustes>
+  )
+}
+
 function SecaoFaixas({ barraca }: { barraca: Barraca }) {
   const [verdeAte, setVerdeAte] = useState(String(barraca.verde_ate))
   const [amareloAte, setAmareloAte] = useState(String(barraca.amarelo_ate))
@@ -823,6 +933,7 @@ export function Ajustes() {
 
       <div className="flex flex-col gap-4 p-4">
         <SecaoItens barracaId={barraca.id} />
+        <SecaoMetodosPagamento barraca={barraca} />
         <SecaoFaixas barraca={barraca} />
         <SecaoAparencia barraca={barraca} />
         <SecaoSair />

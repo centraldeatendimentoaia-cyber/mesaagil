@@ -3,7 +3,11 @@ import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido, enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
+import { ModalMetodoPagamento } from '../components/ModalMetodoPagamento'
+import type { MetodoPagamento } from '../lib/metodoPagamento'
 import type { Item } from '../types/database'
+
+const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito']
 
 type Carrinho = Record<string, number>
 
@@ -51,7 +55,14 @@ export function LancarPedido() {
 
   const [senha, setSenha] = useState<SenhaConfirmada | null>(null)
 
+  const [mostrarModalMetodo, setMostrarModalMetodo] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null)
+
   const enviandoRef = useRef(false)
+
+  // cache local pode ser de antes desta migration e nao ter o campo ainda —
+  // cai no mesmo default da coluna no banco, nunca bloqueia o envio por isso
+  const metodosAtivos = barraca.metodos_pagamento_ativos ?? METODOS_PADRAO
 
   useEffect(() => {
     let cancelado = false
@@ -136,9 +147,27 @@ export function LancarPedido() {
     setObservacao('')
   }
 
-  async function enviarPedido() {
+  function iniciarEnvio() {
     if (enviandoRef.current || totalItens === 0) return
+    setErroEnvio(null)
+
+    if (metodosAtivos.length === 0) {
+      setErroEnvio('Configure ao menos um método de pagamento em Ajustes.')
+      return
+    }
+
+    if (metodosAtivos.length === 1) {
+      enviarComMetodo(metodosAtivos[0] as MetodoPagamento)
+      return
+    }
+
+    setMostrarModalMetodo(true)
+  }
+
+  async function enviarComMetodo(metodo: MetodoPagamento) {
+    if (enviandoRef.current) return
     enviandoRef.current = true
+    setMostrarModalMetodo(false)
 
     const clientUuid = crypto.randomUUID()
     const itensPedido = Object.entries(carrinho)
@@ -160,6 +189,7 @@ export function LancarPedido() {
       p_observacao: observacao.trim() || null,
       p_client_uuid: clientUuid,
       p_itens: itensPedido,
+      p_metodo_pagamento: metodo,
     })
 
     setSenha({ valor: proximoNumeroProvisorio(barraca.id), provisoria: true, idFila: operacao.id })
@@ -354,7 +384,7 @@ export function LancarPedido() {
           </button>
           <button
             type="button"
-            onClick={enviarPedido}
+            onClick={iniciarEnvio}
             disabled={totalItens === 0}
             className="min-h-11 basis-3/4 rounded-2xl bg-marca px-4 text-base font-semibold text-marca-texto active:bg-marca-escura disabled:opacity-40"
           >
@@ -368,7 +398,18 @@ export function LancarPedido() {
             {itensSemPreco === 1 ? '1 item sem preço' : `${itensSemPreco} itens sem preço`}
           </p>
         )}
+        {erroEnvio && (
+          <p className="text-center text-xs font-medium text-sinal-vermelho">{erroEnvio}</p>
+        )}
       </div>
+
+      {mostrarModalMetodo && (
+        <ModalMetodoPagamento
+          metodosAtivos={metodosAtivos}
+          onCancelar={() => setMostrarModalMetodo(false)}
+          onConfirmar={enviarComMetodo}
+        />
+      )}
     </div>
   )
 }

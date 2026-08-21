@@ -4,10 +4,16 @@ import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { formatarPrecoBR } from '../lib/preco'
+import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import type { ItemDoPedido, Pedido } from '../types/database'
 
 function motivoHumanizado(motivo: string | null): string {
   return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
+}
+
+function rotuloMetodo(chave: string | null): string {
+  const metodo = METODOS_DISPONIVEIS.find((m) => m.chave === chave)
+  return metodo ? `${metodo.icone} ${metodo.label}` : humanizarMetodo(chave)
 }
 
 function totalPedidoCentavos(pedido: PedidoComItens): number {
@@ -180,6 +186,14 @@ function CardHistorico({
             )}
           </>
         )}
+      </div>
+
+      <div className="mt-1.5">
+        <span
+          className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold tracking-wide ${corMetodo(pedido.metodo_pagamento)}`}
+        >
+          {rotuloMetodo(pedido.metodo_pagamento)}
+        </span>
       </div>
 
       {pedido.observacao && (
