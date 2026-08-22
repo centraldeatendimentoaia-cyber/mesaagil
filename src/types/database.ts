@@ -55,3 +55,5 @@ export type ItemDoPedido = {
   entregue_em: string | null
   preco_centavos_unitario: number
 }
+
+export type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }

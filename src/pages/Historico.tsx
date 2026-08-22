@@ -5,7 +5,10 @@ import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { formatarPrecoBR } from '../lib/preco'
 import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
-import type { ItemDoPedido, Pedido } from '../types/database'
+import { deslocarDias, hojeISO } from '../lib/datas'
+import { calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
+import { PainelRelatorio } from '../components/PainelRelatorio'
+import type { PedidoComItens } from '../types/database'
 
 function motivoHumanizado(motivo: string | null): string {
   return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
@@ -16,21 +19,6 @@ function rotuloMetodo(chave: string | null): string {
   return metodo ? `${metodo.icone} ${metodo.label}` : humanizarMetodo(chave)
 }
 
-function totalPedidoCentavos(pedido: PedidoComItens): number {
-  return pedido.itens_do_pedido
-    .filter((item) => !item.removido)
-    .reduce((soma, item) => soma + item.preco_centavos_unitario * item.quantidade, 0)
-}
-
-function ehEntregaDireta(pedido: PedidoComItens): boolean {
-  if (!pedido.pronto_em || !pedido.entregue_em) return false
-  const diferencaMs = Math.abs(
-    new Date(pedido.entregue_em).getTime() - new Date(pedido.pronto_em).getTime(),
-  )
-  return diferencaMs < 1000
-}
-
-type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
 type Periodo = 'hoje' | 'ontem' | '7dias' | 'data'
 
 const PERIODOS: { valor: Periodo; rotulo: string }[] = [
@@ -39,24 +27,6 @@ const PERIODOS: { valor: Periodo; rotulo: string }[] = [
   { valor: '7dias', rotulo: '7 dias' },
   { valor: 'data', rotulo: 'Data' },
 ]
-
-function formatarDataISO(data: Date): string {
-  const ano = data.getFullYear()
-  const mes = String(data.getMonth() + 1).padStart(2, '0')
-  const dia = String(data.getDate()).padStart(2, '0')
-  return `${ano}-${mes}-${dia}`
-}
-
-function hojeISO(): string {
-  return formatarDataISO(new Date())
-}
-
-function deslocarDias(iso: string, dias: number): string {
-  const [ano, mes, dia] = iso.split('-').map(Number)
-  const data = new Date(ano, mes - 1, dia)
-  data.setDate(data.getDate() + dias)
-  return formatarDataISO(data)
-}
 
 function formatarHora(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -145,7 +115,7 @@ function CardHistorico({
                 : 'text-neutral-700 dark:text-neutral-300'
             }`}
           >
-            {formatarPrecoBR(totalPedidoCentavos(pedido))}
+            {formatarPrecoBR(calcularTotalPedido(pedido))}
           </p>
           {pedido.viagem && (
             <p className="mt-1 text-xs font-bold tracking-widest text-neutral-500 dark:text-neutral-400">
@@ -310,6 +280,8 @@ export function Historico() {
     ? pedidosDoPeriodo.filter((p) => String(p.senha).includes(busca.trim()))
     : pedidosDoPeriodo
 
+  const filtroRelatorio = { tipo: periodo, data: dataEscolhida }
+
   async function restaurarPedido(pedido: PedidoComItens) {
     setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
 
@@ -442,6 +414,10 @@ export function Historico() {
       </div>
 
       <div className="p-4">
+        <div className="mb-4">
+          <PainelRelatorio barraca={barraca} filtro={filtroRelatorio} />
+        </div>
+
         {carregando && <p className="py-8 text-center text-neutral-500 dark:text-neutral-400">Carregando...</p>}
 
         {!carregando && erro && (
