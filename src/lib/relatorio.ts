@@ -8,6 +8,7 @@ export const METODOS_OU_NAO_INFORMADO: MetodoOuNaoInformado[] = [
   'dinheiro',
   'debito',
   'credito',
+  'pix',
   'nao_informado',
 ]
 
@@ -82,6 +83,7 @@ export function calcularEstimativaLiquida(
     dinheiro: null,
     debito: taxaDebitoBps,
     credito: taxaCreditoBps,
+    pix: null,
     nao_informado: null,
   }
 

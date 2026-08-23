@@ -464,7 +464,7 @@ function SecaoItens({ barracaId }: { barracaId: string }) {
 
 function SecaoMetodosPagamento({ barraca }: { barraca: Barraca }) {
   const [ativos, setAtivos] = useState<string[]>(
-    barraca.metodos_pagamento_ativos ?? ['dinheiro', 'debito', 'credito'],
+    barraca.metodos_pagamento_ativos ?? ['dinheiro', 'debito', 'credito', 'pix'],
   )
   const [aviso, setAviso] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)

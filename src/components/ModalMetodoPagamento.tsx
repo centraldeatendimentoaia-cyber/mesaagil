@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Banknote, CreditCard } from 'lucide-react'
+import { Banknote, CreditCard, QrCode } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import type { MetodoPagamento } from '../lib/metodoPagamento'
@@ -8,12 +8,14 @@ const ICONES: Record<MetodoPagamento, LucideIcon> = {
   dinheiro: Banknote,
   debito: CreditCard,
   credito: CreditCard,
+  pix: QrCode,
 }
 
 const CORES_ICONE_INATIVO: Record<MetodoPagamento, string> = {
   dinheiro: 'text-sinal-verde',
   debito: 'text-blue-600 dark:text-blue-400',
   credito: 'text-purple-600 dark:text-purple-400',
+  pix: 'text-teal-600 dark:text-teal-400',
 }
 
 export function ModalMetodoPagamento({

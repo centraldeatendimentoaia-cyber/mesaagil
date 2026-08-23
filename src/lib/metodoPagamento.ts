@@ -1,9 +1,10 @@
-export type MetodoPagamento = 'dinheiro' | 'debito' | 'credito'
+export type MetodoPagamento = 'dinheiro' | 'debito' | 'credito' | 'pix'
 
 export const METODOS_DISPONIVEIS: { chave: MetodoPagamento; label: string; icone: string }[] = [
   { chave: 'dinheiro', label: 'Dinheiro', icone: '💵' },
   { chave: 'debito', label: 'Débito', icone: '💳' },
   { chave: 'credito', label: 'Crédito', icone: '💳' },
+  { chave: 'pix', label: 'Pix', icone: '🔳' },
 ]
 
 export function humanizarMetodo(chave: string | null): string {
@@ -19,6 +20,8 @@ export function corMetodo(chave: string | null): string {
       return 'bg-blue-500/15 text-blue-700 dark:text-blue-400'
     case 'credito':
       return 'bg-purple-500/15 text-purple-700 dark:text-purple-400'
+    case 'pix':
+      return 'bg-teal-500/15 text-teal-700 dark:text-teal-400'
     default:
       return 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
   }

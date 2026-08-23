@@ -7,7 +7,7 @@ import { ModalMetodoPagamento } from '../components/ModalMetodoPagamento'
 import type { MetodoPagamento } from '../lib/metodoPagamento'
 import type { Item } from '../types/database'
 
-const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito']
+const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
 
 type Carrinho = Record<string, number>
 
