@@ -149,6 +149,76 @@ export function calcularPontosAtencao(
   }
 }
 
+export type ItemMaisVendido = {
+  item_id: string | null
+  nome_item: string
+  quantidade_total: number
+  valor_total: number
+}
+
+export function calcularMaisVendidos(pedidos: PedidoComItens[]): ItemMaisVendido[] {
+  const grupos = new Map<string, ItemMaisVendido>()
+
+  for (const pedido of naoCancelados(pedidos)) {
+    for (const item of pedido.itens_do_pedido) {
+      if (item.removido) continue
+      const chave = item.item_id ?? `nome:${item.nome_item}`
+      const atual = grupos.get(chave) ?? {
+        item_id: item.item_id,
+        nome_item: item.nome_item,
+        quantidade_total: 0,
+        valor_total: 0,
+      }
+      atual.quantidade_total += item.quantidade
+      atual.valor_total += item.preco_centavos_unitario * item.quantidade
+      grupos.set(chave, atual)
+    }
+  }
+
+  return [...grupos.values()].sort((a, b) => b.quantidade_total - a.quantidade_total).slice(0, 5)
+}
+
+export type RitmoDoDia = {
+  tempoMedioPreparoMin: number | null
+  horarioPico: { hora: number; quantidade: number } | null
+}
+
+export function calcularRitmoDoDia(pedidos: PedidoComItens[]): RitmoDoDia {
+  const validos = naoCancelados(pedidos)
+  if (validos.length < 3) {
+    return { tempoMedioPreparoMin: null, horarioPico: null }
+  }
+
+  // entrega direta pula o Pronto, entao pronto_em=entregue_em daria preparo
+  // ~0min e distorceria a media pra baixo — nao entra na conta
+  let somaMinutos = 0
+  let contagemPreparo = 0
+  for (const pedido of validos) {
+    if (!pedido.pronto_em || ehEntregaDireta(pedido)) continue
+    somaMinutos += (new Date(pedido.pronto_em).getTime() - new Date(pedido.criado_em).getTime()) / 60000
+    contagemPreparo += 1
+  }
+  const tempoMedioPreparoMin = contagemPreparo > 0 ? Math.round(somaMinutos / contagemPreparo) : null
+
+  const contagemPorHora = new Map<number, number>()
+  for (const pedido of validos) {
+    const hora = new Date(pedido.criado_em).getHours()
+    contagemPorHora.set(hora, (contagemPorHora.get(hora) ?? 0) + 1)
+  }
+
+  // varre 0-23 em ordem pra empate resolver sempre pro horario mais cedo
+  // ("primeira encontrada")
+  let horarioPico: { hora: number; quantidade: number } | null = null
+  for (let hora = 0; hora < 24; hora++) {
+    const quantidade = contagemPorHora.get(hora) ?? 0
+    if (quantidade > 0 && (!horarioPico || quantidade > horarioPico.quantidade)) {
+      horarioPico = { hora, quantidade }
+    }
+  }
+
+  return { tempoMedioPreparoMin, horarioPico }
+}
+
 export type TipoFiltroRelatorio = 'hoje' | 'ontem' | '7dias' | 'data'
 
 export type FiltroRelatorio = {

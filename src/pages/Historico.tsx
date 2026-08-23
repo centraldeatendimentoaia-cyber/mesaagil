@@ -8,7 +8,7 @@ import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPa
 import { deslocarDias, hojeISO } from '../lib/datas'
 import { calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
-import type { PedidoComItens } from '../types/database'
+import type { Item, PedidoComItens } from '../types/database'
 
 function motivoHumanizado(motivo: string | null): string {
   return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
@@ -228,6 +228,9 @@ export function Historico() {
   const [dataEscolhida, setDataEscolhida] = useState(hojeISO())
   const [busca, setBusca] = useState('')
 
+  const [itensCardapio, setItensCardapio] = useState<Item[]>([])
+  const [itemFiltradoId, setItemFiltradoId] = useState<string | null>(null)
+
   const [mostrarConfirmacaoExclusao, setMostrarConfirmacaoExclusao] = useState(false)
   const [apagando, setApagando] = useState(false)
   const [erroExclusao, setErroExclusao] = useState<string | null>(null)
@@ -275,10 +278,38 @@ export function Historico() {
     }
   }, [barraca.id, periodo, dataEscolhida])
 
+  useEffect(() => {
+    let cancelado = false
+
+    supabase
+      .from('itens')
+      .select('*')
+      .eq('barraca_id', barraca.id)
+      .eq('ativo', true)
+      .order('ordem')
+      .then(({ data, error }) => {
+        if (cancelado || error) return
+        setItensCardapio((data ?? []) as Item[])
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
   const pedidosDoPeriodo = pedidos
-  const pedidosExibidos = busca.trim()
-    ? pedidosDoPeriodo.filter((p) => String(p.senha).includes(busca.trim()))
+  const pedidosDoPeriodoComItemFiltrado = itemFiltradoId
+    ? pedidosDoPeriodo.filter((p) =>
+        p.itens_do_pedido.some((item) => !item.removido && item.item_id === itemFiltradoId),
+      )
     : pedidosDoPeriodo
+  const pedidosExibidos = busca.trim()
+    ? pedidosDoPeriodoComItemFiltrado.filter((p) => String(p.senha).includes(busca.trim()))
+    : pedidosDoPeriodoComItemFiltrado
+
+  const nomeItemFiltrado = itemFiltradoId
+    ? (itensCardapio.find((item) => item.id === itemFiltradoId)?.nome ?? null)
+    : null
 
   const filtroRelatorio = { tipo: periodo, data: dataEscolhida }
 
@@ -379,6 +410,19 @@ export function Historico() {
           )}
         </div>
 
+        <select
+          value={itemFiltradoId ?? ''}
+          onChange={(e) => setItemFiltradoId(e.target.value || null)}
+          className="mt-3 h-11 w-full rounded-2xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+        >
+          <option value="">Todos os produtos</option>
+          {itensCardapio.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.nome}
+            </option>
+          ))}
+        </select>
+
         <input
           type="text"
           inputMode="numeric"
@@ -415,7 +459,12 @@ export function Historico() {
 
       <div className="p-4">
         <div className="mb-4">
-          <PainelRelatorio barraca={barraca} filtro={filtroRelatorio} />
+          <PainelRelatorio
+            barraca={barraca}
+            filtro={filtroRelatorio}
+            itemFiltradoId={itemFiltradoId}
+            nomeItemFiltrado={nomeItemFiltrado}
+          />
         </div>
 
         {carregando && <p className="py-8 text-center text-neutral-500 dark:text-neutral-400">Carregando...</p>}

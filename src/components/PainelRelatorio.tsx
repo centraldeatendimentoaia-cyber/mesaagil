@@ -8,6 +8,7 @@ import { formatarPrecoBR } from '../lib/preco'
 import { bpsParaPercentual } from '../lib/taxas'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
+import { hojeISO } from '../lib/datas'
 import type { Barraca } from '../types/database'
 
 function tituloRelatorio(filtro: FiltroRelatorio): string {
@@ -15,11 +16,24 @@ function tituloRelatorio(filtro: FiltroRelatorio): string {
   if (filtro.tipo === 'ontem') return 'Relatório de ontem'
   if (filtro.tipo === '7dias') return 'Relatório dos últimos 7 dias'
 
-  const iso = filtro.data ?? new Date().toISOString().slice(0, 10)
+  const iso = filtro.data ?? hojeISO()
   const [ano, mes, dia] = iso.split('-').map(Number)
   const data = new Date(ano, mes - 1, dia)
   const texto = data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
   return `Relatório de ${texto}`
+}
+
+// já vem com a preposição certa embutida — "nos últimos 7 dias" não leva
+// "em" na frente, "hoje"/"ontem" tampouco, só a data específica leva "em"
+function fraseDoPeriodo(filtro: FiltroRelatorio): string {
+  if (filtro.tipo === 'hoje') return 'hoje'
+  if (filtro.tipo === 'ontem') return 'ontem'
+  if (filtro.tipo === '7dias') return 'nos últimos 7 dias'
+
+  const iso = filtro.data ?? hojeISO()
+  const [ano, mes, dia] = iso.split('-').map(Number)
+  const data = new Date(ano, mes - 1, dia)
+  return `em ${data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}`
 }
 
 function nomeDoDia(iso: string): string {
@@ -53,6 +67,30 @@ function textoDetalhamentoLiquido(detalhamento: DetalhamentoLiquido[]): string {
     .join(' + ')
 }
 
+/** Monta "vs {label} passado: +R$ X (+Y%)" ou "sem comparação" — reusado tanto
+ * pelo modo completo (total bruto) quanto pelo modo produto isolado (total
+ * do produto), já que a mecânica de comparação é idêntica nos dois. */
+function textoEcorComparacao(
+  atualValor: number,
+  comparacaoValor: number,
+  labelComparacao: string,
+): { texto: string; cor: string } {
+  const diferenca = atualValor - comparacaoValor
+  const percentual = comparacaoValor > 0 ? (diferenca / comparacaoValor) * 100 : null
+  const sinal = diferenca >= 0 ? '+' : '-'
+
+  const texto =
+    comparacaoValor === 0
+      ? 'sem comparação'
+      : `vs ${labelComparacao}: ${sinal}${formatarPrecoBR(Math.abs(diferenca))} (${sinal}${Math.round(
+          Math.abs(percentual ?? 0),
+        )}%)`
+  const cor =
+    comparacaoValor > 0 && diferenca > 0 ? 'text-sinal-verde' : 'text-neutral-500 dark:text-neutral-400'
+
+  return { texto, cor }
+}
+
 function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <div className="mt-5 border-t border-neutral-200 pt-4 dark:border-neutral-800">
@@ -64,53 +102,96 @@ function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   )
 }
 
+function CartaoRelatorio({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/60">
+      {children}
+    </div>
+  )
+}
+
+function Carregando() {
+  return (
+    <CartaoRelatorio>
+      <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+        Calculando relatório...
+      </p>
+    </CartaoRelatorio>
+  )
+}
+
+function Erro() {
+  return (
+    <CartaoRelatorio>
+      <p className="text-center text-sm text-red-600">Não foi possível calcular o relatório.</p>
+    </CartaoRelatorio>
+  )
+}
+
 export function PainelRelatorio({
   barraca,
   filtro,
+  itemFiltradoId = null,
+  nomeItemFiltrado = null,
 }: {
   barraca: Barraca
   filtro: FiltroRelatorio
+  itemFiltradoId?: string | null
+  nomeItemFiltrado?: string | null
 }) {
-  const { atual, comparacao, carregando, erro } = useRelatorio(barraca, filtro)
+  const resultado = useRelatorio(barraca, filtro, itemFiltradoId)
 
   // mesmo motivo do useRelatorio: depende dos campos primitivos, não do
   // objeto filtro (que o Historico passa como literal inline)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const intervalos = useMemo(() => calcularIntervalosRelatorio(filtro), [filtro.tipo, filtro.data])
 
-  if (carregando || !atual) {
-    return (
-      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-6 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Calculando relatório...</p>
-      </div>
-    )
-  }
+  if (resultado.carregando || !resultado.atual) return <Carregando />
+  if (resultado.erro) return <Erro />
 
-  if (erro) {
-    return (
-      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-6 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-        <p className="text-sm text-red-600">Não foi possível calcular o relatório.</p>
-      </div>
-    )
-  }
-
-  const totalComparacao = comparacao?.totalBruto ?? 0
-  const diferenca = atual.totalBruto - totalComparacao
-  const percentualDiferenca = totalComparacao > 0 ? (diferenca / totalComparacao) * 100 : null
   const labelComparacao =
     filtro.tipo === '7dias' ? 'período anterior' : `${nomeDoDia(intervalos.comparacao.inicio)} passado`
 
-  const sinal = diferenca >= 0 ? '+' : '-'
-  const textoComparacao =
-    totalComparacao === 0
-      ? 'sem comparação'
-      : `vs ${labelComparacao}: ${sinal}${formatarPrecoBR(Math.abs(diferenca))} (${sinal}${Math.round(
-          Math.abs(percentualDiferenca ?? 0),
-        )}%)`
-  const corComparacao =
-    totalComparacao > 0 && diferenca > 0
-      ? 'text-sinal-verde'
-      : 'text-neutral-500 dark:text-neutral-400'
+  // ---- modo produto isolado: painel simplificado, uma unica secao ----
+  if (resultado.modo === 'produto_isolado') {
+    const { atual, comparacao } = resultado
+    const totalComparacao = comparacao?.totalIsolado ?? 0
+    const { texto: textoComparacao, cor: corComparacao } = textoEcorComparacao(
+      atual.totalIsolado,
+      totalComparacao,
+      labelComparacao,
+    )
+
+    return (
+      <CartaoRelatorio>
+        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+          Relatório de {nomeItemFiltrado ?? 'produto'} {fraseDoPeriodo(filtro)}
+        </h2>
+
+        <div className="mt-3">
+          <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            O que passou pelo sistema
+          </h3>
+          <p className="mt-1 text-4xl font-black text-neutral-900 dark:text-neutral-100">
+            {formatarPrecoBR(atual.totalIsolado)}
+          </p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {atual.unidadesVendidas} unidade{atual.unidadesVendidas === 1 ? '' : 's'} vendida
+            {atual.unidadesVendidas === 1 ? '' : 's'}
+          </p>
+          <p className={`mt-1 text-sm font-medium ${corComparacao}`}>{textoComparacao}</p>
+        </div>
+      </CartaoRelatorio>
+    )
+  }
+
+  // ---- modo completo (Fase 3.1 + Mais vendidos + Ritmo) ----
+  const { atual, comparacao } = resultado
+  const { texto: textoComparacao, cor: corComparacao } = textoEcorComparacao(
+    atual.totalBruto,
+    comparacao?.totalBruto ?? 0,
+    labelComparacao,
+  )
 
   const metodosComValor = METODOS_OU_NAO_INFORMADO.filter(
     (chave) => atual.divisaoPorMetodo[chave].quantidade > 0,
@@ -118,6 +199,7 @@ export function PainelRelatorio({
 
   const { cancelados, entregaDireta, itensSemPreco, itensRemovidos } = atual.pontosAtencao
   const mostraEntregaDireta = filtro.tipo === 'hoje' || filtro.tipo === 'ontem'
+  const mostraRitmo = filtro.tipo === 'hoje' || filtro.tipo === 'ontem'
 
   const linhasAtencao: { texto: string; subtitulo?: string }[] = []
 
@@ -162,7 +244,7 @@ export function PainelRelatorio({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/60">
+    <CartaoRelatorio>
       <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
         {tituloRelatorio(filtro)}
       </h2>
@@ -216,6 +298,46 @@ export function PainelRelatorio({
         </Secao>
       )}
 
+      <Secao titulo="Mais vendidos">
+        {atual.maisVendidos.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">Sem dados no período</p>
+        ) : (
+          <ol className="mt-2 flex flex-col gap-1.5">
+            {atual.maisVendidos.map((item, indice) => (
+              <li
+                key={item.item_id ?? item.nome_item}
+                className="text-sm text-neutral-800 dark:text-neutral-200"
+              >
+                {indice + 1}. {item.nome_item} — {item.quantidade_total} unidade
+                {item.quantidade_total === 1 ? '' : 's'}
+                {item.valor_total > 0 ? ` (${formatarPrecoBR(item.valor_total)})` : ''}
+              </li>
+            ))}
+          </ol>
+        )}
+      </Secao>
+
+      {mostraRitmo && (
+        <Secao titulo="Ritmo">
+          {atual.ritmoDoDia.horarioPico === null ? (
+            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+              Ainda sem dados suficientes
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-col gap-1 text-sm text-neutral-800 dark:text-neutral-200">
+              {atual.ritmoDoDia.tempoMedioPreparoMin !== null && (
+                <p>Tempo médio de preparo: {atual.ritmoDoDia.tempoMedioPreparoMin} min</p>
+              )}
+              <p>
+                Horário mais movimentado: {atual.ritmoDoDia.horarioPico.hora}h–
+                {atual.ritmoDoDia.horarioPico.hora + 1}h ({atual.ritmoDoDia.horarioPico.quantidade}{' '}
+                comandas)
+              </p>
+            </div>
+          )}
+        </Secao>
+      )}
+
       <Secao titulo="Pontos de atenção">
         {linhasAtencao.length === 0 ? (
           <p className="mt-2 text-sm font-medium text-sinal-verde">Nenhum ponto de atenção 👍</p>
@@ -241,6 +363,6 @@ export function PainelRelatorio({
           </ul>
         )}
       </Secao>
-    </div>
+    </CartaoRelatorio>
   )
 }

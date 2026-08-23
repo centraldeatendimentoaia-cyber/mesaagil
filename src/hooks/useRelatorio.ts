@@ -4,15 +4,19 @@ import {
   calcularDivisaoPorMetodo,
   calcularEstimativaLiquida,
   calcularIntervalosRelatorio,
+  calcularMaisVendidos,
   calcularPontosAtencao,
+  calcularRitmoDoDia,
   calcularTotalBruto,
 } from '../lib/relatorio'
 import type {
   DivisaoMetodo,
   EstimativaLiquida,
   FiltroRelatorio,
+  ItemMaisVendido,
   MetodoOuNaoInformado,
   PontosAtencao,
+  RitmoDoDia,
 } from '../lib/relatorio'
 import type { Barraca, PedidoComItens } from '../types/database'
 
@@ -25,6 +29,13 @@ export type AgregadosRelatorio = {
   divisaoPorMetodo: Record<MetodoOuNaoInformado, DivisaoMetodo>
   estimativaLiquida: EstimativaLiquida | null
   pontosAtencao: PontosAtencao
+  maisVendidos: ItemMaisVendido[]
+  ritmoDoDia: RitmoDoDia
+}
+
+export type AgregadoProdutoIsolado = {
+  totalIsolado: number
+  unidadesVendidas: number
 }
 
 async function buscarPedidosDoPeriodo(
@@ -36,6 +47,31 @@ async function buscarPedidosDoPeriodo(
     .from('pedidos')
     .select('*, itens_do_pedido(*)')
     .eq('barraca_id', barracaId)
+    .gte('data_operacao', inicio)
+    .lte('data_operacao', fim)
+
+  if (error) throw error
+  return (data ?? []) as PedidoComItens[]
+}
+
+/**
+ * !inner + filtro no campo embutido faz o PostgREST filtrar tanto os
+ * pedidos (so os que tem o item) quanto o array itens_do_pedido aninhado
+ * (so a linha do item filtrado) — mas o filtro client-side em
+ * agregarProdutoIsolado continua conferindo isso, sem depender só desse
+ * comportamento do embed.
+ */
+async function buscarPedidosComItem(
+  barracaId: string,
+  itemId: string,
+  inicio: string,
+  fim: string,
+): Promise<PedidoComItens[]> {
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select('*, itens_do_pedido!inner(*)')
+    .eq('barraca_id', barracaId)
+    .eq('itens_do_pedido.item_id', itemId)
     .gte('data_operacao', inicio)
     .lte('data_operacao', fim)
 
@@ -68,18 +104,48 @@ function agregar(
     divisaoPorMetodo: calcularDivisaoPorMetodo(pedidos),
     estimativaLiquida: calcularEstimativaLiquida(pedidos, taxaDebitoBps, taxaCreditoBps),
     pontosAtencao: calcularPontosAtencao(pedidos, catalogoPrecos),
+    maisVendidos: calcularMaisVendidos(pedidos),
+    ritmoDoDia: calcularRitmoDoDia(pedidos),
   }
 }
+
+function agregarProdutoIsolado(pedidos: PedidoComItens[], itemId: string): AgregadoProdutoIsolado {
+  let totalIsolado = 0
+  let unidadesVendidas = 0
+
+  for (const pedido of pedidos) {
+    if (pedido.status === 'cancelado') continue
+    for (const item of pedido.itens_do_pedido) {
+      if (item.removido || item.item_id !== itemId) continue
+      totalIsolado += item.preco_centavos_unitario * item.quantidade
+      unidadesVendidas += item.quantidade
+    }
+  }
+
+  return { totalIsolado, unidadesVendidas }
+}
+
+export type ResultadoRelatorio =
+  | {
+      modo: 'completo'
+      atual: AgregadosRelatorio | null
+      comparacao: AgregadosRelatorio | null
+      carregando: boolean
+      erro: string | null
+    }
+  | {
+      modo: 'produto_isolado'
+      atual: AgregadoProdutoIsolado | null
+      comparacao: AgregadoProdutoIsolado | null
+      carregando: boolean
+      erro: string | null
+    }
 
 export function useRelatorio(
   barraca: Barraca,
   filtro: FiltroRelatorio,
-): {
-  atual: AgregadosRelatorio | null
-  comparacao: AgregadosRelatorio | null
-  carregando: boolean
-  erro: string | null
-} {
+  itemFiltradoId?: string | null,
+): ResultadoRelatorio {
   const [pedidosAtuais, setPedidosAtuais] = useState<PedidoComItens[] | null>(null)
   const [pedidosComparacao, setPedidosComparacao] = useState<PedidoComItens[] | null>(null)
   const [catalogoPrecos, setCatalogoPrecos] = useState<Map<string, number>>(new Map())
@@ -93,15 +159,25 @@ export function useRelatorio(
 
     const intervalos = calcularIntervalosRelatorio(filtro)
 
-    Promise.all([
-      buscarPedidosDoPeriodo(barraca.id, intervalos.atual.inicio, intervalos.atual.fim),
-      buscarPedidosDoPeriodo(
-        barraca.id,
-        intervalos.comparacao.inicio,
-        intervalos.comparacao.fim,
-      ),
-      buscarCatalogoPrecos(barraca.id),
-    ])
+    const buscaAtual = itemFiltradoId
+      ? buscarPedidosComItem(barraca.id, itemFiltradoId, intervalos.atual.inicio, intervalos.atual.fim)
+      : buscarPedidosDoPeriodo(barraca.id, intervalos.atual.inicio, intervalos.atual.fim)
+
+    const buscaComparacao = itemFiltradoId
+      ? buscarPedidosComItem(
+          barraca.id,
+          itemFiltradoId,
+          intervalos.comparacao.inicio,
+          intervalos.comparacao.fim,
+        )
+      : buscarPedidosDoPeriodo(barraca.id, intervalos.comparacao.inicio, intervalos.comparacao.fim)
+
+    // catalogo de precos so importa pro modo completo (pontosAtencao.itensSemPreco)
+    const buscaCatalogo = itemFiltradoId
+      ? Promise.resolve(new Map<string, number>())
+      : buscarCatalogoPrecos(barraca.id)
+
+    Promise.all([buscaAtual, buscaComparacao, buscaCatalogo])
       .then(([atual, comparacao, catalogo]) => {
         if (cancelado) return
         setPedidosAtuais(atual)
@@ -122,7 +198,7 @@ export function useRelatorio(
     // passa um literal inline, então uma dependência em `filtro` mudaria de
     // referência a cada render e refaria a busca sem necessidade
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [barraca.id, filtro.tipo, filtro.data])
+  }, [barraca.id, filtro.tipo, filtro.data, itemFiltradoId])
 
   // barraca vem inteira (não só o id) especificamente pra isso: useBarraca
   // mostra o cache offline-first na hora e só troca pela versão de verdade
@@ -130,20 +206,40 @@ export function useRelatorio(
   // (é leitura pura), basta recalcular via useMemo sempre que os campos de
   // taxa mudarem — sem precisar do guard de "debounce em voo" usado em
   // Ajustes.
-  const atual = useMemo(() => {
-    if (!pedidosAtuais) return null
+  const atualCompleto = useMemo(() => {
+    if (itemFiltradoId || !pedidosAtuais) return null
     return agregar(pedidosAtuais, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps)
-  }, [pedidosAtuais, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
+  }, [itemFiltradoId, pedidosAtuais, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
 
-  const comparacao = useMemo(() => {
-    if (!pedidosComparacao) return null
+  const comparacaoCompleto = useMemo(() => {
+    if (itemFiltradoId || !pedidosComparacao) return null
     return agregar(
       pedidosComparacao,
       catalogoPrecos,
       barraca.taxa_debito_bps,
       barraca.taxa_credito_bps,
     )
-  }, [pedidosComparacao, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
+  }, [itemFiltradoId, pedidosComparacao, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
 
-  return { atual, comparacao, carregando, erro }
+  const atualIsolado = useMemo(() => {
+    if (!itemFiltradoId || !pedidosAtuais) return null
+    return agregarProdutoIsolado(pedidosAtuais, itemFiltradoId)
+  }, [itemFiltradoId, pedidosAtuais])
+
+  const comparacaoIsolado = useMemo(() => {
+    if (!itemFiltradoId || !pedidosComparacao) return null
+    return agregarProdutoIsolado(pedidosComparacao, itemFiltradoId)
+  }, [itemFiltradoId, pedidosComparacao])
+
+  if (itemFiltradoId) {
+    return {
+      modo: 'produto_isolado',
+      atual: atualIsolado,
+      comparacao: comparacaoIsolado,
+      carregando,
+      erro,
+    }
+  }
+
+  return { modo: 'completo', atual: atualCompleto, comparacao: comparacaoCompleto, carregando, erro }
 }
