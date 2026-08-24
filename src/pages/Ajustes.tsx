@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
+import { ModalTrocarSenha } from '../components/ModalTrocarSenha'
 import type { Barraca, Item } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
@@ -845,6 +846,46 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
   )
 }
 
+function SecaoTrocarSenha() {
+  const { usuario } = useAuth()
+  const [mostrarModal, setMostrarModal] = useState(false)
+  const [sucesso, setSucesso] = useState(false)
+
+  const email = usuario?.email ?? null
+
+  function aoTrocarComSucesso() {
+    setMostrarModal(false)
+    setSucesso(true)
+    window.setTimeout(() => setSucesso(false), 3000)
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setMostrarModal(true)}
+        className="min-h-11 w-full rounded-2xl bg-neutral-100 text-base font-medium text-neutral-800 dark:bg-neutral-900 dark:text-neutral-100"
+      >
+        Trocar senha
+      </button>
+
+      {sucesso && (
+        <p className="mt-2 text-center text-sm font-medium text-sinal-verde">
+          Senha alterada com sucesso
+        </p>
+      )}
+
+      {mostrarModal && email && (
+        <ModalTrocarSenha
+          email={email}
+          onFechar={() => setMostrarModal(false)}
+          onSucesso={aoTrocarComSucesso}
+        />
+      )}
+    </>
+  )
+}
+
 function SecaoSair() {
   const navigate = useNavigate()
   const { sair } = useAuth()
@@ -910,6 +951,7 @@ export function Ajustes() {
         <SecaoMetodosPagamento barraca={barraca} />
         <SecaoTaxas barraca={barraca} />
         <SecaoFaixas barraca={barraca} />
+        <SecaoTrocarSenha />
         <SecaoSair />
       </div>
     </div>
