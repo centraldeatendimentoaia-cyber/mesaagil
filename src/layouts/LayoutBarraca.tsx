@@ -22,7 +22,8 @@ export function LayoutBarraca() {
       .getElementById('app-manifest')
       ?.setAttribute('href', `/${barraca.slug}/manifest.webmanifest`)
 
-    document.getElementById('app-theme-color')?.setAttribute('content', barraca.cor_primaria)
+    // Cor de marca fixa do MesaAgil v2 (laranja 500) — não é mais por barraca.
+    document.getElementById('app-theme-color')?.setAttribute('content', '#F58B00')
 
     document
       .getElementById('app-apple-icon')

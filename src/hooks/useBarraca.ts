@@ -47,7 +47,7 @@ export function useBarraca(slug: string) {
     // sempre no primeiro load offline.
     const cache = lerBarracaCache(slug)
     if (cache) {
-      aplicarTema(cache)
+      aplicarTema(cache.modo)
       setEstado({ barraca: cache, carregando: false, erro: null })
     } else {
       setEstado({ barraca: null, carregando: true, erro: null })
@@ -70,7 +70,7 @@ export function useBarraca(slug: string) {
         }
 
         const barraca = data as Barraca
-        aplicarTema(barraca)
+        aplicarTema(barraca.modo)
         salvarBarracaCache(slug, barraca)
         setEstado({ barraca, carregando: false, erro: null })
       })

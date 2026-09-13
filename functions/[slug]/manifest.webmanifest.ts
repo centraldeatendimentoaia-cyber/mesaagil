@@ -6,12 +6,11 @@ interface Env {
 type Barraca = {
   nome: string
   logo_url: string | null
-  cor_primaria: string
-  modo: 'claro' | 'escuro'
 }
 
 const NOME_PADRAO = 'MesaAgil'
-const COR_PADRAO = '#7e14ff'
+// Cor de marca fixa do MesaAgil v2 (laranja 500) — não é mais por barraca.
+const COR_MARCA = '#F58B00'
 const ICONE_192_PADRAO = '/icons/mesaagil-192.png'
 const ICONE_512_PADRAO = '/icons/mesaagil-512.png'
 
@@ -19,7 +18,7 @@ async function buscarBarraca(env: Env, slug: string): Promise<Barraca | null> {
   try {
     const url =
       `${env.VITE_SUPABASE_URL}/rest/v1/barracas` +
-      `?slug=eq.${encodeURIComponent(slug)}&select=nome,logo_url,cor_primaria,modo`
+      `?slug=eq.${encodeURIComponent(slug)}&select=nome,logo_url`
 
     const resposta = await fetch(url, {
       headers: {
@@ -42,8 +41,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const barraca = await buscarBarraca(context.env, slug)
 
   const nome = barraca?.nome ?? NOME_PADRAO
-  const corPrimaria = barraca?.cor_primaria ?? COR_PADRAO
-  const modo = barraca?.modo ?? 'claro'
   const icone192 = barraca?.logo_url ?? ICONE_192_PADRAO
   const icone512 = barraca?.logo_url ?? ICONE_512_PADRAO
 
@@ -53,8 +50,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     start_url: `/${slug}`,
     scope: `/${slug}`,
     display: 'standalone',
-    background_color: modo === 'escuro' ? '#0D0D0D' : '#FFFFFF',
-    theme_color: corPrimaria,
+    background_color: COR_MARCA,
+    theme_color: COR_MARCA,
     icons: [
       { src: icone192, sizes: '192x192', type: 'image/png' },
       { src: icone512, sizes: '512x512', type: 'image/png' },

@@ -1,0 +1,332 @@
+/* =============================================================
+   MesaAgil — Design Tokens (Tailwind v4)
+
+   Fonte: docs/design-system/tokens.css e
+   docs/design-system/MESAAGIL_DESIGN_SYSTEM.md.
+
+   Todo token novo usa o prefixo "mesa" para não colidir com a
+   paleta nativa do Tailwind (neutral/orange/teal já existem por
+   padrão e são usados nos componentes atuais via classes como
+   `text-neutral-900`). Os tokens que o Tailwind v4 sabe transformar
+   em utilitário (--color-*, --radius-*, --shadow-*, --ease-*,
+   --spacing-*, --font-*) entram com a ordem `--<namespace>-mesa-*`
+   — é essa ordem que faz o Tailwind gerar `bg-mesa-orange-500`,
+   `rounded-mesa-lg` etc. Isso inverte a ordem literal do prefixo
+   de docs/design-system/tokens.css (que usa `--mesa-color-*`),
+   mas preserva nomes e valores — é só a posição do segmento
+   "mesa" que muda, por exigência da sintaxe do Tailwind v4.
+
+   Tokens sem namespace equivalente no Tailwind (motion duration,
+   ícones, avatar, gradiente, overlay, blur, z-index) ficam como
+   custom properties simples na segunda seção deste arquivo, com o
+   prefixo `--mesa-*` idêntico ao do arquivo fonte.
+
+   Nenhum componente consome estes tokens ainda — isso é trabalho
+   das próximas fases do redesign v2. Ver Fase 0 em CLAUDE.md.
+   ============================================================= */
+
+@theme {
+  /* ---------- Laranja (marca — comando) ---------- */
+  --color-mesa-orange-50:  #FFF4E5;
+  --color-mesa-orange-100: #FFDDB3;
+  --color-mesa-orange-200: #FFC580;
+  --color-mesa-orange-300: #FFAF4D;
+  --color-mesa-orange-400: #FF9D26;
+  --color-mesa-orange-500: #F58B00;
+  --color-mesa-orange-600: #CC7400;
+  --color-mesa-orange-700: #A35D00;
+  --color-mesa-orange-800: #7A4500;
+  --color-mesa-orange-900: #522E00;
+
+  /* ---------- Teal (marca — confirmação) ---------- */
+  --color-mesa-teal-50:  #E9F9F5;
+  --color-mesa-teal-100: #B3ECDF;
+  --color-mesa-teal-200: #80DFC9;
+  --color-mesa-teal-300: #4DD0B3;
+  --color-mesa-teal-400: #26C4A2;
+  --color-mesa-teal-500: #00B894;
+  --color-mesa-teal-600: #009B7D;
+  --color-mesa-teal-700: #007D65;
+  --color-mesa-teal-800: #005FAD;
+  --color-mesa-teal-900: #004135;
+
+  /* ---------- Neutros ---------- */
+  --color-mesa-neutral-50:  #F5F5F6;
+  --color-mesa-neutral-100: #E8E9EA;
+  --color-mesa-neutral-200: #A9A8B0;
+  --color-mesa-neutral-300: #7C7CB5;
+  --color-mesa-neutral-400: #55555E;
+  --color-mesa-neutral-500: #55555E;
+  --color-mesa-neutral-600: #3D3D45;
+  --color-mesa-neutral-700: #242A30;
+  --color-mesa-neutral-800: #1A1A1E;
+  --color-mesa-neutral-900: #0D0D0F;
+
+  /* ---------- Semânticas ---------- */
+  --color-mesa-success-50:  #E9F9F5;
+  --color-mesa-success-500: #00B894;
+  --color-mesa-success-700: #007D65;
+
+  --color-mesa-warning-50:  #FFF4E5;
+  --color-mesa-warning-500: #F58B00;
+  --color-mesa-warning-700: #A35D00;
+
+  --color-mesa-error-50:  #FCE8E5;
+  --color-mesa-error-500: #E74C3C;
+  --color-mesa-error-700: #A62C1F;
+
+  --color-mesa-info-50:  #E5F2FA;
+  --color-mesa-info-500: #3498DB;
+  --color-mesa-info-700: #1F6FAA;
+
+  /* ---------- Semáforo operacional (inviolável) ----------
+     Cores exclusivas da Cozinha, nunca reutilizadas em outro
+     contexto. NÃO variam entre light/dark — por isso não são
+     redeclaradas no bloco .dark mais abaixo. */
+  --color-mesa-kanban-green:  #00B894;
+  --color-mesa-kanban-yellow: #F5A623;
+  --color-mesa-kanban-red:    #E74C3C;
+
+  /* ---------- Métodos de pagamento ---------- */
+  --color-mesa-payment-cash-bg:    #E9F9F5;
+  --color-mesa-payment-cash-fg:    #007D65;
+  --color-mesa-payment-debit-bg:   #E5F2FA;
+  --color-mesa-payment-debit-fg:   #1F6FAA;
+  --color-mesa-payment-credit-bg:  #F0E9FA;
+  --color-mesa-payment-credit-fg:  #5A3AA6;
+  --color-mesa-payment-pix-bg:     #DEF7F5;
+  --color-mesa-payment-pix-fg:     #00877A;
+  --color-mesa-payment-unknown-bg: #E8E9EA;
+  --color-mesa-payment-unknown-fg: #55555E;
+
+  /* ---------- Marca (aliases funcionais) ----------
+     Usar sempre estes em vez do hex direto ou da escala crua. */
+  --color-mesa-brand: var(--color-mesa-orange-500);
+  --color-mesa-action-primary:          var(--color-mesa-orange-500);
+  --color-mesa-action-primary-hover:    var(--color-mesa-orange-600);
+  --color-mesa-action-primary-active:   var(--color-mesa-orange-700);
+  --color-mesa-action-confirm:          var(--color-mesa-teal-500);
+  --color-mesa-action-confirm-hover:    var(--color-mesa-teal-600);
+  --color-mesa-action-confirm-active:   var(--color-mesa-teal-700);
+  --color-mesa-action-destructive:       var(--color-mesa-error-500);
+  --color-mesa-action-destructive-hover: var(--color-mesa-error-700);
+  --color-mesa-financial-positive:      var(--color-mesa-teal-700);
+
+  /* ---------- Semânticos de superfície (LIGHT — default) ----------
+     Redeclarados dentro de .dark, fora do @theme, para o valor
+     trocar em runtime conforme a classe .dark no <html>. */
+  --color-mesa-bg-base:         var(--color-mesa-neutral-50);
+  --color-mesa-bg-elevated:     #FFFFFF;
+  --color-mesa-surface:         #FFFFFF;
+  --color-mesa-surface-alt:     var(--color-mesa-neutral-50);
+  --color-mesa-surface-inverse: var(--color-mesa-neutral-900);
+  --color-mesa-bg-kanban:       var(--color-mesa-neutral-50);
+
+  --color-mesa-text-primary:    var(--color-mesa-neutral-900);
+  --color-mesa-text-secondary:  var(--color-mesa-neutral-500);
+  --color-mesa-text-tertiary:   var(--color-mesa-neutral-300);
+  --color-mesa-text-disabled:   var(--color-mesa-neutral-300);
+  --color-mesa-text-inverse:    #FFFFFF;
+  --color-mesa-text-on-brand:   #FFFFFF;
+  --color-mesa-text-on-confirm: #FFFFFF;
+  --color-mesa-text-link:       var(--color-mesa-teal-700);
+
+  --color-mesa-border-subtle:  var(--color-mesa-neutral-100);
+  --color-mesa-border-default: var(--color-mesa-neutral-200);
+  --color-mesa-border-strong:  var(--color-mesa-neutral-400);
+  --color-mesa-border-focus:   var(--color-mesa-orange-500);
+
+  /* ---------- Radius ---------- */
+  --radius-mesa-xs:   4px;
+  --radius-mesa-sm:   8px;
+  --radius-mesa-md:   12px;
+  --radius-mesa-lg:   16px;
+  --radius-mesa-xl:   20px;
+  --radius-mesa-2xl:  24px;
+  --radius-mesa-full: 9999px;
+
+  /* ---------- Sombras (LIGHT — default) ----------
+     Redeclaradas dentro de .dark mais abaixo. */
+  --shadow-mesa-1:       0 1px 2px rgba(15, 15, 20, 0.04), 0 4px 12px rgba(15, 15, 20, 0.06);
+  --shadow-mesa-2:       0 4px 8px rgba(15, 15, 20, 0.06), 0 12px 24px rgba(15, 15, 20, 0.08);
+  --shadow-mesa-3:       0 12px 24px rgba(15, 15, 20, 0.10), 0 32px 64px rgba(15, 15, 20, 0.12);
+  --shadow-mesa-glow:    0 0 40px rgba(245, 139, 0, 0.25);
+  --shadow-mesa-nav-top: 0 -1px 0 rgba(15, 15, 20, 0.05);
+
+  /* ---------- Motion — easing (utilitário ease-mesa-*) ---------- */
+  --ease-mesa-standard:    cubic-bezier(0.2, 0, 0, 1);
+  --ease-mesa-decelerate:  cubic-bezier(0, 0, 0.2, 1);
+  --ease-mesa-accelerate:  cubic-bezier(0.4, 0, 1, 1);
+  --ease-mesa-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---------- Espaçamento (base 4, utilitário p-mesa-*, gap-mesa-* etc.) ---------- */
+  --spacing-mesa-0:  0;
+  --spacing-mesa-1:  4px;
+  --spacing-mesa-2:  8px;
+  --spacing-mesa-3:  12px;
+  --spacing-mesa-4:  16px;
+  --spacing-mesa-5:  20px;
+  --spacing-mesa-6:  24px;
+  --spacing-mesa-8:  32px;
+  --spacing-mesa-10: 40px;
+  --spacing-mesa-12: 48px;
+  --spacing-mesa-16: 64px;
+  --spacing-mesa-20: 80px;
+  --spacing-mesa-24: 96px;
+
+  /* ---------- Tipografia — família (utilitário font-mesa-sans) ---------- */
+  --font-mesa-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* =============================================================
+   Tokens sem namespace de utilitário no Tailwind v4 (motion
+   duration, escala tipográfica tamanho/linha, ícone, avatar,
+   toque mínimo, z-index, gradiente, overlay, blur, estados,
+   focus ring). Ficam como custom properties simples, prefixo
+   `--mesa-*` preservado igual a docs/design-system/tokens.css.
+   Uso: var(--mesa-*) direto em CSS, ou arbitrary value do
+   Tailwind (ex: duration-[var(--mesa-duration-short)]).
+   ============================================================= */
+:root {
+  /* Motion — duração */
+  --mesa-duration-instant: 0ms;
+  --mesa-duration-micro: 150ms;
+  --mesa-duration-short: 250ms;
+  --mesa-duration-medium: 400ms;
+  --mesa-duration-long: 600ms;
+
+  /* Tipografia — tamanho / altura de linha (pares nomeados do design system) */
+  --mesa-text-hero-number-size: 96px;
+  --mesa-text-hero-number-line: 104px;
+  --mesa-text-display-number-size: 60px;
+  --mesa-text-display-number-line: 72px;
+  --mesa-text-display-size: 32px;
+  --mesa-text-display-line: 40px;
+  --mesa-text-h1-size: 24px;
+  --mesa-text-h1-line: 32px;
+  --mesa-text-h2-size: 20px;
+  --mesa-text-h2-line: 28px;
+  --mesa-text-h3-size: 16px;
+  --mesa-text-h3-line: 24px;
+  --mesa-text-number-highlight-size: 28px;
+  --mesa-text-number-highlight-line: 36px;
+  --mesa-text-number-compact-size: 20px;
+  --mesa-text-number-compact-line: 28px;
+  --mesa-text-body-size: 14px;
+  --mesa-text-body-line: 20px;
+  --mesa-text-small-size: 12px;
+  --mesa-text-small-line: 16px;
+  --mesa-text-caption-size: 11px;
+  --mesa-text-caption-line: 14px;
+  --mesa-overline-letter-spacing: 0.08em;
+  --mesa-font-feature-tabular: 'tnum' 1, 'lnum' 1;
+
+  /* Ícones */
+  --mesa-icon-xs: 14px;
+  --mesa-icon-sm: 16px;
+  --mesa-icon-md: 20px;
+  --mesa-icon-lg: 24px;
+  --mesa-icon-xl: 32px;
+  --mesa-icon-2xl: 48px;
+
+  /* Avatar */
+  --mesa-avatar-sm: 32px;
+  --mesa-avatar-md: 40px;
+  --mesa-avatar-lg: 64px;
+  --mesa-avatar-xl: 96px;
+
+  /* Alvo mínimo de toque */
+  --mesa-touch-min: 44px;
+
+  /* Z-index */
+  --mesa-z-base: 0;
+  --mesa-z-sticky: 100;
+  --mesa-z-nav: 200;
+  --mesa-z-popover: 300;
+  --mesa-z-tooltip: 400;
+  --mesa-z-modal-backdrop: 500;
+  --mesa-z-modal: 510;
+  --mesa-z-toast: 600;
+
+  /* Estados (hover/active/selected) */
+  --mesa-state-hover-bg:  rgba(15, 15, 20, 0.04);
+  --mesa-state-active-bg: rgba(15, 15, 20, 0.08);
+  --mesa-state-selected-bg: var(--color-mesa-teal-50);
+
+  /* Focus ring (usar como box-shadow) */
+  --mesa-focus-ring-primary: 0 0 0 3px rgba(245, 139, 0, 0.30);
+  --mesa-focus-ring-confirm: 0 0 0 3px rgba(0, 184, 148, 0.30);
+  --mesa-focus-ring-danger:  0 0 0 3px rgba(231, 76, 60, 0.30);
+
+  /* Gradiente atmosférico (LIGHT) — camada 0 das telas de gestão */
+  --mesa-gradient-atmosphere:
+    radial-gradient(1200px 800px at 100% 0%,   rgba(255, 219, 179, 0.60), transparent 60%),
+    radial-gradient(900px  700px at 0%   100%, rgba(255, 243, 229, 0.50), transparent 55%),
+    var(--color-mesa-neutral-50);
+
+  /* Overlay (modal, bottom sheet) */
+  --mesa-color-overlay: rgba(0, 0, 0, 0.40);
+  --mesa-overlay-blur:  8px;
+
+  /* Superfície com blur (header sticky, bottom nav) */
+  --mesa-color-surface-blur: rgba(255, 255, 255, 0.75);
+  --mesa-surface-blur-strength: 12px;
+}
+
+/* =============================================================
+   DARK MODE
+   Ativado pela classe .dark no <html> — mecanismo já existente
+   neste projeto via `@custom-variant dark (&:where(.dark, .dark *))`
+   em src/index.css. Marca (laranja/teal) permanece idêntica em
+   ambos os temas — só superfície, texto e sombra mudam.
+   ============================================================= */
+.dark {
+  --color-mesa-bg-base:         var(--color-mesa-neutral-900);
+  --color-mesa-bg-elevated:     var(--color-mesa-neutral-800);
+  --color-mesa-surface:         var(--color-mesa-neutral-800);
+  --color-mesa-surface-alt:     var(--color-mesa-neutral-700);
+  --color-mesa-surface-inverse: var(--color-mesa-neutral-50);
+  --color-mesa-bg-kanban:       var(--color-mesa-neutral-900);
+
+  --color-mesa-text-primary:   #FFFFFF;
+  --color-mesa-text-secondary: var(--color-mesa-neutral-200);
+  --color-mesa-text-tertiary:  var(--color-mesa-neutral-400);
+  --color-mesa-text-disabled:  var(--color-mesa-neutral-500);
+  --color-mesa-text-inverse:   var(--color-mesa-neutral-900);
+  --color-mesa-text-link:      var(--color-mesa-teal-300);
+
+  --color-mesa-border-subtle:  var(--color-mesa-neutral-700);
+  --color-mesa-border-default: var(--color-mesa-neutral-600);
+  --color-mesa-border-strong:  var(--color-mesa-neutral-400);
+
+  --mesa-state-hover-bg:  rgba(255, 255, 255, 0.06);
+  --mesa-state-active-bg: rgba(255, 255, 255, 0.10);
+  --mesa-state-selected-bg: rgba(0, 184, 148, 0.15);
+
+  --mesa-gradient-atmosphere:
+    radial-gradient(1200px 800px at 100% 0%,   rgba(58, 36, 16, 0.40), transparent 60%),
+    radial-gradient(900px  700px at 0%   100%, rgba(42, 24, 16, 0.20), transparent 55%),
+    var(--color-mesa-neutral-900);
+
+  --mesa-color-overlay: rgba(0, 0, 0, 0.60);
+  --mesa-color-surface-blur: rgba(26, 26, 30, 0.75);
+
+  --shadow-mesa-1:       0 1px 2px rgba(0, 0, 0, 0.40), 0 4px 12px rgba(0, 0, 0, 0.30);
+  --shadow-mesa-2:       0 4px 8px rgba(0, 0, 0, 0.45), 0 12px 24px rgba(0, 0, 0, 0.35);
+  --shadow-mesa-3:       0 12px 24px rgba(0, 0, 0, 0.50), 0 32px 64px rgba(0, 0, 0, 0.40);
+  --shadow-mesa-glow:    0 0 48px rgba(245, 139, 0, 0.35);
+  --shadow-mesa-nav-top: 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* =============================================================
+   REDUCED MOTION
+   ============================================================= */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mesa-duration-instant: 0ms;
+    --mesa-duration-micro: 100ms;
+    --mesa-duration-short: 100ms;
+    --mesa-duration-medium: 100ms;
+    --mesa-duration-long: 100ms;
+  }
+}

@@ -3,7 +3,6 @@ export type Barraca = {
   nome: string
   slug: string
   logo_url: string | null
-  cor_primaria: string
   modo: 'claro' | 'escuro'
   verde_ate: number
   amarelo_ate: number

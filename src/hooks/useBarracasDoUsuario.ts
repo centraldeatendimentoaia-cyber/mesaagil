@@ -46,7 +46,7 @@ export function useBarracasDoUsuario(usuario: User | null) {
 
     supabase
       .from('usuarios_barracas')
-      .select('barraca_id, papel, barracas(id, nome, slug, logo_url, cor_primaria, modo, verde_ate, amarelo_ate, criada_em)')
+      .select('barraca_id, papel, barracas(id, nome, slug, logo_url, modo, verde_ate, amarelo_ate, criada_em)')
       .eq('usuario_id', usuario.id)
       .then(({ data, error }) => {
         if (cancelado) return
