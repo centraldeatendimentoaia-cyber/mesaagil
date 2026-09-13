@@ -29,7 +29,10 @@ essas funcionalidades.
   ele
 
 ## Regras de tema
-- Cada barraca define logo, nome, cor principal e modo claro/escuro
+- Cor de marca é fixa do MesaAgil (laranja para comando, teal para
+  confirmação). Cada barraca define apenas logo, nome e modo
+  claro/escuro. Cor primária por barraca foi eliminada — não sugerir
+  customização de cor.
 - Tema aplicado por CSS custom properties em runtime
 - Nenhuma cor escrita direto no componente, apenas variáveis CSS
 - As cores do kanban (verde/amarelo/vermelho) NUNCA são
@@ -43,7 +46,8 @@ essas funcionalidades.
 - Áreas de toque de no mínimo 44px
 
 ## Stack
-React + Vite + TypeScript, Tailwind CSS, Supabase (Postgres, Auth,
+React + Vite + TypeScript, Tailwind CSS v4 (configuração via @theme
+block no CSS, não há tailwind.config.js), Supabase (Postgres, Auth,
 Realtime), deploy em Cloudflare Pages.
 
 ## Estilo
