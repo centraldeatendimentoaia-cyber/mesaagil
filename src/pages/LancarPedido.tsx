@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowRight, Check, Minus, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido, enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
 import { ModalMetodoPagamento } from '../components/ModalMetodoPagamento'
+import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { Textarea } from '../components/ui/Textarea'
+import { Toggle } from '../components/ui/Toggle'
 import type { MetodoPagamento } from '../lib/metodoPagamento'
 import type { Item } from '../types/database'
 
@@ -38,6 +45,72 @@ function proximoNumeroProvisorio(barracaId: string): number {
   const proximo = atual + 1
   window.localStorage.setItem(chave, String(proximo))
   return proximo
+}
+
+function CardItemCardapio({
+  item,
+  quantidade,
+  onIncrementar,
+  onDecrementar,
+}: {
+  item: Item
+  quantidade: number
+  onIncrementar: () => void
+  onDecrementar: () => void
+}) {
+  const selecionado = quantidade > 0
+
+  return (
+    <Card className="flex flex-col">
+      <p className="text-base font-semibold text-mesa-text-primary">{item.nome}</p>
+      <p className="mt-0.5 text-sm text-mesa-text-secondary">
+        {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
+      </p>
+
+      <div className="mt-3">
+        {selecionado ? (
+          <>
+            <div className="flex items-center justify-center gap-3 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
+              <button
+                type="button"
+                onClick={onDecrementar}
+                aria-label={`Remover uma unidade de ${item.nome}`}
+                className="flex size-10 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white outline-none transition-transform active:scale-90"
+              >
+                <Minus className="size-4" aria-hidden />
+              </button>
+              <span className="min-w-[1.5ch] text-center text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
+                {quantidade}
+              </span>
+              <button
+                type="button"
+                onClick={onIncrementar}
+                aria-label={`Adicionar uma unidade de ${item.nome}`}
+                className="flex size-10 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white outline-none transition-transform active:scale-90"
+              >
+                <Plus className="size-4" aria-hidden />
+              </button>
+            </div>
+            {item.preco_centavos > 0 && (
+              <p className="mt-2 text-center text-sm font-semibold text-mesa-teal-700 dark:text-mesa-teal-400">
+                Subtotal {formatarPrecoBR(item.preco_centavos * quantidade)}
+              </p>
+            )}
+          </>
+        ) : (
+          <Button
+            variant="confirm"
+            size="sm"
+            icon={<Plus className="size-4" aria-hidden />}
+            onClick={onIncrementar}
+            className="w-full"
+          >
+            Adicionar
+          </Button>
+        )}
+      </div>
+    </Card>
+  )
 }
 
 export function LancarPedido() {
@@ -197,211 +270,179 @@ export function LancarPedido() {
     enviandoRef.current = false
   }
 
+  // Confirmação pós-envio: sem mockup de referência nesta fase (só a tela de
+  // seleção de itens tem). Linguagem visual emprestada da Chamada (overline
+  // da marca, número herói), mas com o glow atmosférico normal — essa tela é
+  // pro operador, não pro balcão, não precisa do contraste absoluto da Chamada.
   if (senha !== null) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-white p-6 dark:bg-neutral-950">
-        <p className="text-xl font-medium text-neutral-500 dark:text-neutral-400">Senha</p>
-        <p
-          className={`text-[112px] font-bold leading-none ${
-            senha.provisoria ? 'text-neutral-400 dark:text-neutral-600' : 'text-marca'
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-500">
+          {barraca.nome}
+        </span>
+        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+          Pedido enviado
+        </span>
+        <span
+          className={`text-[96px] font-bold leading-[104px] tracking-tight ${
+            senha.provisoria ? 'text-mesa-text-tertiary' : 'text-mesa-teal-700 dark:text-mesa-teal-400'
           }`}
         >
           {senha.valor}
-        </p>
+        </span>
 
-        {senha.provisoria && (
-          <div className="flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2 dark:bg-neutral-900">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-neutral-400" aria-hidden />
-            <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+        {senha.provisoria ? (
+          <span className="inline-flex items-center gap-2 rounded-mesa-full bg-mesa-neutral-100 px-4 py-2 dark:bg-mesa-neutral-800">
+            <span
+              className="size-2 animate-pulse rounded-mesa-full bg-mesa-neutral-400"
+              aria-hidden
+            />
+            <span className="text-sm font-medium text-mesa-text-secondary">
               Provisória — confirmando pedido...
             </span>
-          </div>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2 rounded-mesa-full bg-mesa-teal-50 px-4 py-2 text-sm font-semibold text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400">
+            <Check className="size-4 shrink-0" aria-hidden />
+            Enviado para a cozinha
+          </span>
         )}
 
-        <button
-          type="button"
+        <Button
+          size="xl"
           onClick={() => {
             limparFormulario()
             setSenha(null)
           }}
-          className="min-h-11 rounded-2xl bg-marca px-8 py-3 text-base font-semibold text-marca-texto active:bg-marca-escura"
+          className="mt-4 w-full max-w-xs"
         >
-          Novo Pedido
-        </button>
+          Novo pedido
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
+    <div className="flex min-h-screen flex-col">
+      <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
+        <h1 className="text-[32px] font-bold leading-[40px] text-mesa-teal-700 dark:text-mesa-teal-300">
+          Lançar Pedido
+        </h1>
+        <div className="flex shrink-0 flex-col items-end gap-1.5 pt-1">
+          <Badge variant={online ? 'success' : 'warning'} dot>
+            {online ? 'Online' : 'Offline'}
+          </Badge>
+          {pendentes > 0 && (
+            <Badge variant="neutral">
+              {pendentes} pendente{pendentes === 1 ? '' : 's'}
+            </Badge>
+          )}
+        </div>
+      </div>
+
       {!online && (
-        <div className="bg-sinal-amarelo px-4 py-2 text-center text-sm font-semibold text-neutral-900">
+        <p className="mx-6 mt-4 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 text-sm font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
           Sem conexão — os pedidos serão enviados quando a rede voltar
-        </div>
+        </p>
       )}
 
-      {pendentes > 0 && (
-        <div className="flex justify-end px-4 pt-2">
-          <span className="rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-            {pendentes} pendente{pendentes === 1 ? '' : 's'}
-          </span>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto p-4 pb-52">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
+      <div className="flex-1 overflow-y-auto px-6 pb-40 pt-5">
+        <div className="flex items-stretch gap-3">
+          <Input
             value={mesa}
             onChange={(e) => setMesa(e.target.value)}
             disabled={viagem}
             placeholder={viagem ? 'Viagem (sem mesa)' : 'Mesa (opcional)'}
-            className="h-11 flex-1 rounded-2xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 placeholder:text-neutral-400 disabled:bg-neutral-100 disabled:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:disabled:bg-neutral-800"
+            aria-label="Mesa"
+            className="flex-1"
           />
-
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Viagem
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={viagem}
-              aria-label="Viagem"
-              onClick={() => setViagem((v) => !v)}
-              className={`relative h-11 w-[72px] shrink-0 rounded-full p-1 transition-colors ${
-                viagem ? 'bg-marca' : 'bg-neutral-300 dark:bg-neutral-700'
-              }`}
-            >
-              <span
-                className={`block h-9 w-9 rounded-full bg-white shadow transition-transform ${
-                  viagem ? 'translate-x-7' : 'translate-x-0'
-                }`}
-              />
-            </button>
+          <div className="flex h-12 shrink-0 items-center rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-4">
+            <Toggle checked={viagem} onChange={setViagem} label="Viagem" />
           </div>
         </div>
 
+        <Textarea
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          placeholder="Observação (opcional)"
+          rows={2}
+          className="mt-4"
+        />
+
         <div className="mt-6 grid grid-cols-2 gap-3">
           {carregandoItens && (
-            <p className="col-span-2 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="col-span-2 py-8 text-center text-sm text-mesa-text-secondary">
               Carregando cardápio...
             </p>
           )}
 
           {!carregandoItens && erroItens && (
-            <p className="col-span-2 py-8 text-center text-sm text-red-600">
+            <p className="col-span-2 py-8 text-center text-sm text-mesa-error-500">
               Não foi possível carregar o cardápio.
             </p>
           )}
 
           {!carregandoItens && !erroItens && itens.length === 0 && (
-            <p className="col-span-2 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="col-span-2 py-8 text-center text-sm text-mesa-text-secondary">
               Nenhum item cadastrado.
             </p>
           )}
 
           {!carregandoItens &&
             !erroItens &&
-            itens.map((item) => {
-              const quantidade = carrinho[item.id] ?? 0
-              const selecionado = quantidade > 0
-
-              if (!selecionado) {
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => incrementar(item.id)}
-                    className="flex min-h-16 w-full items-center gap-2 rounded-2xl bg-neutral-100 py-3 pl-4 pr-3 text-base font-medium text-neutral-900 transition-colors active:bg-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:active:bg-neutral-800"
-                  >
-                    <span className="flex-1 text-left">{item.nome}</span>
-                    <span className="shrink-0 min-w-[56px] text-right text-sm font-normal text-neutral-500 dark:text-neutral-400">
-                      {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
-                    </span>
-                  </button>
-                )
-              }
-
-              return (
-                <div
-                  key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => incrementar(item.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      incrementar(item.id)
-                    }
-                  }}
-                  className="flex min-h-16 w-full cursor-pointer items-center gap-2 rounded-2xl bg-marca px-2 py-2 text-marca-texto"
-                >
-                  <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-marca-texto/20 px-1.5 text-xs font-bold">
-                    {quantidade}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-left text-base font-medium">
-                    {item.nome}
-                  </span>
-                  <span className="shrink-0 text-right text-sm font-semibold">
-                    {item.preco_centavos > 0
-                      ? formatarPrecoBR(item.preco_centavos * quantidade)
-                      : '—'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      decrementar(item.id)
-                    }}
-                    aria-label={`Remover uma unidade de ${item.nome}`}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marca-texto/20 text-lg font-bold leading-none"
-                  >
-                    −
-                  </button>
-                </div>
-              )
-            })}
+            itens.map((item) => (
+              <CardItemCardapio
+                key={item.id}
+                item={item}
+                quantidade={carrinho[item.id] ?? 0}
+                onIncrementar={() => incrementar(item.id)}
+                onDecrementar={() => decrementar(item.id)}
+              />
+            ))}
         </div>
-
-        <textarea
-          value={observacao}
-          onChange={(e) => setObservacao(e.target.value)}
-          placeholder="Observação (opcional)"
-          rows={2}
-          className="mt-6 w-full resize-none rounded-2xl border border-neutral-300 bg-white p-3 text-base text-neutral-900 placeholder:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-        />
       </div>
 
-      <div className="fixed inset-x-0 bottom-16 flex flex-col gap-1 border-t border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={limparFormulario}
-            className="min-h-11 basis-1/4 rounded-2xl bg-neutral-200 px-4 text-base font-medium text-neutral-800 active:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-100 dark:active:bg-neutral-700"
-          >
-            Limpar
-          </button>
+      {totalItens > 0 && (
+        <div className="fixed inset-x-0 bottom-16 flex flex-col gap-2 px-4 pb-3">
+          {itensSemPreco > 0 && (
+            <p className="text-center text-xs font-medium text-mesa-text-secondary">
+              {itensSemPreco === 1 ? '1 item sem preço' : `${itensSemPreco} itens sem preço`}
+            </p>
+          )}
+          {erroEnvio && (
+            <p className="text-center text-xs font-medium text-mesa-error-500">{erroEnvio}</p>
+          )}
+
           <button
             type="button"
             onClick={iniciarEnvio}
-            disabled={totalItens === 0}
-            className="min-h-11 basis-3/4 rounded-2xl bg-marca px-4 text-base font-semibold text-marca-texto active:bg-marca-escura disabled:opacity-40"
+            className="flex w-full items-center justify-between gap-3 rounded-mesa-2xl bg-mesa-teal-700 py-4 pl-5 pr-2 text-left text-white shadow-mesa-3 outline-none transition-transform active:scale-[0.99] dark:bg-mesa-teal-600"
           >
-            {totalItens === 0
-              ? 'Enviar Pedido (0)'
-              : `Enviar Pedido (${totalItens}) — ${formatarPrecoBR(totalCentavos)}`}
+            <span>
+              <span className="block text-sm text-white/80">
+                {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
+              </span>
+              <span className="block text-2xl font-bold leading-tight">
+                {formatarPrecoBR(totalCentavos)}
+              </span>
+            </span>
+            {/* TODO(fase 4): esse botão hoje envia direto; virará porta para a
+                tela Confirmar Pedido. Rótulo mantido honesto ("Enviar pedido")
+                até essa tela existir, pra não sugerir uma revisão que ainda
+                não acontece. */}
+            <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-teal-600 px-4 py-2.5 text-sm font-semibold dark:bg-mesa-teal-500">
+              Enviar pedido
+              <ArrowRight className="size-4 shrink-0" aria-hidden />
+            </span>
           </button>
+
+          <div className="flex justify-center">
+            <Button variant="ghost" size="sm" onClick={limparFormulario}>
+              Limpar pedido
+            </Button>
+          </div>
         </div>
-        {itensSemPreco > 0 && (
-          <p className="text-center text-xs text-neutral-500 dark:text-neutral-400">
-            {itensSemPreco === 1 ? '1 item sem preço' : `${itensSemPreco} itens sem preço`}
-          </p>
-        )}
-        {erroEnvio && (
-          <p className="text-center text-xs font-medium text-sinal-vermelho">{erroEnvio}</p>
-        )}
-      </div>
+      )}
 
       {mostrarModalMetodo && (
         <ModalMetodoPagamento
