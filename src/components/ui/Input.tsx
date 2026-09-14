@@ -119,10 +119,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           disabled
             ? 'cursor-not-allowed bg-mesa-neutral-100 border-mesa-neutral-200 opacity-50 dark:bg-mesa-neutral-800 dark:border-mesa-neutral-700'
             : hasError
-              ? 'bg-mesa-neutral-50 border-mesa-error-500 dark:bg-mesa-neutral-800 focus-within:[box-shadow:var(--mesa-focus-ring-danger)]'
-              : 'bg-mesa-neutral-50 border-mesa-neutral-200 dark:bg-mesa-neutral-800 dark:border-mesa-neutral-700 ' +
-                'focus-within:border-mesa-orange-500 focus-within:bg-white dark:focus-within:bg-mesa-neutral-800 ' +
-                'focus-within:[box-shadow:var(--mesa-focus-ring-primary)]',
+              ? 'bg-mesa-surface border-mesa-error-500 focus-within:[box-shadow:var(--mesa-focus-ring-danger)]'
+              : 'bg-mesa-surface border-mesa-border-default ' +
+                'focus-within:border-mesa-orange-500 focus-within:[box-shadow:var(--mesa-focus-ring-primary)]',
         )}
       >
         {leftAffix}
@@ -134,7 +133,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           value={value}
           aria-invalid={hasError || undefined}
           aria-describedby={helpText || error ? helpId : undefined}
-          className="h-full min-w-0 flex-1 bg-transparent text-sm text-mesa-text-primary placeholder:text-mesa-neutral-400 outline-none disabled:cursor-not-allowed"
+          className="h-full min-w-0 flex-1 bg-transparent text-sm text-mesa-text-primary placeholder:text-mesa-text-tertiary outline-none disabled:cursor-not-allowed"
           {...rest}
         />
         {rightAffix}

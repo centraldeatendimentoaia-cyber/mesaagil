@@ -37,14 +37,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         aria-describedby={helpText || error ? helpId : undefined}
         className={clsx(
           'min-h-[88px] resize-y rounded-mesa-sm border-[1.5px] px-4 py-3 text-sm text-mesa-text-primary',
-          'placeholder:text-mesa-neutral-400 outline-none transition-colors duration-[var(--mesa-duration-micro)]',
+          'placeholder:text-mesa-text-tertiary outline-none transition-colors duration-[var(--mesa-duration-micro)]',
           disabled
             ? 'cursor-not-allowed bg-mesa-neutral-100 border-mesa-neutral-200 opacity-50 dark:bg-mesa-neutral-800 dark:border-mesa-neutral-700'
             : hasError
-              ? 'bg-mesa-neutral-50 border-mesa-error-500 dark:bg-mesa-neutral-800 focus:[box-shadow:var(--mesa-focus-ring-danger)]'
-              : 'bg-mesa-neutral-50 border-mesa-neutral-200 dark:bg-mesa-neutral-800 dark:border-mesa-neutral-700 ' +
-                'focus:border-mesa-orange-500 focus:bg-white dark:focus:bg-mesa-neutral-800 ' +
-                'focus:[box-shadow:var(--mesa-focus-ring-primary)]',
+              ? 'bg-mesa-surface border-mesa-error-500 focus:[box-shadow:var(--mesa-focus-ring-danger)]'
+              : 'bg-mesa-surface border-mesa-border-default ' +
+                'focus:border-mesa-orange-500 focus:[box-shadow:var(--mesa-focus-ring-primary)]',
         )}
         {...rest}
       />
