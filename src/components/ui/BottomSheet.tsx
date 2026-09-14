@@ -13,11 +13,18 @@ export interface BottomSheetProps {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+// Pilha module-level de sheets abertos ao mesmo tempo (um confirmando algo
+// por cima de outro, ex.: apagar item dentro do detalhe da comanda). Cada
+// instância se registra ao montar e sai da pilha ao desmontar — o handler de
+// Esc só age quando é o topo, senão Esc num sheet interno fecharia os dois.
+const pilhaAbertos: symbol[] = []
+
 export function BottomSheet({ open, onClose, children, className, ...rest }: BottomSheetProps) {
   const [mounted, setMounted] = useState(open)
   const [visible, setVisible] = useState(false)
   const [prevOpen, setPrevOpen] = useState(open)
   const sheetRef = useRef<HTMLDivElement>(null)
+  const idRef = useRef<symbol>(Symbol('bottom-sheet'))
 
   if (open !== prevOpen) {
     setPrevOpen(open)
@@ -55,10 +62,21 @@ export function BottomSheet({ open, onClose, children, className, ...rest }: Bot
 
   useEffect(() => {
     if (!mounted) return
+    const id = idRef.current
+    pilhaAbertos.push(id)
+    return () => {
+      const indice = pilhaAbertos.indexOf(id)
+      if (indice !== -1) pilhaAbertos.splice(indice, 1)
+    }
+  }, [mounted])
+
+  useEffect(() => {
+    if (!mounted) return
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose()
+        const topo = pilhaAbertos[pilhaAbertos.length - 1]
+        if (topo === idRef.current) onClose()
         return
       }
       if (event.key !== 'Tab' || !sheetRef.current) return

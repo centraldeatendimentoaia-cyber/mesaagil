@@ -1,21 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, X } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { Check, Clock, ListChecks } from 'lucide-react'
+import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
-import type { PedidoComItens, StatusConexao } from '../hooks/useRealtimePedidos'
+import { Badge } from '../components/ui/Badge'
+import { BottomSheet } from '../components/ui/BottomSheet'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Chip } from '../components/ui/Chip'
+import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
+import { DetalheComanda } from '../components/DetalheComanda'
 import type { MotivoCancelamento } from '../lib/cancelamento'
-import type { Barraca, ItemDoPedido } from '../types/database'
+import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
+import type { StatusConexao } from '../hooks/useRealtimePedidos'
 
 type Coluna = 'a_fazer' | 'pronto'
-type CorSinal = 'verde' | 'amarelo' | 'vermelho' | 'pronto'
+type CorSinal = 'verde' | 'amarelo' | 'vermelho'
 
-const DURACAO_LONGO_TOQUE_MS = 1000
 const DURACAO_FAIXA_FINALIZADO_MS = 5000
 const INTERVALO_RELOGIO_MS = 10000
 
@@ -27,137 +32,58 @@ function minutosDecorridos(pedido: PedidoComItens): number {
   return Math.max(0, Math.floor((fim - inicio) / 60000))
 }
 
-function corPorTempo(pedido: PedidoComItens, minutos: number, barraca: Barraca): CorSinal {
-  if (pedido.status === 'pronto') return 'pronto'
+function corPorTempo(minutos: number, barraca: Barraca): CorSinal {
   if (minutos <= barraca.verde_ate) return 'verde'
   if (minutos <= barraca.amarelo_ate) return 'amarelo'
   return 'vermelho'
 }
 
-const CORES_BORDA: Record<CorSinal, string> = {
-  verde: 'border-sinal-verde',
-  amarelo: 'border-sinal-amarelo',
-  vermelho: 'border-sinal-vermelho',
-  pronto: 'border-sinal-pronto',
+function formatarHora(iso: string): string {
+  const data = new Date(iso)
+  return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`
 }
 
-const CORES_FUNDO: Record<CorSinal, string> = {
-  verde: 'bg-sinal-verde/10',
-  amarelo: 'bg-sinal-amarelo/10',
-  vermelho: 'bg-sinal-vermelho/10',
-  pronto: 'bg-sinal-pronto/10',
+const CORES_BORDA: Record<CorSinal, string> = {
+  verde: 'border-l-mesa-kanban-green',
+  amarelo: 'border-l-mesa-kanban-yellow',
+  vermelho: 'border-l-mesa-kanban-red',
 }
 
 const CORES_TEXTO: Record<CorSinal, string> = {
-  verde: 'text-sinal-verde',
-  amarelo: 'text-sinal-amarelo',
-  vermelho: 'text-sinal-vermelho',
-  pronto: 'text-sinal-pronto',
+  verde: 'text-mesa-kanban-green',
+  amarelo: 'text-mesa-kanban-yellow',
+  vermelho: 'text-mesa-kanban-red',
 }
 
-function LinhaItem({
-  item,
-  onSolicitarRemocao,
-  onAlternarEntregue,
+/**
+ * 34×34 visual (regra da tarefa), 44×44 de área de toque — mesmo padrão do
+ * botão de apagar em Ajustes.tsx e do stepper em LancarPedido.tsx.
+ */
+function BotaoChecklist({
+  onClick,
+  contador,
+  total,
 }: {
-  item: ItemDoPedido
-  onSolicitarRemocao: (item: ItemDoPedido) => void
-  onAlternarEntregue: (item: ItemDoPedido) => void
+  onClick: () => void
+  contador: number
+  total: number
 }) {
-  const timerRef = useRef<number | null>(null)
-  const disparouRef = useRef(false)
-
-  function iniciarToque() {
-    if (item.removido) return
-    disparouRef.current = false
-    timerRef.current = window.setTimeout(() => {
-      disparouRef.current = true
-      onSolicitarRemocao(item)
-    }, DURACAO_LONGO_TOQUE_MS)
-  }
-
-  function cancelarToque() {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-  }
-
-  function aoClicar(e: MouseEvent<HTMLLIElement>) {
-    if (disparouRef.current) {
-      e.stopPropagation()
-    }
-  }
-
-  const entregue = item.entregue && !item.removido
-
   return (
-    <li
-      onPointerDown={(e: PointerEvent<HTMLLIElement>) => {
-        e.stopPropagation()
-        iniciarToque()
-      }}
-      onPointerUp={cancelarToque}
-      onPointerLeave={cancelarToque}
-      onPointerCancel={cancelarToque}
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={aoClicar}
-      className={`flex select-none items-center gap-2 py-1.5 text-lg ${
-        item.removido ? 'opacity-40' : ''
-      }`}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Ver detalhes da comanda"
+      className="relative flex size-11 shrink-0 items-center justify-center outline-none"
     >
-      {!item.removido && (
-        <button
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation()
-            onAlternarEntregue(item)
-          }}
-          aria-label={
-            item.entregue
-              ? `Desmarcar ${item.nome_item} como entregue`
-              : `Marcar ${item.nome_item} como entregue`
-          }
-          className="flex h-11 w-11 shrink-0 items-center justify-center"
-        >
-          <span
-            className={`flex h-6 w-6 items-center justify-center rounded-md border-2 ${
-              item.entregue ? 'border-sinal-verde bg-sinal-verde' : 'border-white/30'
-            }`}
-          >
-            {item.entregue && <Check size={16} strokeWidth={3} className="text-white" />}
-          </span>
-        </button>
-      )}
-
-      <span
-        className={`flex-1 ${
-          item.removido
-            ? 'text-neutral-400 line-through'
-            : entregue
-              ? 'text-white opacity-60'
-              : 'text-white'
-        }`}
-      >
-        {item.nome_item}
+      <span className="flex size-[34px] items-center justify-center rounded-mesa-sm bg-mesa-teal-50 text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400">
+        <ListChecks className="size-[18px]" aria-hidden />
       </span>
-
-      <span className="flex shrink-0 items-center gap-2">
-        <span
-          className={`font-semibold ${
-            item.removido
-              ? 'text-neutral-400 line-through'
-              : entregue
-                ? 'text-white opacity-60'
-                : 'text-white'
-          }`}
-        >
-          {item.quantidade}×
+      {contador > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-mesa-full bg-mesa-teal-500 px-0.5 text-[10px] font-bold leading-none text-white">
+          {contador}/{total}
         </span>
-        {entregue && <span className="text-xs text-neutral-400">✓ entregue</span>}
-      </span>
-    </li>
+      )}
+    </button>
   )
 }
 
@@ -165,180 +91,152 @@ function CardPedido({
   pedido,
   barraca,
   coluna,
+  marcadosCount,
+  onAbrirDetalhe,
   onMoverParaPronto,
   onVoltar,
   onEntregar,
-  onSolicitarRemocao,
-  onAlternarEntregue,
   onCancelar,
   onAtalhoEntregar,
 }: {
   pedido: PedidoComItens
   barraca: Barraca
   coluna: Coluna
+  marcadosCount: number
+  onAbrirDetalhe: (pedido: PedidoComItens) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onVoltar: (pedido: PedidoComItens) => void
   onEntregar: (pedido: PedidoComItens) => void
-  onSolicitarRemocao: (pedido: PedidoComItens, item: ItemDoPedido) => void
-  onAlternarEntregue: (pedido: PedidoComItens, item: ItemDoPedido) => void
   onCancelar: (pedido: PedidoComItens) => void
   onAtalhoEntregar: (pedido: PedidoComItens) => void
 }) {
   const minutos = minutosDecorridos(pedido)
-  const cor = corPorTempo(pedido, minutos, barraca)
+  const cor = corPorTempo(minutos, barraca)
 
   const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
   const tudoEntregue =
     pedido.status !== 'entregue' && itensAtivos.length > 0 && itensAtivos.every((i) => i.entregue)
+  const mostrarIdentificacao = pedido.viagem || pedido.mesa
 
-  const podeCancelar = pedido.status === 'a_fazer' || pedido.status === 'pronto'
-
-  const conteudo = (
-    <>
-      {podeCancelar && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onCancelar(pedido)
-          }}
-          aria-label={`Cancelar comanda ${pedido.senha}`}
-          className="group absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center"
+  return (
+    <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
+      <div className="flex items-center gap-2">
+        <span className="text-2xl font-black leading-none text-mesa-text-tertiary">
+          {pedido.senha}
+        </span>
+        {mostrarIdentificacao && (
+          <>
+            <span className="text-mesa-border-default" aria-hidden>
+              |
+            </span>
+            <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
+          </>
+        )}
+        <span
+          className={clsx(
+            'ml-auto flex items-center gap-1 text-sm font-semibold',
+            coluna === 'a_fazer' ? CORES_TEXTO[cor] : 'text-mesa-text-secondary',
+          )}
         >
-          <X
-            size={18}
-            className="text-neutral-400 opacity-40 transition-opacity group-hover:opacity-100 group-active:opacity-100"
+          <Clock className="size-3.5 shrink-0" aria-hidden />
+          {coluna === 'a_fazer'
+            ? formatarHora(pedido.criado_em)
+            : `Pronto às ${pedido.pronto_em ? formatarHora(pedido.pronto_em) : '--:--'}`}
+        </span>
+        {coluna === 'a_fazer' && (
+          <BotaoChecklist
+            onClick={() => onAbrirDetalhe(pedido)}
+            contador={marcadosCount}
+            total={itensAtivos.length}
           />
-        </button>
-      )}
+        )}
+      </div>
 
       {tudoEntregue && (
-        <div className="mb-3 mr-11 flex h-8 items-center justify-center gap-2 rounded-xl bg-sinal-verde/15">
-          <Check size={16} strokeWidth={3} className="text-sinal-verde" />
-          <span className="text-sm font-medium text-sinal-verde">Tudo entregue — finalizar?</span>
+        <div className="mt-3 flex h-9 items-center justify-center gap-2 rounded-mesa-md bg-mesa-teal-50 dark:bg-mesa-teal-500/15">
+          <Check className="size-4 shrink-0 text-mesa-teal-700 dark:text-mesa-teal-400" strokeWidth={3} aria-hidden />
+          <span className="text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-400">
+            Tudo entregue — finalizar?
+          </span>
         </div>
       )}
 
-      <p className={`text-center text-6xl font-black leading-none ${CORES_TEXTO[cor]}`}>
-        {pedido.senha}
-      </p>
-
-      {pedido.viagem && (
-        <p className="mt-2 text-center text-xs font-bold tracking-widest text-neutral-300">
-          VIAGEM
-        </p>
-      )}
-
-      {pedido.mesa && (
-        <p className="mt-1 text-center text-base text-neutral-300">Mesa: {pedido.mesa}</p>
+      {itensAtivos.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {itensAtivos.map((item) => (
+            <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
+              {item.quantidade}× {item.nome_item}
+            </Chip>
+          ))}
+        </div>
       )}
 
       {pedido.observacao && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-sinal-amarelo/15 p-3">
-          <span aria-hidden className="text-lg leading-none">
-            ⚠️
-          </span>
-          <p className="text-sm font-semibold text-sinal-amarelo">{pedido.observacao}</p>
-        </div>
+        <p className="mt-3 rounded-mesa-md bg-mesa-neutral-100 p-3 text-sm text-mesa-text-primary dark:bg-mesa-neutral-700">
+          {pedido.observacao}
+        </p>
       )}
 
-      <ul className="mt-3 divide-y divide-white/10">
-        {pedido.itens_do_pedido.map((item) => (
-          <LinhaItem
-            key={item.id}
-            item={item}
-            onSolicitarRemocao={(itemAlvo) => onSolicitarRemocao(pedido, itemAlvo)}
-            onAlternarEntregue={(itemAlvo) => onAlternarEntregue(pedido, itemAlvo)}
-          />
-        ))}
-      </ul>
-
-      {pedido.status === 'a_fazer' ? (
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className={`text-4xl font-bold ${CORES_TEXTO[cor]}`}>{minutos} min</p>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onAtalhoEntregar(pedido)
-            }}
-            aria-label={`Marcar comanda ${pedido.senha} como entregue direto`}
-            className="flex min-h-11 items-center gap-1.5 rounded-xl bg-sinal-verde/15 px-3 text-base font-semibold text-sinal-verde active:opacity-70"
-          >
-            <Check size={18} strokeWidth={2.5} />
-            Entregue
-          </button>
-        </div>
-      ) : (
-        <p className={`mt-3 text-center text-4xl font-bold ${CORES_TEXTO[cor]}`}>{minutos} min</p>
-      )}
-    </>
-  )
-
-  const classeCartao = `relative w-full rounded-2xl border-4 ${CORES_BORDA[cor]} ${CORES_FUNDO[cor]} bg-neutral-900 p-4`
-
-  if (coluna === 'a_fazer') {
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onMoverParaPronto(pedido)}
-        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onMoverParaPronto(pedido)
-          }
-        }}
-        className={`${classeCartao} cursor-pointer text-left`}
-      >
-        {conteudo}
+      <div className="mt-4 flex gap-3">
+        {coluna === 'a_fazer' ? (
+          <>
+            <Button variant="outline" size="md" className="flex-1" onClick={() => onMoverParaPronto(pedido)}>
+              Pronto
+            </Button>
+            <Button variant="confirm" size="md" className="flex-1" onClick={() => onAtalhoEntregar(pedido)}>
+              Entregar direto
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" size="md" className="flex-1" onClick={() => onVoltar(pedido)}>
+              Voltar
+            </Button>
+            <Button variant="confirm" size="md" className="flex-1" onClick={() => onEntregar(pedido)}>
+              Entregue
+            </Button>
+          </>
+        )}
       </div>
+
+      <div className="mt-2 flex justify-center">
+        <button
+          type="button"
+          onClick={() => onCancelar(pedido)}
+          className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
+        >
+          Cancelar
+        </button>
+      </div>
+    </Card>
+  )
+}
+
+const TEXTO_STATUS: Record<StatusConexao, string> = {
+  conectado: 'Tempo real',
+  reconectando: 'Reconectando',
+  offline: 'Offline',
+}
+
+function BadgeStatus({ status }: { status: StatusConexao }) {
+  if (status === 'conectado') {
+    return (
+      <Badge variant="successOutline" dot>
+        {TEXTO_STATUS[status]}
+      </Badge>
     )
   }
-
+  if (status === 'offline') {
+    return (
+      <Badge variant="danger" dot>
+        {TEXTO_STATUS[status]}
+      </Badge>
+    )
+  }
   return (
-    <div className={classeCartao}>
-      {conteudo}
-      <div className="mt-4 flex gap-3">
-        <button
-          type="button"
-          onClick={() => onVoltar(pedido)}
-          className="min-h-11 flex-1 rounded-2xl bg-neutral-700 text-base font-semibold text-white active:bg-neutral-600"
-        >
-          Voltar
-        </button>
-        <button
-          type="button"
-          onClick={() => onEntregar(pedido)}
-          className="min-h-11 flex-1 rounded-2xl bg-sinal-pronto text-base font-semibold text-white active:opacity-80"
-        >
-          Entregue
-        </button>
-      </div>
-    </div>
-  )
-}
-
-const CORES_PONTO_STATUS: Record<StatusConexao, string> = {
-  conectado: 'bg-sinal-verde',
-  reconectando: 'bg-sinal-amarelo',
-  offline: 'bg-sinal-vermelho',
-}
-
-function PontoStatus({ status }: { status: StatusConexao }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span
-        className={`h-2.5 w-2.5 shrink-0 rounded-full ${CORES_PONTO_STATUS[status]}`}
-        aria-hidden
-      />
-      {status !== 'conectado' && (
-        <span className="text-xs font-medium text-neutral-400">
-          {status === 'reconectando' ? 'reconectando' : 'offline'}
-        </span>
-      )}
-      <span className="sr-only">Conexão em tempo real: {status}</span>
-    </div>
+    <Badge variant="neutral" dot className="[&>span:first-child]:animate-pulse">
+      {TEXTO_STATUS[status]}
+    </Badge>
   )
 }
 
@@ -348,6 +246,9 @@ export function Cozinha() {
     usePedidosAtual()
   const { pendentes, online } = useSincronizacaoAtual()
   const [aba, setAba] = useState<Coluna>('a_fazer')
+
+  const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
+  const [marcadosLocalmente, setMarcadosLocalmente] = useState<Record<string, Set<string>>>({})
 
   const [itemParaRemover, setItemParaRemover] = useState<{
     pedido: PedidoComItens
@@ -368,8 +269,8 @@ export function Cozinha() {
 
   // Relógio global: minutosDecorridos/corPorTempo são calculados em tempo de
   // render usando Date.now(). Sem isso, os cards só recalculam quando
-  // `pedidos` muda por outro motivo (evento realtime, etc.) e o cronômetro
-  // fica congelado no valor do último render real. Um único timer aqui
+  // `pedidos` muda por outro motivo (evento realtime, etc.) e o horário
+  // exibido fica parado no valor do último render real. Um único timer aqui
   // força esse re-render — não é por card, pra não multiplicar timers.
   const [, forcarAtualizacaoDoRelogio] = useState(0)
 
@@ -381,10 +282,36 @@ export function Cozinha() {
     return () => window.clearInterval(intervalo)
   }, [])
 
+  const pedidoSelecionado = pedidos.find((p) => p.id === pedidoSelecionadoId) ?? null
+
+  function abrirDetalhe(pedido: PedidoComItens) {
+    // "contador reseta a cada abertura" — cada sessão de detalhe começa do
+    // zero, mesmo reabrindo a mesma comanda (ver TODO fase 4 logo abaixo).
+    setMarcadosLocalmente((atual) => ({ ...atual, [pedido.id]: new Set() }))
+    setPedidoSelecionadoId(pedido.id)
+  }
+
+  // TODO(fase 4): persistir estado "entregue" por item marcado aqui. Hoje é
+  // visual apenas — vive só em marcadosLocalmente (memória), nunca é
+  // gravado no Supabase, e reseta a cada abertura do bottom sheet.
+  function alternarMarcacaoLocal(pedidoId: string, itemId: string) {
+    setMarcadosLocalmente((atual) => {
+      const setAtual = new Set(atual[pedidoId] ?? [])
+      if (setAtual.has(itemId)) setAtual.delete(itemId)
+      else setAtual.add(itemId)
+      return { ...atual, [pedidoId]: setAtual }
+    })
+  }
+
   async function moverParaPronto(pedido: PedidoComItens) {
     const agora = new Date().toISOString()
     aplicarPatchPedido(pedido.id, { status: 'pronto', pronto_em: agora })
     await enfileirar('mudar_status', { pedido_id: pedido.id, status: 'pronto', pronto_em: agora })
+  }
+
+  function moverParaProntoEFechar(pedido: PedidoComItens) {
+    setPedidoSelecionadoId(null)
+    moverParaPronto(pedido)
   }
 
   async function voltarParaFazer(pedido: PedidoComItens) {
@@ -440,25 +367,6 @@ export function Cozinha() {
     setItemParaRemover(null)
   }
 
-  async function alternarEntregueItem(pedido: PedidoComItens, item: ItemDoPedido) {
-    const novoValor = !item.entregue
-    const novoEntregueEm = novoValor ? new Date().toISOString() : null
-
-    aplicarPatchItem(pedido.id, item.id, { entregue: novoValor, entregue_em: novoEntregueEm })
-
-    const { error } = await supabase
-      .from('itens_do_pedido')
-      .update({ entregue: novoValor, entregue_em: novoEntregueEm })
-      .eq('id', item.id)
-
-    if (error) {
-      aplicarPatchItem(pedido.id, item.id, {
-        entregue: item.entregue,
-        entregue_em: item.entregue_em,
-      })
-    }
-  }
-
   async function cancelarPedido(motivo: MotivoCancelamento) {
     if (!pedidoParaCancelar) return
     const pedido = pedidoParaCancelar
@@ -484,6 +392,7 @@ export function Cozinha() {
 
     setCancelando(false)
     setPedidoParaCancelar(null)
+    if (pedidoSelecionadoId === pedido.id) setPedidoSelecionadoId(null)
   }
 
   async function confirmarEntregaDireta() {
@@ -513,7 +422,7 @@ export function Cozinha() {
 
   function renderLista(lista: PedidoComItens[], coluna: Coluna) {
     if (lista.length === 0) {
-      return <p className="py-8 text-center text-neutral-500">Nenhum pedido.</p>
+      return <p className="py-8 text-center text-sm text-mesa-text-secondary">Nenhum pedido.</p>
     }
     return (
       <div className="flex flex-col gap-4">
@@ -523,11 +432,11 @@ export function Cozinha() {
             pedido={pedido}
             barraca={barraca}
             coluna={coluna}
+            marcadosCount={marcadosLocalmente[pedido.id]?.size ?? 0}
+            onAbrirDetalhe={abrirDetalhe}
             onMoverParaPronto={moverParaPronto}
             onVoltar={voltarParaFazer}
             onEntregar={finalizarPedido}
-            onSolicitarRemocao={(p, item) => setItemParaRemover({ pedido: p, item })}
-            onAlternarEntregue={alternarEntregueItem}
             onCancelar={setPedidoParaCancelar}
             onAtalhoEntregar={setPedidoParaEntregaDireta}
           />
@@ -537,106 +446,139 @@ export function Cozinha() {
   }
 
   return (
-    <div className="min-h-screen bg-cozinha-fundo pb-40">
+    <div className="min-h-screen bg-mesa-bg-kanban pb-40">
       {!online && (
-        <div className="bg-sinal-amarelo px-4 py-2 text-center text-sm font-semibold text-neutral-900">
+        <p className="border-l-[3px] border-mesa-error-500 bg-mesa-error-50 p-3 text-center text-sm font-medium text-mesa-error-700 dark:bg-mesa-error-500/15 dark:text-mesa-error-400">
           Sem conexão — os pedidos serão enviados quando a rede voltar
-        </div>
+        </p>
       )}
 
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-white">Cozinha</span>
-          <PontoStatus status={statusConexao} />
+      <div className="flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
+        <h1 className="text-2xl font-bold text-mesa-text-primary">Cozinha</h1>
+        <div className="flex shrink-0 items-center gap-2">
           {pendentes > 0 && (
-            <span className="rounded-full bg-neutral-800 px-3 py-1 text-xs font-semibold text-neutral-300">
+            <Badge variant="neutral">
               {pendentes} pendente{pendentes === 1 ? '' : 's'}
-            </span>
+            </Badge>
           )}
+          <BadgeStatus status={statusConexao} />
+          <Link
+            to={`/${barraca.slug}/historico`}
+            className="flex min-h-11 items-center rounded-mesa-full bg-mesa-neutral-100 px-4 text-sm font-semibold text-mesa-text-primary dark:bg-mesa-neutral-700"
+          >
+            Histórico
+          </Link>
         </div>
-        <Link
-          to={`/${barraca.slug}/historico`}
-          className="flex min-h-11 items-center rounded-2xl bg-neutral-800 px-4 text-sm font-semibold text-white active:bg-neutral-700"
-        >
-          Histórico
-        </Link>
       </div>
 
-      <div className="flex border-b border-white/10 md:hidden">
-        <button
-          type="button"
-          onClick={() => setAba('a_fazer')}
-          className={`min-h-11 flex-1 py-3 text-center text-sm font-bold ${
-            aba === 'a_fazer'
-              ? 'border-b-2 border-white text-white'
-              : 'text-neutral-500'
-          }`}
-        >
-          A Fazer ({pedidosAFazer.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setAba('pronto')}
-          className={`min-h-11 flex-1 py-3 text-center text-sm font-bold ${
-            aba === 'pronto' ? 'border-b-2 border-white text-white' : 'text-neutral-500'
-          }`}
-        >
-          Pronto ({pedidosProntos.length})
-        </button>
+      <div className="px-4 pb-4 md:hidden">
+        <SegmentedControl
+          aria-label="Colunas da cozinha"
+          items={[
+            { label: 'A Fazer', count: pedidosAFazer.length },
+            { label: 'Pronto', count: pedidosProntos.length },
+          ]}
+          activeIndex={aba === 'a_fazer' ? 0 : 1}
+          onChange={(indice) => setAba(indice === 0 ? 'a_fazer' : 'pronto')}
+        />
       </div>
 
-      <div className="p-4 md:hidden">
+      <div className="px-4 md:hidden">
         {renderLista(aba === 'a_fazer' ? pedidosAFazer : pedidosProntos, aba)}
+        {aba === 'pronto' && (
+          <p className="mt-6 text-center text-sm text-mesa-text-secondary">
+            O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
+            cliente
+          </p>
+        )}
       </div>
 
-      <div className="hidden gap-6 p-6 md:grid md:grid-cols-2">
+      <div className="hidden gap-6 px-6 md:grid md:grid-cols-2">
         <div>
-          <h2 className="mb-4 text-lg font-bold text-white">A Fazer ({pedidosAFazer.length})</h2>
+          <h2 className="mb-4 text-lg font-bold text-mesa-text-primary">
+            A Fazer ({pedidosAFazer.length})
+          </h2>
           {renderLista(pedidosAFazer, 'a_fazer')}
         </div>
         <div>
-          <h2 className="mb-4 text-lg font-bold text-white">Pronto ({pedidosProntos.length})</h2>
+          <h2 className="mb-4 text-lg font-bold text-mesa-text-primary">
+            Pronto ({pedidosProntos.length})
+          </h2>
           {renderLista(pedidosProntos, 'pronto')}
+          <p className="mt-6 text-center text-sm text-mesa-text-secondary">
+            O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
+            cliente
+          </p>
         </div>
       </div>
 
-      {itemParaRemover && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-2xl bg-neutral-900 p-6 text-center">
-            <p className="text-lg font-semibold text-white">
-              Remover "{itemParaRemover.item.nome_item}"?
+      <DetalheComanda
+        pedido={pedidoSelecionado}
+        barraca={barraca}
+        marcados={pedidoSelecionadoId ? (marcadosLocalmente[pedidoSelecionadoId] ?? new Set()) : new Set()}
+        onFechar={() => setPedidoSelecionadoId(null)}
+        onAlternarLocal={(itemId) => {
+          if (pedidoSelecionadoId) alternarMarcacaoLocal(pedidoSelecionadoId, itemId)
+        }}
+        onSolicitarRemocaoItem={(item) => {
+          if (pedidoSelecionado) setItemParaRemover({ pedido: pedidoSelecionado, item })
+        }}
+        onMoverParaPronto={moverParaProntoEFechar}
+        onCancelar={setPedidoParaCancelar}
+      />
+
+      {/* Sheet empilhado sobre o DetalheComanda — o primitivo já isola qual
+          dos dois responde ao Esc (ver correção em ui/BottomSheet.tsx). */}
+      <BottomSheet
+        open={itemParaRemover !== null}
+        onClose={() => setItemParaRemover(null)}
+        aria-label="Confirmar remoção de item"
+      >
+        {itemParaRemover && (
+          <>
+            <h2 className="text-lg font-semibold text-mesa-text-primary">
+              Remover {itemParaRemover.item.nome_item} do pedido?
+            </h2>
+            <p className="mt-1 text-sm text-mesa-text-secondary">
+              Pedido {itemParaRemover.pedido.senha} · essa ação não pode ser desfeita.
             </p>
-            <p className="mt-1 text-sm text-neutral-400">Pedido {itemParaRemover.pedido.senha}</p>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setItemParaRemover(null)}
-                className="min-h-11 flex-1 rounded-2xl bg-neutral-700 text-base font-medium text-white"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
+            <div className="mt-6 flex flex-col gap-2">
+              <Button
+                variant="destructive"
+                size="xl"
+                loading={removendoItem}
                 onClick={confirmarRemocaoItem}
-                disabled={removendoItem}
-                className="min-h-11 flex-1 rounded-2xl bg-sinal-vermelho text-base font-semibold text-white disabled:opacity-50"
+                className="w-full"
               >
                 Remover
-              </button>
+              </Button>
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={() => setItemParaRemover(null)}
+                className="w-full"
+              >
+                Cancelar
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </BottomSheet>
 
       {pedidoFinalizado && (
-        <div className="fixed inset-x-0 bottom-16 z-40 flex items-center justify-between gap-4 bg-neutral-800 px-6 py-4">
+        <div className="fixed inset-x-0 bottom-16 z-40 flex items-center justify-between gap-4 bg-mesa-neutral-800 px-6 py-4">
           <span className="text-base font-medium text-white">
             Pedido {pedidoFinalizado.senha} finalizado
           </span>
+          {/* Banner sempre escuro (bg-mesa-neutral-800 fixo, não segue o tema),
+              então usa botão local com texto branco fixo em vez do Button
+              ghost — a variante ghost usa text-mesa-text-primary (escuro no
+              claro), e sobrepor com className é a mesma corrida de
+              especificidade que já corrigimos no Input na Fase 3. */}
           <button
             type="button"
             onClick={desfazerFinalizacao}
-            className="min-h-11 rounded-2xl bg-neutral-600 px-4 text-base font-semibold text-white"
+            className="min-h-11 shrink-0 rounded-mesa-md px-3 text-base font-semibold text-white outline-none"
           >
             Desfazer
           </button>
