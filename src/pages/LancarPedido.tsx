@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Check, Minus, Plus } from 'lucide-react'
+import { ArrowRight, Check, Minus, Plus, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido, enfileirar } from '../lib/fila'
@@ -47,6 +47,35 @@ function proximoNumeroProvisorio(barracaId: string): number {
   return proximo
 }
 
+/**
+ * Círculo visível de 40×40 (compacto o bastante pra caber lado a lado
+ * num grid de 2 colunas), mas a área clicável real é 44×44 via padding
+ * transparente — mesmo padrão do botão de apagar em Ajustes.tsx. A cor
+ * de fundo mora só no <span> interno; o <button> em si é transparente.
+ */
+function BotaoStepper({
+  icone: Icone,
+  onClick,
+  rotulo,
+}: {
+  icone: LucideIcon
+  onClick: () => void
+  rotulo: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={rotulo}
+      className="flex size-11 shrink-0 items-center justify-center outline-none"
+    >
+      <span className="flex size-10 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white transition-transform active:scale-90">
+        <Icone className="size-4" aria-hidden />
+      </span>
+    </button>
+  )
+}
+
 function CardItemCardapio({
   item,
   quantidade,
@@ -70,26 +99,12 @@ function CardItemCardapio({
       <div className="mt-3">
         {selecionado ? (
           <>
-            <div className="flex items-center justify-center gap-3 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
-              <button
-                type="button"
-                onClick={onDecrementar}
-                aria-label={`Remover uma unidade de ${item.nome}`}
-                className="flex size-10 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white outline-none transition-transform active:scale-90"
-              >
-                <Minus className="size-4" aria-hidden />
-              </button>
+            <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
+              <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
               <span className="min-w-[1.5ch] text-center text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
                 {quantidade}
               </span>
-              <button
-                type="button"
-                onClick={onIncrementar}
-                aria-label={`Adicionar uma unidade de ${item.nome}`}
-                className="flex size-10 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white outline-none transition-transform active:scale-90"
-              >
-                <Plus className="size-4" aria-hidden />
-              </button>
+              <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
             </div>
             {item.preco_centavos > 0 && (
               <p className="mt-2 text-center text-sm font-semibold text-mesa-teal-700 dark:text-mesa-teal-400">
@@ -100,7 +115,7 @@ function CardItemCardapio({
         ) : (
           <Button
             variant="confirm"
-            size="sm"
+            size="md"
             icon={<Plus className="size-4" aria-hidden />}
             onClick={onIncrementar}
             className="w-full"
@@ -437,7 +452,7 @@ export function LancarPedido() {
           </button>
 
           <div className="flex justify-center">
-            <Button variant="ghost" size="sm" onClick={limparFormulario}>
+            <Button variant="ghost" size="md" onClick={limparFormulario}>
               Limpar pedido
             </Button>
           </div>
