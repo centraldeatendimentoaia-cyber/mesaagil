@@ -37,12 +37,24 @@ export function BottomSheet({ open, onClose, children, className, ...rest }: Bot
     return () => clearTimeout(timeout)
   }, [open, mounted])
 
+  // Trava de scroll e foco inicial dependem só de `mounted` — se
+  // dependessem de `onClose` (quase sempre uma arrow inline, identidade
+  // nova a cada render do pai), o foco voltaria pro container do sheet a
+  // cada re-render, roubando o cursor de quem estivesse digitando dentro.
   useEffect(() => {
     if (!mounted) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     sheetRef.current?.focus()
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mounted])
+
+  useEffect(() => {
+    if (!mounted) return
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -67,10 +79,7 @@ export function BottomSheet({ open, onClose, children, className, ...rest }: Bot
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.removeEventListener('keydown', handleKeyDown)
-    }
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [mounted, onClose])
 
   if (!mounted) return null
