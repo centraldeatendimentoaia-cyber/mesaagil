@@ -14,7 +14,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const baseClasses =
-  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium ' +
+  'relative inline-flex select-none items-center justify-center gap-2 text-center font-medium ' +
   'transition-[background-color,color,transform,box-shadow] duration-[var(--mesa-duration-micro)] ease-mesa-standard ' +
   'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 outline-none'
 
@@ -41,10 +41,13 @@ const variantClasses: Record<ButtonVariant, string> = {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-9 px-4 text-sm',
-  md: 'h-11 px-5 text-sm',
-  lg: 'h-[52px] px-6 text-base',
-  xl: 'h-[60px] px-6 text-base font-semibold',
+  sm: 'h-9 px-4 text-sm whitespace-nowrap',
+  md: 'h-11 px-5 text-sm whitespace-nowrap',
+  // lg/xl são CTAs de largura total — texto longo quebra em vez de
+  // estourar a tela horizontalmente. min-h em vez de h para o botão
+  // crescer quando a segunda linha aparece.
+  lg: 'min-h-[52px] px-6 py-3 text-base leading-snug',
+  xl: 'min-h-[60px] px-6 py-3 text-base font-semibold leading-snug',
 }
 
 const spinnerSizeClasses: Record<ButtonSize, string> = {
