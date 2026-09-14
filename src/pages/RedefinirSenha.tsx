@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { KeyRound, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+
+const ATRASO_REDIRECIONAMENTO_MS = 1500
 
 export function RedefinirSenha() {
   const navigate = useNavigate()
@@ -10,6 +15,12 @@ export function RedefinirSenha() {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
+
+  useEffect(() => {
+    if (!salvo) return
+    const timeout = window.setTimeout(() => navigate('/'), ATRASO_REDIRECIONAMENTO_MS)
+    return () => window.clearTimeout(timeout)
+  }, [salvo, navigate])
 
   async function aoSubmeter(e: FormEvent) {
     e.preventDefault()
@@ -31,28 +42,30 @@ export function RedefinirSenha() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 dark:bg-neutral-950">
-      <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-        <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Nova senha</h1>
-
-        {salvo ? (
-          <>
-            <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">
-              Senha atualizada com sucesso.
+    <div className="flex min-h-screen flex-col items-center justify-center p-6 [background:var(--mesa-gradient-atmosphere)]">
+      <div className="w-full max-w-[420px]">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
+            <KeyRound className="size-7 text-mesa-orange-500" aria-hidden />
+          </div>
+          <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
+            Redefinir senha
+          </h1>
+          {salvo ? (
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-mesa-text-secondary">
+              <CheckCircle className="size-4 shrink-0 text-mesa-teal-600" aria-hidden />
+              Senha atualizada! Te levando pro MesaAgil...
             </p>
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="mt-6 min-h-11 w-full rounded-2xl bg-[#C4372A] text-base font-semibold text-white"
-            >
-              Ir para o login
-            </button>
-          </>
-        ) : (
-          <form onSubmit={aoSubmeter} className="mt-4">
-            <label className="block">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Nova senha</span>
-              <input
+          ) : (
+            <p className="mt-1 text-sm text-mesa-text-secondary">Escolha uma senha nova</p>
+          )}
+        </div>
+
+        {!salvo && (
+          <>
+            <form onSubmit={aoSubmeter} className="mt-8 flex flex-col gap-4">
+              <Input
+                label="Nova senha"
                 type="password"
                 autoComplete="new-password"
                 autoFocus
@@ -60,20 +73,22 @@ export function RedefinirSenha() {
                 minLength={6}
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
               />
-            </label>
 
-            {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
+              {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
 
-            <button
-              type="submit"
-              disabled={salvando}
-              className="mt-6 min-h-11 w-full rounded-2xl bg-[#C4372A] text-base font-semibold text-white disabled:opacity-60"
+              <Button type="submit" size="xl" loading={salvando} className="w-full">
+                Salvar nova senha
+              </Button>
+            </form>
+
+            <Link
+              to="/login"
+              className="mt-4 block text-center text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
             >
-              {salvando ? 'Salvando...' : 'Salvar'}
-            </button>
-          </form>
+              Voltar para o login
+            </Link>
+          </>
         )}
       </div>
     </div>
