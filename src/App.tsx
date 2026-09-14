@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useTheme } from './hooks/useTheme'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
 import { LancarPedido } from './pages/LancarPedido'
@@ -14,6 +15,11 @@ import { Dispatcher } from './pages/Dispatcher'
 import { SelecionarBarraca } from './pages/SelecionarBarraca'
 
 function App() {
+  // Fonte única de verdade do tema claro/escuro: preferência manual do
+  // usuário (localStorage) > prefers-color-scheme do dispositivo. O campo
+  // modo da barraca no Supabase é legado e não é mais lido por nada.
+  useTheme()
+
   return (
     <BrowserRouter>
       <Routes>
