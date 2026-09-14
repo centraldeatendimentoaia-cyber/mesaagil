@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { Check, Moon, Sun } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
@@ -846,6 +847,27 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
   )
 }
 
+function SecaoAparencia() {
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
+
+  return (
+    <SecaoAjustes titulo="Aparência">
+      <div className="flex items-center justify-between">
+        <span className="text-base text-neutral-900 dark:text-neutral-100">Tema</span>
+        <button
+          type="button"
+          onClick={alternarTema}
+          aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+        >
+          {escuro ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
+    </SecaoAjustes>
+  )
+}
+
 function SecaoTrocarSenha() {
   const { usuario } = useAuth()
   const [mostrarModal, setMostrarModal] = useState(false)
@@ -951,6 +973,7 @@ export function Ajustes() {
         <SecaoMetodosPagamento barraca={barraca} />
         <SecaoTaxas barraca={barraca} />
         <SecaoFaixas barraca={barraca} />
+        <SecaoAparencia />
         <SecaoTrocarSenha />
         <SecaoSair />
       </div>

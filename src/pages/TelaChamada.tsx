@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
-import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
+import { usePedidosAtual } from '../layouts/contextoPedidos'
 
 const DURACAO_DESTAQUE_MS = 10000
 
@@ -18,7 +18,7 @@ function tamanhoGrade(quantidade: number): { colunas: string; texto: string } {
 export function TelaChamada() {
   const barraca = useBarracaAtual()
   const navigate = useNavigate()
-  const { pedidos } = useRealtimePedidos(barraca.id)
+  const { pedidos } = usePedidosAtual()
   const [destacados, setDestacados] = useState<Set<string>>(new Set())
 
   const vistosRef = useRef<Set<string>>(new Set())

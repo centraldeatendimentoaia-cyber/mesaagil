@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
+import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
-import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 import type { PedidoComItens, StatusConexao } from '../hooks/useRealtimePedidos'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
@@ -345,7 +345,7 @@ function PontoStatus({ status }: { status: StatusConexao }) {
 export function Cozinha() {
   const barraca = useBarracaAtual()
   const { pedidos, status: statusConexao, aplicarPatchPedido, aplicarPatchItem } =
-    useRealtimePedidos(barraca.id)
+    usePedidosAtual()
   const { pendentes, online } = useSincronizacaoAtual()
   const [aba, setAba] = useState<Coluna>('a_fazer')
 

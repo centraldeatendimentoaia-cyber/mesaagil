@@ -1,17 +1,28 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation, useParams } from 'react-router-dom'
+import clsx from 'clsx'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
+import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 import { NaoEncontrado } from '../pages/NaoEncontrado'
 import { BarraNavegacao } from '../components/BarraNavegacao'
 import { BarracaContext, SincronizacaoContext } from './contextoBarraca'
+import { PedidosContext } from './contextoPedidos'
 
 export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
   const sincronizacao = useSincronizacao()
+  const { pedidos, status, aplicarPatchPedido, aplicarPatchItem } = useRealtimePedidos(
+    barraca?.id ?? '',
+  )
   const location = useLocation()
   const emTelaDeChamada = location.pathname.endsWith('/chamada')
+  const emCozinha = location.pathname.endsWith('/cozinha')
+  // Regra inviolável do design system (seção 2.2): o glow atmosférico nunca
+  // aparece na Cozinha (atrapalha a leitura do semáforo) nem na Chamada
+  // (que já tem fundo escuro absoluto próprio, com layout fora daqui).
+  const semGradiente = emCozinha || emTelaDeChamada
 
   useEffect(() => {
     if (!barraca) return
@@ -42,11 +53,29 @@ export function LayoutBarraca() {
     return <NaoEncontrado />
   }
 
+  const estadoPedidos = {
+    pedidos,
+    status,
+    contagemAFazer: pedidos.filter((p) => p.status === 'a_fazer').length,
+    contagemPronto: pedidos.filter((p) => p.status === 'pronto').length,
+    aplicarPatchPedido,
+    aplicarPatchItem,
+  }
+
   return (
     <BarracaContext.Provider value={barraca}>
       <SincronizacaoContext.Provider value={sincronizacao}>
-        <Outlet />
-        {!emTelaDeChamada && <BarraNavegacao />}
+        <PedidosContext.Provider value={estadoPedidos}>
+          <div
+            className={clsx(
+              'min-h-screen',
+              semGradiente ? 'bg-mesa-bg-kanban' : '[background:var(--mesa-gradient-atmosphere)]',
+            )}
+          >
+            <Outlet />
+          </div>
+          {!emTelaDeChamada && <BarraNavegacao />}
+        </PedidosContext.Provider>
       </SincronizacaoContext.Provider>
     </BarracaContext.Provider>
   )
