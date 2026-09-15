@@ -1,50 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, Minus, Plus, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
-import { aoConcluirCriacaoPedido, enfileirar } from '../lib/fila'
+import { aoConcluirCriacaoPedido } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
-import { ModalMetodoPagamento } from '../components/ModalMetodoPagamento'
+import type {
+  Carrinho,
+  EntregaDiretaPorItem,
+  EstadoParaConfirmar,
+  EstadoParaEditar,
+  EstadoPedidoEnviado,
+} from '../lib/carrinho'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
-import type { MetodoPagamento } from '../lib/metodoPagamento'
 import type { Item } from '../types/database'
-
-const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
-
-type Carrinho = Record<string, number>
 
 type SenhaConfirmada = {
   valor: number
   provisoria: boolean
   idFila?: string
-}
-
-function dataOperacaoAtual(): string {
-  const agora = new Date()
-  const ano = agora.getFullYear()
-  const mes = String(agora.getMonth() + 1).padStart(2, '0')
-  const dia = String(agora.getDate()).padStart(2, '0')
-  return `${ano}-${mes}-${dia}`
-}
-
-/**
- * Número local, só para o operador ter o que falar/anotar enquanto o
- * pedido real ainda não sincronizou. Isolado por barraca e por dia,
- * mas NUNCA é escrito no banco nem comparado com a senha real — dois
- * dispositivos offline ao mesmo tempo podem gerar o mesmo número
- * provisório, e é por isso que a tela deixa isso muito claro.
- */
-function proximoNumeroProvisorio(barracaId: string): number {
-  const chave = `mesaagil:provisorio:${barracaId}:${dataOperacaoAtual()}`
-  const atual = Number(window.localStorage.getItem(chave) ?? '0')
-  const proximo = atual + 1
-  window.localStorage.setItem(chave, String(proximo))
-  return proximo
 }
 
 /**
@@ -128,29 +107,53 @@ function CardItemCardapio({
   )
 }
 
+function ehEstadoParaEditar(estado: unknown): estado is EstadoParaEditar {
+  return typeof estado === 'object' && estado !== null && 'carrinho' in estado
+}
+
+function ehEstadoPedidoEnviado(estado: unknown): estado is EstadoPedidoEnviado {
+  return typeof estado === 'object' && estado !== null && 'senhaEnviada' in estado
+}
+
 export function LancarPedido() {
   const barraca = useBarracaAtual()
+  const navigate = useNavigate()
+  const location = useLocation()
   const { pendentes, online } = useSincronizacaoAtual()
+
+  // Estado recebido ao voltar de ConfirmarPedido ("Voltar e editar") ou
+  // logo depois de um envio confirmado por lá — ver src/lib/carrinho.ts
+  // pro contrato completo. Lido uma vez, nos inicializadores abaixo.
+  const estadoRecebido = location.state as unknown
+  const edicaoRecebida = ehEstadoParaEditar(estadoRecebido) ? estadoRecebido : null
+  const envioRecebido = ehEstadoPedidoEnviado(estadoRecebido) ? estadoRecebido : null
 
   const [itens, setItens] = useState<Item[]>([])
   const [carregandoItens, setCarregandoItens] = useState(true)
   const [erroItens, setErroItens] = useState<string | null>(null)
 
-  const [carrinho, setCarrinho] = useState<Carrinho>({})
-  const [mesa, setMesa] = useState('')
-  const [viagem, setViagem] = useState(false)
-  const [observacao, setObservacao] = useState('')
+  const [carrinho, setCarrinho] = useState<Carrinho>(() => edicaoRecebida?.carrinho ?? {})
+  const [mesa, setMesa] = useState(() => edicaoRecebida?.mesa ?? '')
+  const [viagem, setViagem] = useState(() => edicaoRecebida?.viagem ?? false)
+  const [observacao, setObservacao] = useState(() => edicaoRecebida?.observacao ?? '')
+  // Não editável nesta tela — só guardado pra devolver pra ConfirmarPedido
+  // intacto se o operador for e voltar sem mudar nada.
+  const [entregaDiretaHerdada] = useState<EntregaDiretaPorItem>(
+    () => edicaoRecebida?.entregaDireta ?? {},
+  )
 
-  const [senha, setSenha] = useState<SenhaConfirmada | null>(null)
+  const [senha, setSenha] = useState<SenhaConfirmada | null>(
+    () => envioRecebido?.senhaEnviada ?? null,
+  )
 
-  const [mostrarModalMetodo, setMostrarModalMetodo] = useState(false)
-  const [erroEnvio, setErroEnvio] = useState<string | null>(null)
-
-  const enviandoRef = useRef(false)
-
-  // cache local pode ser de antes desta migration e nao ter o campo ainda —
-  // cai no mesmo default da coluna no banco, nunca bloqueia o envio por isso
-  const metodosAtivos = barraca.metodos_pagamento_ativos ?? METODOS_PADRAO
+  // Limpa o state da entrada de histórico depois de consumido: sem isso,
+  // um refresh de página bem depois (ex: já em "Novo pedido") ressuscita a
+  // senha antiga ou o carrinho antigo, porque location.state sobrevive no
+  // history entry até algo sobrescrever.
+  useEffect(() => {
+    if (estadoRecebido) navigate(location.pathname, { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     let cancelado = false
@@ -235,54 +238,18 @@ export function LancarPedido() {
     setObservacao('')
   }
 
-  function iniciarEnvio() {
-    if (enviandoRef.current || totalItens === 0) return
-    setErroEnvio(null)
-
-    if (metodosAtivos.length === 0) {
-      setErroEnvio('Configure ao menos um método de pagamento em Ajustes.')
-      return
-    }
-
-    if (metodosAtivos.length === 1) {
-      enviarComMetodo(metodosAtivos[0] as MetodoPagamento)
-      return
-    }
-
-    setMostrarModalMetodo(true)
-  }
-
-  async function enviarComMetodo(metodo: MetodoPagamento) {
-    if (enviandoRef.current) return
-    enviandoRef.current = true
-    setMostrarModalMetodo(false)
-
-    const clientUuid = crypto.randomUUID()
-    const itensPedido = Object.entries(carrinho)
-      .filter(([, quantidade]) => quantidade > 0)
-      .map(([itemId, quantidade]) => {
-        const item = itens.find((i) => i.id === itemId)
-        return {
-          item_id: itemId,
-          nome_item: item?.nome ?? '',
-          quantidade,
-          preco_centavos_unitario: item?.preco_centavos ?? 0,
-        }
-      })
-
-    const operacao = await enfileirar('criar_pedido', {
-      p_barraca_id: barraca.id,
-      p_mesa: viagem ? null : mesa.trim() || null,
-      p_viagem: viagem,
-      p_observacao: observacao.trim() || null,
-      p_client_uuid: clientUuid,
-      p_itens: itensPedido,
-      p_metodo_pagamento: metodo,
+  function verNota() {
+    if (totalItens === 0) return
+    navigate(`/${barraca.slug}/confirmar`, {
+      state: {
+        carrinho,
+        itens,
+        mesa,
+        viagem,
+        observacao,
+        entregaDireta: entregaDiretaHerdada,
+      } satisfies EstadoParaConfirmar,
     })
-
-    setSenha({ valor: proximoNumeroProvisorio(barraca.id), provisoria: true, idFila: operacao.id })
-    limparFormulario()
-    enviandoRef.current = false
   }
 
   // Confirmação pós-envio: sem mockup de referência nesta fase (só a tela de
@@ -424,13 +391,10 @@ export function LancarPedido() {
               {itensSemPreco === 1 ? '1 item sem preço' : `${itensSemPreco} itens sem preço`}
             </p>
           )}
-          {erroEnvio && (
-            <p className="text-center text-xs font-medium text-mesa-error-500">{erroEnvio}</p>
-          )}
 
           <button
             type="button"
-            onClick={iniciarEnvio}
+            onClick={verNota}
             className="flex w-full items-center justify-between gap-3 rounded-mesa-2xl bg-mesa-teal-700 py-4 pl-5 pr-2 text-left text-white shadow-mesa-3 outline-none transition-transform active:scale-[0.99] dark:bg-mesa-teal-600"
           >
             <span>
@@ -441,12 +405,8 @@ export function LancarPedido() {
                 {formatarPrecoBR(totalCentavos)}
               </span>
             </span>
-            {/* TODO(fase 4): esse botão hoje envia direto; virará porta para a
-                tela Confirmar Pedido. Rótulo mantido honesto ("Enviar pedido")
-                até essa tela existir, pra não sugerir uma revisão que ainda
-                não acontece. */}
             <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-teal-600 px-4 py-2.5 text-sm font-semibold dark:bg-mesa-teal-500">
-              Enviar pedido
+              Ver nota
               <ArrowRight className="size-4 shrink-0" aria-hidden />
             </span>
           </button>
@@ -457,14 +417,6 @@ export function LancarPedido() {
             </Button>
           </div>
         </div>
-      )}
-
-      {mostrarModalMetodo && (
-        <ModalMetodoPagamento
-          metodosAtivos={metodosAtivos}
-          onCancelar={() => setMostrarModalMetodo(false)}
-          onConfirmar={enviarComMetodo}
-        />
       )}
     </div>
   )

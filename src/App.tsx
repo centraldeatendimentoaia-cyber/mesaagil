@@ -3,6 +3,7 @@ import { useTheme } from './hooks/useTheme'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
 import { LancarPedido } from './pages/LancarPedido'
+import { ConfirmarPedido } from './pages/ConfirmarPedido'
 import { Cozinha } from './pages/Cozinha'
 import { Historico } from './pages/Historico'
 import { TelaChamada } from './pages/TelaChamada'
@@ -47,6 +48,7 @@ function App() {
           }
         >
           <Route index element={<LancarPedido />} />
+          <Route path="confirmar" element={<ConfirmarPedido />} />
           <Route path="cozinha" element={<Cozinha />} />
           <Route path="historico" element={<Historico />} />
           <Route path="chamada" element={<TelaChamada />} />

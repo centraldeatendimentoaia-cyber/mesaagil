@@ -52,6 +52,7 @@ export type ItemDoPedido = {
   motivo_remocao: string | null
   entregue: boolean
   entregue_em: string | null
+  entrega_direta: boolean
   preco_centavos_unitario: number
 }
 

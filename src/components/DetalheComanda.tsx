@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import type { MouseEvent, PointerEvent } from 'react'
-import { Check, Clock, Trash } from 'lucide-react'
+import { Check, Clock, ShoppingBag, Trash } from 'lucide-react'
 import clsx from 'clsx'
 import { BottomSheet } from './ui/BottomSheet'
 import { Button } from './ui/Button'
@@ -47,7 +47,7 @@ function LinhaItemDetalhe({
   const disparouRef = useRef(false)
 
   function iniciarToque() {
-    if (item.removido) return
+    if (item.removido || item.entrega_direta) return
     disparouRef.current = false
     timerRef.current = window.setTimeout(() => {
       disparouRef.current = true
@@ -84,6 +84,15 @@ function LinhaItemDetalhe({
     >
       {item.removido ? (
         <span className="size-7 shrink-0" />
+      ) : item.entrega_direta ? (
+        // Já nasceu entregue direto no balcão — não passou pela cozinha, não
+        // tem o que marcar aqui. Ícone só informativo, sem botão.
+        <span
+          className="flex size-11 shrink-0 items-center justify-center text-mesa-text-tertiary"
+          aria-label={`${item.nome_item} entregue direto, sem passar na cozinha`}
+        >
+          <ShoppingBag className="size-4" aria-hidden />
+        </span>
       ) : (
         <button
           type="button"
@@ -125,7 +134,7 @@ function LinhaItemDetalhe({
         ×{item.quantidade}
       </span>
 
-      {!item.removido && (
+      {!item.removido && !item.entrega_direta && (
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
@@ -164,8 +173,12 @@ export function DetalheComanda({
 }) {
   const itensAtivos = pedido?.itens_do_pedido.filter((i) => !i.removido) ?? []
   const itensRemovidos = pedido?.itens_do_pedido.filter((i) => i.removido) ?? []
-  const totalAtivos = itensAtivos.length
-  const entreguesCount = itensAtivos.filter((i) => i.entregue).length
+  // Itens entrega_direta nunca passaram pela cozinha — ficam listados acima
+  // (transparência do conteúdo do pedido), mas não contam na barra de
+  // progresso de preparo, mesmo critério do card em Cozinha.tsx.
+  const itensParaCozinha = itensAtivos.filter((i) => !i.entrega_direta)
+  const totalAtivos = itensParaCozinha.length
+  const entreguesCount = itensParaCozinha.filter((i) => i.entregue).length
   const progresso = totalAtivos > 0 ? (entreguesCount / totalAtivos) * 100 : 0
 
   const minutos = pedido ? minutosDecorridos(pedido) : 0

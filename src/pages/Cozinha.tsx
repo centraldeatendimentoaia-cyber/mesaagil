@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, ListChecks } from 'lucide-react'
+import { Check, Clock, ListChecks, ShoppingBag } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
@@ -87,6 +87,21 @@ function BotaoChecklist({
   )
 }
 
+/**
+ * Item com entrega_direta=true nasceu entregue direto no balcão (Fase 4) —
+ * nunca passou pela cozinha, então não usa o Chip normal (que alterna
+ * entregue/pendente via onClick). Visual não-interativo, cinza + riscado,
+ * pra deixar claro que esse item já saiu e não precisa de ação aqui.
+ */
+function ChipEntregaDireta({ item }: { item: ItemDoPedido }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-mesa-full bg-mesa-neutral-100 px-3 py-2 text-sm font-medium text-mesa-text-tertiary line-through dark:bg-mesa-neutral-700">
+      <ShoppingBag className="size-3.5 shrink-0" aria-hidden />
+      {item.quantidade}× {item.nome_item}
+    </span>
+  )
+}
+
 function CardPedido({
   pedido,
   barraca,
@@ -112,9 +127,15 @@ function CardPedido({
   const cor = corPorTempo(minutos, barraca)
 
   const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
-  const entreguesCount = itensAtivos.filter((i) => i.entregue).length
+  // Itens entrega_direta nasceram entregues direto no balcão — nunca
+  // entraram no fluxo de preparo, então não contam pro checklist/banner de
+  // progresso da cozinha (só aparecem como chip informativo abaixo).
+  const itensParaCozinha = itensAtivos.filter((i) => !i.entrega_direta)
+  const entreguesCount = itensParaCozinha.filter((i) => i.entregue).length
   const tudoEntregue =
-    pedido.status !== 'entregue' && itensAtivos.length > 0 && itensAtivos.every((i) => i.entregue)
+    pedido.status !== 'entregue' &&
+    itensParaCozinha.length > 0 &&
+    itensParaCozinha.every((i) => i.entregue)
   const mostrarIdentificacao = pedido.viagem || pedido.mesa
 
   return (
@@ -146,7 +167,7 @@ function CardPedido({
           <BotaoChecklist
             onClick={() => onAbrirDetalhe(pedido)}
             contador={entreguesCount}
-            total={itensAtivos.length}
+            total={itensParaCozinha.length}
           />
         )}
       </div>
@@ -162,13 +183,17 @@ function CardPedido({
 
       {itensAtivos.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {itensAtivos.map((item) => (
-            <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
-              <span className={item.entregue ? 'line-through' : undefined}>
-                {item.quantidade}× {item.nome_item}
-              </span>
-            </Chip>
-          ))}
+          {itensAtivos.map((item) =>
+            item.entrega_direta ? (
+              <ChipEntregaDireta key={item.id} item={item} />
+            ) : (
+              <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
+                <span className={item.entregue ? 'line-through' : undefined}>
+                  {item.quantidade}× {item.nome_item}
+                </span>
+              </Chip>
+            ),
+          )}
         </div>
       )}
 
