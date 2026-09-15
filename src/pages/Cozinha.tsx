@@ -587,7 +587,8 @@ export function Cozinha() {
 
       {pedidoParaCancelar && (
         <ModalCancelamento
-          senha={pedidoParaCancelar.senha}
+          pedido={pedidoParaCancelar}
+          barraca={barraca}
           cancelando={cancelando}
           onFechar={() => setPedidoParaCancelar(null)}
           onConfirmar={cancelarPedido}

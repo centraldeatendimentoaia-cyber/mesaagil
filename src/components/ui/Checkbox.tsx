@@ -53,7 +53,7 @@ export function Checkbox({
   return (
     <label
       htmlFor={checkboxId}
-      className={clsx('inline-flex items-center gap-2.5', disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer', className)}
+      className={clsx('inline-flex min-h-11 items-center gap-2.5', disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer', className)}
     >
       <span className="relative inline-flex shrink-0">
         <input
