@@ -162,6 +162,14 @@ function CardPedido({
       )}
 
       {itensAtivos.length > 0 && (
+        // TODO(fase 4): Persistir estado "entregue" no banco.
+        // Esses chips já leem item.entregue (o campo real do banco) — não
+        // precisam mudar quando a persistência voltar. O que falta é o
+        // bottom sheet voltar a ESCREVER nesse campo (ver TODO em
+        // DetalheComanda.tsx); até lá, item.entregue fica sempre false
+        // pra pedidos novos e os chips aqui não acendem em teal sozinhos.
+        // Ver também o contador "X/Y" do BotaoChecklist logo acima, que
+        // hoje reflete só marcadosLocalmente (sessão), não dado real.
         <div className="mt-3 flex flex-wrap gap-1.5">
           {itensAtivos.map((item) => (
             <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>

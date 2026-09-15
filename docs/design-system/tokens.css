@@ -277,7 +277,9 @@
 
     --mesa-color-text-primary:   var(--mesa-color-white);
     --mesa-color-text-secondary: var(--mesa-color-neutral-200);
-    --mesa-color-text-tertiary:  var(--mesa-color-neutral-400);
+    /* neutral-400 falhava AA até pra texto grande (~2.3:1 contra a
+       surface neutral-800) — neutral-300 cobre com folga (~4.5:1). */
+    --mesa-color-text-tertiary:  var(--mesa-color-neutral-300);
     --mesa-color-text-disabled:  var(--mesa-color-neutral-500);
     --mesa-color-text-inverse:   var(--mesa-color-neutral-900);
     --mesa-color-text-link:      var(--mesa-color-teal-300);
@@ -317,7 +319,9 @@
 
   --mesa-color-text-primary:   var(--mesa-color-white);
   --mesa-color-text-secondary: var(--mesa-color-neutral-200);
-  --mesa-color-text-tertiary:  var(--mesa-color-neutral-400);
+  /* neutral-400 falhava AA até pra texto grande (~2.3:1 contra a
+     surface neutral-800) — neutral-300 cobre com folga (~4.5:1). */
+  --mesa-color-text-tertiary:  var(--mesa-color-neutral-300);
   --mesa-color-text-disabled:  var(--mesa-color-neutral-500);
   --mesa-color-text-inverse:   var(--mesa-color-neutral-900);
   --mesa-color-text-link:      var(--mesa-color-teal-300);

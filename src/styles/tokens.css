@@ -290,7 +290,11 @@
 
   --color-mesa-text-primary:   #FFFFFF;
   --color-mesa-text-secondary: var(--color-mesa-neutral-200);
-  --color-mesa-text-tertiary:  var(--color-mesa-neutral-400);
+  /* neutral-400 (~2.3:1 contra a surface neutral-800) falhava até o AA de
+     texto grande — usado em números heróicos como a senha. neutral-300
+     cobre o AA de texto grande com folga (~4.5:1) e ainda fica claramente
+     mais discreto que text-secondary. */
+  --color-mesa-text-tertiary:  var(--color-mesa-neutral-300);
   --color-mesa-text-disabled:  var(--color-mesa-neutral-500);
   --color-mesa-text-inverse:   var(--color-mesa-neutral-900);
   --color-mesa-text-link:      var(--color-mesa-teal-300);

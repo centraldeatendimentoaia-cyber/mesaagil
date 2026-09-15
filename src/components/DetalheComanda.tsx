@@ -90,6 +90,21 @@ function LinhaItemDetalhe({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
+            // TODO(fase 4): Persistir estado "entregue" no banco.
+            // A coluna já existe (itens_do_pedido.entregue / entregue_em —
+            // era gravada por alternarEntregueItem antes desta reforma,
+            // removida quando este checkbox virou só-visual). Falta:
+            // - Trocar onAlternar/onAlternarLocal por uma chamada real ao
+            //   Supabase (mesmo padrão de aplicarPatchItem já usado pelo
+            //   resto da tela)
+            // - Sync via Supabase Realtime pra outros aparelhos verem em
+            //   tempo real (PedidosContext já assina a tabela — falta o
+            //   componente ler o valor real em vez do Set local)
+            // - No card da Cozinha (fora do sheet), refletir chips
+            //   entregues como verdes riscados (padrão do que já foi
+            //   marcado)
+            // - Contador "X/Y" no ícone de checklist do card fica com
+            //   dado real
             onAlternar()
           }}
           aria-label={marcado ? `Desmarcar ${item.nome_item} como entregue` : `Marcar ${item.nome_item} como entregue`}
