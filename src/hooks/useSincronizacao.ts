@@ -35,6 +35,13 @@ async function executarOperacao(op: OperacaoPendente): Promise<void> {
       if (error) throw error
       return
     }
+
+    case 'marcar_entregue': {
+      const { item_id, ...campos } = op.payload as { item_id: string }
+      const { error } = await supabase.from('itens_do_pedido').update(campos).eq('id', item_id)
+      if (error) throw error
+      return
+    }
   }
 }
 

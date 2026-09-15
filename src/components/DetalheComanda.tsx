@@ -90,21 +90,6 @@ function LinhaItemDetalhe({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
-            // TODO(fase 4): Persistir estado "entregue" no banco.
-            // A coluna já existe (itens_do_pedido.entregue / entregue_em —
-            // era gravada por alternarEntregueItem antes desta reforma,
-            // removida quando este checkbox virou só-visual). Falta:
-            // - Trocar onAlternar/onAlternarLocal por uma chamada real ao
-            //   Supabase (mesmo padrão de aplicarPatchItem já usado pelo
-            //   resto da tela)
-            // - Sync via Supabase Realtime pra outros aparelhos verem em
-            //   tempo real (PedidosContext já assina a tabela — falta o
-            //   componente ler o valor real em vez do Set local)
-            // - No card da Cozinha (fora do sheet), refletir chips
-            //   entregues como verdes riscados (padrão do que já foi
-            //   marcado)
-            // - Contador "X/Y" no ícone de checklist do card fica com
-            //   dado real
             onAlternar()
           }}
           aria-label={marcado ? `Desmarcar ${item.nome_item} como entregue` : `Marcar ${item.nome_item} como entregue`}
@@ -163,18 +148,16 @@ function LinhaItemDetalhe({
 export function DetalheComanda({
   pedido,
   barraca,
-  marcados,
   onFechar,
-  onAlternarLocal,
+  onAlternarEntregue,
   onSolicitarRemocaoItem,
   onMoverParaPronto,
   onCancelar,
 }: {
   pedido: PedidoComItens | null
   barraca: Barraca
-  marcados: Set<string>
   onFechar: () => void
-  onAlternarLocal: (itemId: string) => void
+  onAlternarEntregue: (item: ItemDoPedido) => void
   onSolicitarRemocaoItem: (item: ItemDoPedido) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onCancelar: (pedido: PedidoComItens) => void
@@ -182,8 +165,8 @@ export function DetalheComanda({
   const itensAtivos = pedido?.itens_do_pedido.filter((i) => !i.removido) ?? []
   const itensRemovidos = pedido?.itens_do_pedido.filter((i) => i.removido) ?? []
   const totalAtivos = itensAtivos.length
-  const marcadosCount = itensAtivos.filter((i) => marcados.has(i.id)).length
-  const progresso = totalAtivos > 0 ? (marcadosCount / totalAtivos) * 100 : 0
+  const entreguesCount = itensAtivos.filter((i) => i.entregue).length
+  const progresso = totalAtivos > 0 ? (entreguesCount / totalAtivos) * 100 : 0
 
   const minutos = pedido ? minutosDecorridos(pedido) : 0
   const cor = pedido ? corSemaforo(minutos, barraca) : 'verde'
@@ -217,8 +200,8 @@ export function DetalheComanda({
               <LinhaItemDetalhe
                 key={item.id}
                 item={item}
-                marcado={marcados.has(item.id)}
-                onAlternar={() => onAlternarLocal(item.id)}
+                marcado={item.entregue}
+                onAlternar={() => onAlternarEntregue(item)}
                 onSolicitarRemocao={() => onSolicitarRemocaoItem(item)}
               />
             ))}
@@ -242,7 +225,7 @@ export function DetalheComanda({
                 />
               </div>
               <span className="shrink-0 text-sm font-medium text-mesa-text-secondary">
-                {marcadosCount} de {totalAtivos}
+                {entreguesCount} de {totalAtivos}
               </span>
             </div>
           )}

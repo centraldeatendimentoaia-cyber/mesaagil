@@ -91,7 +91,6 @@ function CardPedido({
   pedido,
   barraca,
   coluna,
-  marcadosCount,
   onAbrirDetalhe,
   onMoverParaPronto,
   onVoltar,
@@ -102,7 +101,6 @@ function CardPedido({
   pedido: PedidoComItens
   barraca: Barraca
   coluna: Coluna
-  marcadosCount: number
   onAbrirDetalhe: (pedido: PedidoComItens) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onVoltar: (pedido: PedidoComItens) => void
@@ -114,6 +112,7 @@ function CardPedido({
   const cor = corPorTempo(minutos, barraca)
 
   const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
+  const entreguesCount = itensAtivos.filter((i) => i.entregue).length
   const tudoEntregue =
     pedido.status !== 'entregue' && itensAtivos.length > 0 && itensAtivos.every((i) => i.entregue)
   const mostrarIdentificacao = pedido.viagem || pedido.mesa
@@ -146,7 +145,7 @@ function CardPedido({
         {coluna === 'a_fazer' && (
           <BotaoChecklist
             onClick={() => onAbrirDetalhe(pedido)}
-            contador={marcadosCount}
+            contador={entreguesCount}
             total={itensAtivos.length}
           />
         )}
@@ -162,18 +161,12 @@ function CardPedido({
       )}
 
       {itensAtivos.length > 0 && (
-        // TODO(fase 4): Persistir estado "entregue" no banco.
-        // Esses chips já leem item.entregue (o campo real do banco) — não
-        // precisam mudar quando a persistência voltar. O que falta é o
-        // bottom sheet voltar a ESCREVER nesse campo (ver TODO em
-        // DetalheComanda.tsx); até lá, item.entregue fica sempre false
-        // pra pedidos novos e os chips aqui não acendem em teal sozinhos.
-        // Ver também o contador "X/Y" do BotaoChecklist logo acima, que
-        // hoje reflete só marcadosLocalmente (sessão), não dado real.
         <div className="mt-3 flex flex-wrap gap-1.5">
           {itensAtivos.map((item) => (
             <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
-              {item.quantidade}× {item.nome_item}
+              <span className={item.entregue ? 'line-through' : undefined}>
+                {item.quantidade}× {item.nome_item}
+              </span>
             </Chip>
           ))}
         </div>
@@ -256,7 +249,6 @@ export function Cozinha() {
   const [aba, setAba] = useState<Coluna>('a_fazer')
 
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
-  const [marcadosLocalmente, setMarcadosLocalmente] = useState<Record<string, Set<string>>>({})
 
   const [itemParaRemover, setItemParaRemover] = useState<{
     pedido: PedidoComItens
@@ -293,21 +285,25 @@ export function Cozinha() {
   const pedidoSelecionado = pedidos.find((p) => p.id === pedidoSelecionadoId) ?? null
 
   function abrirDetalhe(pedido: PedidoComItens) {
-    // "contador reseta a cada abertura" — cada sessão de detalhe começa do
-    // zero, mesmo reabrindo a mesma comanda (ver TODO fase 4 logo abaixo).
-    setMarcadosLocalmente((atual) => ({ ...atual, [pedido.id]: new Set() }))
     setPedidoSelecionadoId(pedido.id)
   }
 
-  // TODO(fase 4): persistir estado "entregue" por item marcado aqui. Hoje é
-  // visual apenas — vive só em marcadosLocalmente (memória), nunca é
-  // gravado no Supabase, e reseta a cada abertura do bottom sheet.
-  function alternarMarcacaoLocal(pedidoId: string, itemId: string) {
-    setMarcadosLocalmente((atual) => {
-      const setAtual = new Set(atual[pedidoId] ?? [])
-      if (setAtual.has(itemId)) setAtual.delete(itemId)
-      else setAtual.add(itemId)
-      return { ...atual, [pedidoId]: setAtual }
+  // Optimistic + fila offline, mesmo padrão de moverParaPronto/remover_item
+  // logo abaixo: aplica local na hora, enfileira, sincroniza quando puder.
+  // Sem revert síncrono no erro — a fila resolve/retenta em segundo plano
+  // (Cozinha precisa funcionar offline, regra do CLAUDE.md). O realtime já
+  // propaga entregue/entregue_em pra outros aparelhos de graça: a
+  // assinatura de itens_do_pedido em useRealtimePedidos é `event: '*'`
+  // sem filtro de coluna, então já cobre esses dois campos sem ajuste.
+  async function alternarEntregueItem(pedido: PedidoComItens, item: ItemDoPedido) {
+    const novoValor = !item.entregue
+    const novoEntregueEm = novoValor ? new Date().toISOString() : null
+
+    aplicarPatchItem(pedido.id, item.id, { entregue: novoValor, entregue_em: novoEntregueEm })
+    await enfileirar('marcar_entregue', {
+      item_id: item.id,
+      entregue: novoValor,
+      entregue_em: novoEntregueEm,
     })
   }
 
@@ -440,7 +436,6 @@ export function Cozinha() {
             pedido={pedido}
             barraca={barraca}
             coluna={coluna}
-            marcadosCount={marcadosLocalmente[pedido.id]?.size ?? 0}
             onAbrirDetalhe={abrirDetalhe}
             onMoverParaPronto={moverParaPronto}
             onVoltar={voltarParaFazer}
@@ -523,10 +518,9 @@ export function Cozinha() {
       <DetalheComanda
         pedido={pedidoSelecionado}
         barraca={barraca}
-        marcados={pedidoSelecionadoId ? (marcadosLocalmente[pedidoSelecionadoId] ?? new Set()) : new Set()}
         onFechar={() => setPedidoSelecionadoId(null)}
-        onAlternarLocal={(itemId) => {
-          if (pedidoSelecionadoId) alternarMarcacaoLocal(pedidoSelecionadoId, itemId)
+        onAlternarEntregue={(item) => {
+          if (pedidoSelecionado) alternarEntregueItem(pedidoSelecionado, item)
         }}
         onSolicitarRemocaoItem={(item) => {
           if (pedidoSelecionado) setItemParaRemover({ pedido: pedidoSelecionado, item })
