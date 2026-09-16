@@ -1,7 +1,10 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useTheme } from './hooks/useTheme'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
+import { Dashboard } from './pages/Dashboard'
 import { LancarPedido } from './pages/LancarPedido'
+import { ConfirmarPedido } from './pages/ConfirmarPedido'
 import { Cozinha } from './pages/Cozinha'
 import { Historico } from './pages/Historico'
 import { TelaChamada } from './pages/TelaChamada'
@@ -14,6 +17,11 @@ import { Dispatcher } from './pages/Dispatcher'
 import { SelecionarBarraca } from './pages/SelecionarBarraca'
 
 function App() {
+  // Fonte única de verdade do tema claro/escuro: preferência manual do
+  // usuário (localStorage) > prefers-color-scheme do dispositivo. O campo
+  // modo da barraca no Supabase é legado e não é mais lido por nada.
+  useTheme()
+
   return (
     <BrowserRouter>
       <Routes>
@@ -40,7 +48,9 @@ function App() {
             </RotaProtegida>
           }
         >
-          <Route index element={<LancarPedido />} />
+          <Route index element={<Dashboard />} />
+          <Route path="lancar" element={<LancarPedido />} />
+          <Route path="confirmar" element={<ConfirmarPedido />} />
           <Route path="cozinha" element={<Cozinha />} />
           <Route path="historico" element={<Historico />} />
           <Route path="chamada" element={<TelaChamada />} />

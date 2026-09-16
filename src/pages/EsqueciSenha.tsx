@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Mail, CheckCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+
+const COOLDOWN_REENVIO_SEGUNDOS = 30
 
 export function EsqueciSenha() {
   const { resetarSenha } = useAuth()
@@ -9,58 +14,98 @@ export function EsqueciSenha() {
   const [email, setEmail] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const intervaloRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (intervaloRef.current !== null) window.clearInterval(intervaloRef.current)
+    }
+  }, [])
+
+  function iniciarCooldown() {
+    setCooldown(COOLDOWN_REENVIO_SEGUNDOS)
+    if (intervaloRef.current !== null) window.clearInterval(intervaloRef.current)
+    intervaloRef.current = window.setInterval(() => {
+      setCooldown((atual) => {
+        if (atual <= 1) {
+          if (intervaloRef.current !== null) window.clearInterval(intervaloRef.current)
+          intervaloRef.current = null
+          return 0
+        }
+        return atual - 1
+      })
+    }, 1000)
+  }
 
   async function aoSubmeter(e: FormEvent) {
     e.preventDefault()
-    if (enviando) return
+    if (enviando || cooldown > 0) return
 
     setEnviando(true)
     await resetarSenha(email.trim())
     setEnviando(false)
     setEnviado(true)
+    iniciarCooldown()
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 dark:bg-neutral-950">
-      <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-        <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-          Esqueci minha senha
-        </h1>
+    <div className="flex min-h-screen flex-col items-center justify-center p-6 [background:var(--mesa-gradient-atmosphere)]">
+      <div className="w-full max-w-[420px]">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
+            <Mail className="size-7 text-mesa-orange-500" aria-hidden />
+          </div>
+          <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
+            Esqueci minha senha
+          </h1>
+          {enviado ? (
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-mesa-text-secondary">
+              <CheckCircle className="size-4 shrink-0 text-mesa-teal-600" aria-hidden />
+              Enviamos um link para {email.trim()}. Verifique sua caixa de entrada.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-mesa-text-secondary">
+              Informe seu e-mail e enviaremos um link para recuperar a senha
+            </p>
+          )}
+        </div>
 
-        {enviado ? (
-          <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-400">
-            Se este email existir, um link foi enviado. Confira sua caixa e o spam.
-          </p>
-        ) : (
-          <form onSubmit={aoSubmeter} className="mt-4">
-            <label className="block">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">Email</span>
-              <input
-                type="email"
-                autoComplete="email"
-                autoFocus
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
-              />
-            </label>
+        <form onSubmit={aoSubmeter} className="mt-8 flex flex-col gap-4">
+          <Input
+            label="E-mail"
+            type="email"
+            autoComplete="email"
+            autoFocus={!enviado}
+            required
+            readOnly={enviado}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-            <button
+          {enviado ? (
+            <Button
               type="submit"
-              disabled={enviando}
-              className="mt-6 min-h-11 w-full rounded-2xl bg-[#C4372A] text-base font-semibold text-white disabled:opacity-60"
+              variant="outline"
+              size="xl"
+              loading={enviando}
+              disabled={cooldown > 0}
+              className="w-full"
             >
-              {enviando ? 'Enviando...' : 'Enviar link de recuperação'}
-            </button>
-          </form>
-        )}
+              {cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar link'}
+            </Button>
+          ) : (
+            <Button type="submit" size="xl" loading={enviando} className="w-full">
+              Enviar link de recuperação
+            </Button>
+          )}
+        </form>
 
         <Link
           to="/login"
-          className="mt-4 block text-center text-sm text-neutral-500 dark:text-neutral-400"
+          className="mt-4 block text-center text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
         >
-          Voltar pro login
+          Voltar para o login
         </Link>
       </div>
     </div>

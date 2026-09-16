@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ChevronLeft, Download, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
@@ -8,6 +9,14 @@ import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPa
 import { deslocarDias, hojeISO } from '../lib/datas'
 import { calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
+import { Badge } from '../components/ui/Badge'
+import { BotaoHome } from '../components/ui/BotaoHome'
+import { BottomSheet } from '../components/ui/BottomSheet'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Chip } from '../components/ui/Chip'
+import { Input } from '../components/ui/Input'
+import { SegmentedControl } from '../components/ui/SegmentedControl'
 import type { Item, PedidoComItens } from '../types/database'
 
 function motivoHumanizado(motivo: string | null): string {
@@ -100,120 +109,88 @@ function CardHistorico({
   onRestaurar: (pedido: PedidoComItens) => void
 }) {
   const tempoTotal = pedido.entregue_em ? minutosEntre(pedido.criado_em, pedido.entregue_em) : null
+  const cancelado = pedido.status === 'cancelado'
+  const itensAtivos = pedido.itens_do_pedido.filter((item) => !item.removido)
 
   return (
-    <div className="w-full rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-3xl font-black leading-none text-neutral-900 dark:text-neutral-100">
-            {pedido.senha}
-          </p>
+          <p className="text-2xl font-black leading-none text-mesa-text-tertiary">{pedido.senha}</p>
           <p
-            className={`mt-1 text-base font-semibold ${
-              pedido.status === 'cancelado'
-                ? 'text-neutral-400 line-through opacity-50 dark:text-neutral-600'
-                : 'text-neutral-700 dark:text-neutral-300'
-            }`}
+            className={
+              cancelado
+                ? 'mt-1.5 text-base font-semibold text-mesa-text-tertiary line-through'
+                : 'mt-1.5 text-base font-semibold text-mesa-text-primary'
+            }
           >
             {formatarPrecoBR(calcularTotalPedido(pedido))}
           </p>
-          {pedido.viagem && (
-            <p className="mt-1 text-xs font-bold tracking-widest text-neutral-500 dark:text-neutral-400">
-              VIAGEM
-            </p>
-          )}
-          {pedido.mesa && (
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Mesa: {pedido.mesa}
+          {(pedido.viagem || pedido.mesa) && (
+            <p className="mt-1 text-sm text-mesa-text-secondary">
+              {pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}
             </p>
           )}
         </div>
-        <div className="text-right text-sm text-neutral-500 dark:text-neutral-400">
+        <div className="text-right text-sm text-mesa-text-secondary">
           <p>Entrada {formatarHora(pedido.criado_em)}</p>
-          <p className="font-semibold text-neutral-700 dark:text-neutral-300">
+          <p className="font-semibold text-mesa-text-primary">
             {tempoTotal !== null ? `${tempoTotal} min de preparo` : '—'}
           </p>
         </div>
       </div>
 
-      <div className="mt-2">
-        {pedido.status === 'cancelado' ? (
-          <>
-            <span className="inline-block rounded-full bg-sinal-vermelho/15 px-2.5 py-1 text-xs font-bold tracking-wide text-sinal-vermelho">
-              CANCELADO
-            </span>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-              Motivo: {motivoHumanizado(pedido.motivo_cancelamento)}
-            </p>
-          </>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {cancelado ? (
+          <Badge variant="danger">CANCELADO</Badge>
         ) : (
-          <>
-            <span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold tracking-wide text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-              ENTREGUE
-            </span>
-            {ehEntregaDireta(pedido) && (
-              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Entrega direta</p>
-            )}
-          </>
+          <Badge variant="neutral">ENTREGUE</Badge>
         )}
-      </div>
-
-      <div className="mt-1.5">
+        {!cancelado && ehEntregaDireta(pedido) && <Badge variant="neutral">Entrega direta</Badge>}
+        {/* corMetodo() já devolve um par bg/texto completo (cor dinâmica por
+            método) — não passa por Badge pra não competir com as classes de
+            variant do próprio primitivo (mesma race de especificidade que já
+            corrigimos no Input). Mesmo formato visual (pill, texto pequeno). */}
         <span
-          className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold tracking-wide ${corMetodo(pedido.metodo_pagamento)}`}
+          className={`inline-flex items-center rounded-mesa-full px-3 py-1 text-xs font-medium ${corMetodo(pedido.metodo_pagamento)}`}
         >
           {rotuloMetodo(pedido.metodo_pagamento)}
         </span>
       </div>
 
+      {cancelado && (
+        <p className="mt-2 text-xs text-mesa-text-secondary">
+          Motivo: {motivoHumanizado(pedido.motivo_cancelamento)}
+        </p>
+      )}
+
       {pedido.observacao && (
-        <div className="mt-3 rounded-xl bg-neutral-100 p-3 dark:bg-neutral-800">
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {pedido.observacao}
-          </p>
+        <p className="mt-3 rounded-mesa-md bg-mesa-neutral-100 p-3 text-sm text-mesa-text-primary dark:bg-mesa-neutral-700">
+          {pedido.observacao}
+        </p>
+      )}
+
+      {itensAtivos.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {itensAtivos.map((item) => (
+            <Chip key={item.id} variant="plain">
+              {item.quantidade}× {item.nome_item}
+            </Chip>
+          ))}
         </div>
       )}
 
-      <ul className="mt-3 divide-y divide-neutral-100 dark:divide-neutral-800">
-        {pedido.itens_do_pedido.map((item) => (
-          <li
-            key={item.id}
-            className={`flex items-center justify-between gap-3 py-1.5 text-base ${
-              item.removido ? 'opacity-50' : ''
-            }`}
-          >
-            <span
-              className={
-                item.removido
-                  ? 'text-neutral-400 line-through'
-                  : 'text-neutral-800 dark:text-neutral-200'
-              }
-            >
-              {item.nome_item}
-            </span>
-            <span
-              className={`font-semibold ${
-                item.removido
-                  ? 'text-neutral-400 line-through'
-                  : 'text-neutral-800 dark:text-neutral-200'
-              }`}
-            >
-              {item.quantidade}×
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {pedido.status !== 'cancelado' && (
-        <button
-          type="button"
+      {!cancelado && (
+        <Button
+          variant="outline"
+          size="md"
           onClick={() => onRestaurar(pedido)}
-          className="mt-4 min-h-11 w-full rounded-2xl bg-marca text-base font-semibold text-marca-texto active:bg-marca-escura"
+          className="mt-4 w-full"
         >
           Restaurar
-        </button>
+        </Button>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -374,46 +351,54 @@ export function Historico() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-950">
-      <div className="sticky top-0 z-10 border-b border-neutral-200 bg-white/95 p-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
-        <Link
-          to={`/${barraca.slug}/cozinha`}
-          className="mb-3 inline-flex min-h-11 items-center text-sm font-medium text-neutral-500 dark:text-neutral-400"
-        >
-          ← Cozinha
-        </Link>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {PERIODOS.map((p) => (
-            <button
-              key={p.valor}
-              type="button"
-              onClick={() => setPeriodo(p.valor)}
-              className={`min-h-11 rounded-2xl px-4 text-sm font-semibold ${
-                periodo === p.valor
-                  ? 'bg-marca text-marca-texto'
-                  : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900 dark:text-neutral-300'
-              }`}
+    <div className="min-h-screen pb-24">
+      <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1">
+            <BotaoHome className="-ml-2" />
+            <Link
+              to={`/${barraca.slug}/cozinha`}
+              aria-label="Voltar para Cozinha"
+              className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
             >
-              {p.rotulo}
-            </button>
-          ))}
-
-          {periodo === 'data' && (
-            <input
-              type="date"
-              value={dataEscolhida}
-              max={hojeISO()}
-              onChange={(e) => setDataEscolhida(e.target.value)}
-              className="h-11 rounded-2xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-            />
-          )}
+              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
+            </Link>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Download className="size-4" aria-hidden />}
+            onClick={exportarCsv}
+            disabled={pedidosExibidos.length === 0}
+          >
+            Exportar
+          </Button>
         </div>
+
+        <div className="mt-4">
+          <SegmentedControl
+            aria-label="Período do histórico"
+            items={PERIODOS.map((p) => ({ label: p.rotulo }))}
+            activeIndex={PERIODOS.findIndex((p) => p.valor === periodo)}
+            onChange={(indice) => setPeriodo(PERIODOS[indice].valor)}
+          />
+        </div>
+
+        {periodo === 'data' && (
+          <input
+            type="date"
+            value={dataEscolhida}
+            max={hojeISO()}
+            onChange={(e) => setDataEscolhida(e.target.value)}
+            className="mt-3 h-10 rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-3 text-sm text-mesa-text-primary outline-none focus:border-mesa-orange-500"
+          />
+        )}
 
         <select
           value={itemFiltradoId ?? ''}
           onChange={(e) => setItemFiltradoId(e.target.value || null)}
-          className="mt-3 h-11 w-full rounded-2xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          className="mt-3 h-12 w-full rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-4 text-sm text-mesa-text-primary outline-none focus:border-mesa-orange-500"
         >
           <option value="">Todos os produtos</option>
           {itensCardapio.map((item) => (
@@ -423,41 +408,34 @@ export function Historico() {
           ))}
         </select>
 
-        <input
-          type="text"
+        <Input
+          type="search"
           inputMode="numeric"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
+          onClear={() => setBusca('')}
           placeholder="Buscar por senha"
-          className="mt-3 h-11 w-full rounded-2xl border border-neutral-300 bg-white px-4 text-base text-neutral-900 placeholder:text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          aria-label="Buscar por senha"
+          className="mt-3"
         />
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-mesa-text-secondary">
             {pedidosExibidos.length} comanda{pedidosExibidos.length === 1 ? '' : 's'} no período
           </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={exportarCsv}
-              disabled={pedidosExibidos.length === 0}
-              className="min-h-11 rounded-2xl bg-marca px-4 text-sm font-semibold text-marca-texto disabled:opacity-40"
-            >
-              Exportar CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => setMostrarConfirmacaoExclusao(true)}
-              disabled={pedidosDoPeriodo.length === 0}
-              className="min-h-11 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              Apagar
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMostrarConfirmacaoExclusao(true)}
+            disabled={pedidosDoPeriodo.length === 0}
+            className="flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-mesa-error-500 disabled:opacity-40"
+          >
+            <Trash2 className="size-4 shrink-0" aria-hidden />
+            Apagar período
+          </button>
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="px-6 pt-4">
         <div className="mb-4">
           <PainelRelatorio
             barraca={barraca}
@@ -467,14 +445,18 @@ export function Historico() {
           />
         </div>
 
-        {carregando && <p className="py-8 text-center text-neutral-500 dark:text-neutral-400">Carregando...</p>}
+        {carregando && (
+          <p className="py-8 text-center text-sm text-mesa-text-secondary">Carregando...</p>
+        )}
 
         {!carregando && erro && (
-          <p className="py-8 text-center text-red-600">Não foi possível carregar o histórico.</p>
+          <p className="py-8 text-center text-sm text-mesa-error-500">
+            Não foi possível carregar o histórico.
+          </p>
         )}
 
         {!carregando && !erro && pedidosExibidos.length === 0 && (
-          <p className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+          <p className="py-8 text-center text-sm text-mesa-text-secondary">
             Nenhuma comanda no período.
           </p>
         )}
@@ -488,42 +470,45 @@ export function Historico() {
         )}
       </div>
 
-      {mostrarConfirmacaoExclusao && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center dark:bg-neutral-900">
-            <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              Apagar {pedidosDoPeriodo.length} pedido
-              {pedidosDoPeriodo.length === 1 ? '' : 's'} do período selecionado?
-            </p>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-              Esta ação não pode ser desfeita.
-            </p>
+      <BottomSheet
+        open={mostrarConfirmacaoExclusao}
+        onClose={() => {
+          setMostrarConfirmacaoExclusao(false)
+          setErroExclusao(null)
+        }}
+        aria-label="Confirmar exclusão do período"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">
+          Apagar {pedidosDoPeriodo.length} pedido{pedidosDoPeriodo.length === 1 ? '' : 's'} do
+          período selecionado?
+        </h2>
+        <p className="mt-1 text-sm text-mesa-text-secondary">Esta ação não pode ser desfeita.</p>
 
-            {erroExclusao && <p className="mt-2 text-sm text-red-600">{erroExclusao}</p>}
+        {erroExclusao && <p className="mt-2 text-sm text-mesa-error-500">{erroExclusao}</p>}
 
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setMostrarConfirmacaoExclusao(false)
-                  setErroExclusao(null)
-                }}
-                className="min-h-11 flex-1 rounded-2xl bg-neutral-200 text-base font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={apagarPeriodo}
-                disabled={apagando}
-                className="min-h-11 flex-1 rounded-2xl bg-red-600 text-base font-semibold text-white disabled:opacity-50"
-              >
-                Apagar definitivamente
-              </button>
-            </div>
-          </div>
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            variant="destructive"
+            size="xl"
+            loading={apagando}
+            onClick={apagarPeriodo}
+            className="w-full"
+          >
+            Apagar definitivamente
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => {
+              setMostrarConfirmacaoExclusao(false)
+              setErroExclusao(null)
+            }}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
         </div>
-      )}
+      </BottomSheet>
     </div>
   )
 }

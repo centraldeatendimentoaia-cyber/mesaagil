@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { aplicarTema } from '../lib/tema'
 import type { Barraca } from '../types/database'
 
 type EstadoBarraca = {
@@ -47,7 +46,7 @@ export function useBarraca(slug: string) {
     // sempre no primeiro load offline.
     const cache = lerBarracaCache(slug)
     if (cache) {
-      aplicarTema(cache)
+      // TODO(v2): campo modo é legado, remover em migration futura
       setEstado({ barraca: cache, carregando: false, erro: null })
     } else {
       setEstado({ barraca: null, carregando: true, erro: null })
@@ -70,7 +69,7 @@ export function useBarraca(slug: string) {
         }
 
         const barraca = data as Barraca
-        aplicarTema(barraca)
+        // TODO(v2): campo modo é legado, remover em migration futura
         salvarBarracaCache(slug, barraca)
         setEstado({ barraca, carregando: false, erro: null })
       })

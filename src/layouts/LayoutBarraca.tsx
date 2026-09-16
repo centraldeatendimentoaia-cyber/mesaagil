@@ -1,17 +1,35 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation, useParams } from 'react-router-dom'
+import clsx from 'clsx'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
+import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
 import { NaoEncontrado } from '../pages/NaoEncontrado'
 import { BarraNavegacao } from '../components/BarraNavegacao'
 import { BarracaContext, SincronizacaoContext } from './contextoBarraca'
+import { PedidosContext } from './contextoPedidos'
 
 export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
   const sincronizacao = useSincronizacao()
+  const { pedidos, status, aplicarPatchPedido, aplicarPatchItem } = useRealtimePedidos(
+    barraca?.id ?? '',
+  )
   const location = useLocation()
   const emTelaDeChamada = location.pathname.endsWith('/chamada')
+  const emCozinha = location.pathname.endsWith('/cozinha')
+  const emConfirmarPedido = location.pathname.endsWith('/confirmar')
+  const emDashboard = location.pathname === `/${slug}` || location.pathname === `/${slug}/`
+  // Regra inviolável do design system (seção 2.2): o glow atmosférico nunca
+  // aparece na Cozinha (atrapalha a leitura do semáforo) nem na Chamada
+  // (que já tem fundo escuro absoluto próprio, com layout fora daqui).
+  const semGradiente = emCozinha || emTelaDeChamada
+  // Confirmar Pedido e o Dashboard são telas de destino/fluxo (como a
+  // Chamada), não abas — sem bottom nav, igual aos mockups 04-confirmar-
+  // pedido e 02-caixa. Dashboard mantém o gradiente (regra acima é só
+  // sobre Cozinha/Chamada).
+  const semBottomNav = emTelaDeChamada || emConfirmarPedido || emDashboard
 
   useEffect(() => {
     if (!barraca) return
@@ -22,7 +40,8 @@ export function LayoutBarraca() {
       .getElementById('app-manifest')
       ?.setAttribute('href', `/${barraca.slug}/manifest.webmanifest`)
 
-    document.getElementById('app-theme-color')?.setAttribute('content', barraca.cor_primaria)
+    // Cor de marca fixa do MesaAgil v2 (laranja 500) — não é mais por barraca.
+    document.getElementById('app-theme-color')?.setAttribute('content', '#F58B00')
 
     document
       .getElementById('app-apple-icon')
@@ -41,11 +60,29 @@ export function LayoutBarraca() {
     return <NaoEncontrado />
   }
 
+  const estadoPedidos = {
+    pedidos,
+    status,
+    contagemAFazer: pedidos.filter((p) => p.status === 'a_fazer').length,
+    contagemPronto: pedidos.filter((p) => p.status === 'pronto').length,
+    aplicarPatchPedido,
+    aplicarPatchItem,
+  }
+
   return (
     <BarracaContext.Provider value={barraca}>
       <SincronizacaoContext.Provider value={sincronizacao}>
-        <Outlet />
-        {!emTelaDeChamada && <BarraNavegacao />}
+        <PedidosContext.Provider value={estadoPedidos}>
+          <div
+            className={clsx(
+              'min-h-screen',
+              semGradiente ? 'bg-mesa-bg-kanban' : '[background:var(--mesa-gradient-atmosphere)]',
+            )}
+          >
+            <Outlet />
+          </div>
+          {!semBottomNav && <BarraNavegacao />}
+        </PedidosContext.Provider>
       </SincronizacaoContext.Provider>
     </BarracaContext.Provider>
   )
