@@ -6,27 +6,21 @@
 -- 3. Marca itens com entrega_direta=true como entregues no ato
 --    (entregue = true, entregue_em = now())
 --
--- Limpeza: também dropa a versão órfã de criar_pedido que existia
--- sem parâmetro p_metodo_pagamento (era código morto do MVP inicial,
--- nunca chamado hoje).
+-- IMPORTANTE: p_client_uuid é `text`, não `uuid`. A coluna
+-- pedidos.client_uuid no banco é text — mantido pra bater com o
+-- código do frontend, que sempre enviou string.
+--
+-- Limpeza feita fora deste arquivo:
+--   - As duas versões antigas (com metodo_pagamento default null e
+--     versão original de 6 parâmetros) foram dropadas manualmente
+--     via SQL no dashboard. Não deve haver duplicata deste nome.
 
--- Dropa versão órfã (sem metodo_pagamento) que estava latente no banco
-DROP FUNCTION IF EXISTS public.criar_pedido(
-  uuid,     -- p_barraca_id
-  text,     -- p_mesa
-  boolean,  -- p_viagem
-  text,     -- p_observacao
-  uuid,     -- p_client_uuid
-  jsonb     -- p_itens (sem metodo_pagamento entre os anteriores)
-);
-
--- Substitui a versão em uso com suporte a entrega_direta
 CREATE OR REPLACE FUNCTION public.criar_pedido(
   p_barraca_id uuid,
   p_mesa text,
   p_viagem boolean,
   p_observacao text,
-  p_client_uuid uuid,
+  p_client_uuid text,
   p_metodo_pagamento text,
   p_itens jsonb
 )
