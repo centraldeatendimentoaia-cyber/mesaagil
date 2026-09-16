@@ -5,7 +5,7 @@ import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 
 const ITENS: { rotulo: string; rota: string; icone: LucideIcon }[] = [
-  { rotulo: 'Lançar', rota: '', icone: ShoppingBag },
+  { rotulo: 'Lançar', rota: 'lancar', icone: ShoppingBag },
   { rotulo: 'Cozinha', rota: 'cozinha', icone: ChefHat },
   { rotulo: 'Chamada', rota: 'chamada', icone: Volume2 },
   { rotulo: 'Histórico', rota: 'historico', icone: History },
@@ -30,8 +30,7 @@ export function BarraNavegacao() {
         return (
           <NavLink
             key={item.rota}
-            to={`/${barraca.slug}${item.rota ? `/${item.rota}` : ''}`}
-            end={item.rota === ''}
+            to={`/${barraca.slug}/${item.rota}`}
             className={({ isActive }) =>
               clsx(
                 'flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5',

@@ -13,6 +13,7 @@ import type {
   EstadoPedidoEnviado,
 } from '../lib/carrinho'
 import { Badge } from '../components/ui/Badge'
+import { BotaoHome } from '../components/ui/BotaoHome'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -307,9 +308,12 @@ export function LancarPedido() {
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
-        <h1 className="text-[32px] font-bold leading-[40px] text-mesa-teal-700 dark:text-mesa-teal-300">
-          Lançar Pedido
-        </h1>
+        <div className="flex items-center gap-1">
+          <BotaoHome className="-ml-2" />
+          <h1 className="text-[32px] font-bold leading-[40px] text-mesa-teal-700 dark:text-mesa-teal-300">
+            Lançar Pedido
+          </h1>
+        </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5 pt-1">
           <Badge variant={online ? 'success' : 'warning'} dot>
             {online ? 'Online' : 'Offline'}

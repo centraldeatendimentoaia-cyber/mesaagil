@@ -10,6 +10,7 @@ import { deslocarDias, hojeISO } from '../lib/datas'
 import { calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
 import { Badge } from '../components/ui/Badge'
+import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -353,14 +354,17 @@ export function Historico() {
     <div className="min-h-screen pb-24">
       <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
         <div className="flex items-center justify-between gap-3">
-          <Link
-            to={`/${barraca.slug}/cozinha`}
-            aria-label="Voltar para Cozinha"
-            className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
-          >
-            <ChevronLeft className="size-7 shrink-0" aria-hidden />
-            <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
-          </Link>
+          <div className="flex items-center gap-1">
+            <BotaoHome className="-ml-2" />
+            <Link
+              to={`/${barraca.slug}/cozinha`}
+              aria-label="Voltar para Cozinha"
+              className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
+            >
+              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
+            </Link>
+          </div>
           <Button
             variant="outline"
             size="sm"

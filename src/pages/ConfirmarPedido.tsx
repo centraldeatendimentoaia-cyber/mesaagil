@@ -13,6 +13,8 @@ import {
 } from '../lib/carrinho'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import type { MetodoPagamento } from '../lib/metodoPagamento'
+import { BotaoHome } from '../components/ui/BotaoHome'
+import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Checkbox } from '../components/ui/Checkbox'
@@ -108,6 +110,7 @@ export function ConfirmarPedido() {
   )
   const [enviando, setEnviando] = useState(false)
   const [avisoNFe, setAvisoNFe] = useState(false)
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
   const enviandoRef = useRef(false)
   const avisoNFeTimerRef = useRef<number | null>(null)
   const clientUuidRef = useRef(crypto.randomUUID())
@@ -143,7 +146,7 @@ export function ConfirmarPedido() {
   }
 
   function voltarEEditar() {
-    navigate(`/${barraca.slug}`, {
+    navigate(`/${barraca.slug}/lancar`, {
       replace: true,
       state: {
         carrinho,
@@ -153,6 +156,15 @@ export function ConfirmarPedido() {
         entregaDireta,
       } satisfies EstadoParaEditar,
     })
+  }
+
+  // Home aqui descarta um carrinho ainda não enviado — diferente de
+  // LancarPedido (onde os outros itens da bottom nav já trocam de aba sem
+  // avisar mesmo com o carrinho cheio). Essa tela não tem bottom nav, então
+  // Home seria o único jeito de sair sem passar por "Voltar e editar" — por
+  // isso confirma antes, pra não apagar sem querer o trabalho do operador.
+  function irParaInicio() {
+    navigate(`/${barraca.slug}`)
   }
 
   async function enviarPedido(forcarEntregaDiretaEmTudo: boolean) {
@@ -178,7 +190,7 @@ export function ConfirmarPedido() {
       p_itens: itensPedido,
     })
 
-    navigate(`/${barraca.slug}`, {
+    navigate(`/${barraca.slug}/lancar`, {
       replace: true,
       state: {
         senhaEnviada: {
@@ -204,14 +216,17 @@ export function ConfirmarPedido() {
   return (
     <div className="flex min-h-screen flex-col">
       <div className="px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
-        <button
-          type="button"
-          onClick={voltarEEditar}
-          className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
-        >
-          <ChevronLeft className="size-7 shrink-0" aria-hidden />
-          <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
-        </button>
+        <div className="flex items-center gap-1">
+          <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />
+          <button
+            type="button"
+            onClick={voltarEEditar}
+            className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
+          >
+            <ChevronLeft className="size-7 shrink-0" aria-hidden />
+            <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
+          </button>
+        </div>
         <p className="mt-1 text-sm text-mesa-text-secondary">
           A senha é gerada só depois de confirmar
         </p>
@@ -311,6 +326,28 @@ export function ConfirmarPedido() {
           </button>
         </div>
       </div>
+
+      <BottomSheet
+        open={confirmandoDescarte}
+        onClose={() => setConfirmandoDescarte(false)}
+        aria-label="Confirmar descarte do pedido"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">Descartar pedido em andamento?</h2>
+        <p className="mt-1 text-sm text-mesa-text-secondary">Os itens selecionados serão perdidos.</p>
+        <div className="mt-6 flex flex-col gap-2">
+          <Button variant="destructive" size="xl" onClick={irParaInicio} className="w-full">
+            Descartar
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => setConfirmandoDescarte(false)}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

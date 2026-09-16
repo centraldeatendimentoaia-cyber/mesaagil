@@ -934,7 +934,7 @@ export function Ajustes() {
       <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 py-5 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
         <Link
           to={`/${barraca.slug}`}
-          aria-label="Voltar para Lançar Pedido"
+          aria-label="Voltar para o início"
           className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
         >
           <ChevronLeft className="size-7 shrink-0" aria-hidden />

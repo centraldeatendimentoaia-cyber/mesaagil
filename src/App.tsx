@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
+import { Dashboard } from './pages/Dashboard'
 import { LancarPedido } from './pages/LancarPedido'
 import { ConfirmarPedido } from './pages/ConfirmarPedido'
 import { Cozinha } from './pages/Cozinha'
@@ -47,7 +48,8 @@ function App() {
             </RotaProtegida>
           }
         >
-          <Route index element={<LancarPedido />} />
+          <Route index element={<Dashboard />} />
+          <Route path="lancar" element={<LancarPedido />} />
           <Route path="confirmar" element={<ConfirmarPedido />} />
           <Route path="cozinha" element={<Cozinha />} />
           <Route path="historico" element={<Historico />} />

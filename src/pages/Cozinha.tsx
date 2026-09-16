@@ -6,6 +6,7 @@ import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarra
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
 import { Badge } from '../components/ui/Badge'
+import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -482,7 +483,10 @@ export function Cozinha() {
       )}
 
       <div className="flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
-        <h1 className="text-2xl font-bold text-mesa-text-primary">Cozinha</h1>
+        <div className="flex items-center gap-1">
+          <BotaoHome className="-ml-2" />
+          <h1 className="text-2xl font-bold text-mesa-text-primary">Cozinha</h1>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           {pendentes > 0 && (
             <Badge variant="neutral">

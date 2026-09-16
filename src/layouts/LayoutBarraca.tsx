@@ -20,14 +20,16 @@ export function LayoutBarraca() {
   const emTelaDeChamada = location.pathname.endsWith('/chamada')
   const emCozinha = location.pathname.endsWith('/cozinha')
   const emConfirmarPedido = location.pathname.endsWith('/confirmar')
+  const emDashboard = location.pathname === `/${slug}` || location.pathname === `/${slug}/`
   // Regra inviolável do design system (seção 2.2): o glow atmosférico nunca
   // aparece na Cozinha (atrapalha a leitura do semáforo) nem na Chamada
   // (que já tem fundo escuro absoluto próprio, com layout fora daqui).
   const semGradiente = emCozinha || emTelaDeChamada
-  // Confirmar Pedido é uma tela de fluxo (como Chamada), não uma aba — sem
-  // bottom nav, igual ao mockup 04-confirmar-pedido. Mantém o gradiente,
-  // já que essa regra é só sobre Cozinha/Chamada.
-  const semBottomNav = emTelaDeChamada || emConfirmarPedido
+  // Confirmar Pedido e o Dashboard são telas de destino/fluxo (como a
+  // Chamada), não abas — sem bottom nav, igual aos mockups 04-confirmar-
+  // pedido e 02-caixa. Dashboard mantém o gradiente (regra acima é só
+  // sobre Cozinha/Chamada).
+  const semBottomNav = emTelaDeChamada || emConfirmarPedido || emDashboard
 
   useEffect(() => {
     if (!barraca) return
