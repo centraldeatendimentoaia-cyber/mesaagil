@@ -452,7 +452,7 @@ export function LancarPedido() {
             gruposCardapio !== null &&
             gruposCardapio.map((grupo) => (
               <div key={grupo.id} className="mb-6 last:mb-0">
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-700 dark:text-mesa-teal-400">
                   {grupo.nome}
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
