@@ -19,6 +19,15 @@ export type Item = {
   ativo: boolean
   ordem: number
   preco_centavos: number
+  categoria_id: string | null
+}
+
+export type Categoria = {
+  id: string
+  barraca_id: string
+  nome: string
+  ordem: number
+  criada_em: string
 }
 
 export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'

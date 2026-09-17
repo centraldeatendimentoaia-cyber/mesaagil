@@ -19,7 +19,7 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
-import type { Item } from '../types/database'
+import type { Categoria, Item } from '../types/database'
 
 type SenhaConfirmada = {
   valor: number
@@ -132,6 +132,7 @@ export function LancarPedido() {
   const [itens, setItens] = useState<Item[]>([])
   const [carregandoItens, setCarregandoItens] = useState(true)
   const [erroItens, setErroItens] = useState<string | null>(null)
+  const [categorias, setCategorias] = useState<Categoria[]>([])
 
   const [carrinho, setCarrinho] = useState<Carrinho>(() => edicaoRecebida?.carrinho ?? {})
   const [mesa, setMesa] = useState(() => edicaoRecebida?.mesa ?? '')
@@ -182,6 +183,55 @@ export function LancarPedido() {
       cancelado = true
     }
   }, [barraca.id])
+
+  useEffect(() => {
+    let cancelado = false
+
+    supabase
+      .from('categorias')
+      .select('*')
+      .eq('barraca_id', barraca.id)
+      .order('ordem')
+      .then(({ data, error }) => {
+        if (cancelado) return
+        if (!error) setCategorias((data ?? []) as Categoria[])
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
+  const gruposCardapio = useMemo(() => {
+    if (categorias.length === 0) return null
+
+    const porCategoria = new Map<string, Item[]>()
+    const semCategoria: Item[] = []
+
+    for (const item of itens) {
+      if (item.categoria_id) {
+        const lista = porCategoria.get(item.categoria_id) ?? []
+        lista.push(item)
+        porCategoria.set(item.categoria_id, lista)
+      } else {
+        semCategoria.push(item)
+      }
+    }
+
+    const grupos = categorias
+      .map((categoria) => ({
+        id: categoria.id,
+        nome: categoria.nome,
+        itens: porCategoria.get(categoria.id) ?? [],
+      }))
+      .filter((grupo) => grupo.itens.length > 0)
+
+    if (semCategoria.length > 0) {
+      grupos.push({ id: 'sem-categoria', nome: 'Outros', itens: semCategoria })
+    }
+
+    return grupos
+  }, [categorias, itens])
 
   useEffect(() => {
     if (!senha?.provisoria || !senha.idFila) return
@@ -355,35 +405,59 @@ export function LancarPedido() {
           className="mt-4"
         />
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-6">
           {carregandoItens && (
-            <p className="col-span-2 py-8 text-center text-sm text-mesa-text-secondary">
+            <p className="py-8 text-center text-sm text-mesa-text-secondary">
               Carregando cardápio...
             </p>
           )}
 
           {!carregandoItens && erroItens && (
-            <p className="col-span-2 py-8 text-center text-sm text-mesa-error-500">
+            <p className="py-8 text-center text-sm text-mesa-error-500">
               Não foi possível carregar o cardápio.
             </p>
           )}
 
           {!carregandoItens && !erroItens && itens.length === 0 && (
-            <p className="col-span-2 py-8 text-center text-sm text-mesa-text-secondary">
+            <p className="py-8 text-center text-sm text-mesa-text-secondary">
               Nenhum item cadastrado.
             </p>
           )}
 
+          {!carregandoItens && !erroItens && itens.length > 0 && gruposCardapio === null && (
+            <div className="grid grid-cols-2 gap-3">
+              {itens.map((item) => (
+                <CardItemCardapio
+                  key={item.id}
+                  item={item}
+                  quantidade={carrinho[item.id] ?? 0}
+                  onIncrementar={() => incrementar(item.id)}
+                  onDecrementar={() => decrementar(item.id)}
+                />
+              ))}
+            </div>
+          )}
+
           {!carregandoItens &&
             !erroItens &&
-            itens.map((item) => (
-              <CardItemCardapio
-                key={item.id}
-                item={item}
-                quantidade={carrinho[item.id] ?? 0}
-                onIncrementar={() => incrementar(item.id)}
-                onDecrementar={() => decrementar(item.id)}
-              />
+            gruposCardapio !== null &&
+            gruposCardapio.map((grupo) => (
+              <div key={grupo.id} className="mb-6 last:mb-0">
+                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+                  {grupo.nome}
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {grupo.itens.map((item) => (
+                    <CardItemCardapio
+                      key={item.id}
+                      item={item}
+                      quantidade={carrinho[item.id] ?? 0}
+                      onIncrementar={() => incrementar(item.id)}
+                      onDecrementar={() => decrementar(item.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
         </div>
       </div>

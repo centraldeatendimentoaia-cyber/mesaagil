@@ -14,12 +14,14 @@ import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
 import { ModalTrocarSenha } from '../components/ModalTrocarSenha'
+import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Chip } from '../components/ui/Chip'
 import { Input } from '../components/ui/Input'
 import { Toggle } from '../components/ui/Toggle'
 import { BottomSheet } from '../components/ui/BottomSheet'
-import type { Barraca, Item } from '../types/database'
+import type { Barraca, Categoria, Item } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
@@ -144,6 +146,17 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   const [excluindo, setExcluindo] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [novaCategoriaId, setNovaCategoriaId] = useState<string | null>(null)
+  const [gerenciandoCategorias, setGerenciandoCategorias] = useState(false)
+  const [itemEscolhendoCategoria, setItemEscolhendoCategoria] = useState<Item | 'novo' | null>(
+    null,
+  )
+  const [novaCategoriaNome, setNovaCategoriaNome] = useState('')
+  const [criandoCategoria, setCriandoCategoria] = useState(false)
+  const [editandoCategoriaId, setEditandoCategoriaId] = useState<string | null>(null)
+  const [nomeEdicaoCategoria, setNomeEdicaoCategoria] = useState('')
+
   const arrastandoIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -165,6 +178,120 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
       cancelado = true
     }
   }, [barracaId])
+
+  useEffect(() => {
+    let cancelado = false
+
+    supabase
+      .from('categorias')
+      .select('*')
+      .eq('barraca_id', barracaId)
+      .order('ordem')
+      .then(({ data, error }) => {
+        if (cancelado) return
+        if (!error) setCategorias((data ?? []) as Categoria[])
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barracaId])
+
+  function nomeCategoria(categoriaId: string | null): string {
+    if (!categoriaId) return 'Sem categoria'
+    return categorias.find((c) => c.id === categoriaId)?.nome ?? 'Sem categoria'
+  }
+
+  async function criarCategoria() {
+    const nome = novaCategoriaNome.trim()
+    if (!nome) return
+
+    setCriandoCategoria(true)
+    const proximaOrdem =
+      categorias.length > 0 ? Math.max(...categorias.map((c) => c.ordem)) + 1 : 1
+
+    const { data, error } = await supabase
+      .from('categorias')
+      .insert({ barraca_id: barracaId, nome, ordem: proximaOrdem })
+      .select()
+      .single()
+
+    setCriandoCategoria(false)
+
+    if (!error && data) {
+      setCategorias((atual) => [...atual, data as Categoria])
+      setNovaCategoriaNome('')
+    }
+  }
+
+  function iniciarEdicaoCategoria(categoria: Categoria) {
+    setEditandoCategoriaId(categoria.id)
+    setNomeEdicaoCategoria(categoria.nome)
+  }
+
+  async function salvarEdicaoCategoria(categoria: Categoria) {
+    const nome = nomeEdicaoCategoria.trim()
+    setEditandoCategoriaId(null)
+    if (!nome || nome === categoria.nome) return
+
+    setCategorias((atual) => atual.map((c) => (c.id === categoria.id ? { ...c, nome } : c)))
+    const { error } = await supabase.from('categorias').update({ nome }).eq('id', categoria.id)
+
+    if (error) {
+      setCategorias((atual) =>
+        atual.map((c) => (c.id === categoria.id ? { ...c, nome: categoria.nome } : c)),
+      )
+    }
+  }
+
+  function moverCategoria(id: string, direcao: -1 | 1) {
+    const indice = categorias.findIndex((c) => c.id === id)
+    const novoIndice = indice + direcao
+    if (indice === -1 || novoIndice < 0 || novoIndice >= categorias.length) return
+
+    const copia = [...categorias]
+    const [categoria] = copia.splice(indice, 1)
+    copia.splice(novoIndice, 0, categoria)
+
+    const comOrdem = copia.map((c, i) => ({ ...c, ordem: i + 1 }))
+    setCategorias(comOrdem)
+    Promise.all(
+      comOrdem.map((c, i) => supabase.from('categorias').update({ ordem: i + 1 }).eq('id', c.id)),
+    )
+  }
+
+  async function excluirCategoria(categoria: Categoria) {
+    setCategorias((atual) => atual.filter((c) => c.id !== categoria.id))
+    setItens((atual) =>
+      atual.map((i) => (i.categoria_id === categoria.id ? { ...i, categoria_id: null } : i)),
+    )
+    await supabase.from('categorias').delete().eq('id', categoria.id)
+  }
+
+  async function escolherCategoria(categoriaId: string | null) {
+    const alvo = itemEscolhendoCategoria
+    setItemEscolhendoCategoria(null)
+    if (!alvo) return
+
+    if (alvo === 'novo') {
+      setNovaCategoriaId(categoriaId)
+      return
+    }
+
+    setItens((atual) =>
+      atual.map((i) => (i.id === alvo.id ? { ...i, categoria_id: categoriaId } : i)),
+    )
+    const { error } = await supabase
+      .from('itens')
+      .update({ categoria_id: categoriaId })
+      .eq('id', alvo.id)
+
+    if (error) {
+      setItens((atual) =>
+        atual.map((i) => (i.id === alvo.id ? { ...i, categoria_id: alvo.categoria_id } : i)),
+      )
+    }
+  }
 
   async function persistirOrdem(lista: Item[]) {
     await Promise.all(
@@ -222,6 +349,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
         ativo: true,
         ordem: proximaOrdem,
         preco_centavos: precoCentavos,
+        categoria_id: novaCategoriaId,
       })
       .select()
       .single()
@@ -232,6 +360,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
       setItens((atual) => [...atual, data as Item])
       setNovoNome('')
       setNovoPreco('')
+      setNovaCategoriaId(null)
       setCriandoItem(false)
     }
   }
@@ -301,7 +430,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
 
   return (
     <section>
-      <RotuloSecao>Cardápio</RotuloSecao>
+      <div className="mb-3 flex items-center justify-between">
+        <RotuloSecao>Cardápio</RotuloSecao>
+        <button
+          type="button"
+          onClick={() => setGerenciandoCategorias(true)}
+          className="min-h-11 text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+        >
+          Categorias
+        </button>
+      </div>
       <Card>
         {carregando && <p className="text-sm text-mesa-text-secondary">Carregando...</p>}
         {!carregando && erro && (
@@ -353,7 +491,14 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                     <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
                   </div>
 
-                  <div className="flex items-center gap-1 pl-1">
+                  <div className="flex flex-wrap items-center gap-1 pl-1">
+                    <Chip
+                      variant="plain"
+                      onClick={() => setItemEscolhendoCategoria(item)}
+                      aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
+                    >
+                      {nomeCategoria(item.categoria_id)}
+                    </Chip>
                     <span
                       draggable
                       onDragStart={() => {
@@ -421,6 +566,13 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                   aria-label="Preço do novo item"
                   className="w-28"
                 />
+                <Chip
+                  variant="plain"
+                  onClick={() => setItemEscolhendoCategoria('novo')}
+                  aria-label={`Categoria do novo item: ${nomeCategoria(novaCategoriaId)}`}
+                >
+                  {nomeCategoria(novaCategoriaId)}
+                </Chip>
                 <Button
                   size="sm"
                   onClick={criarItem}
@@ -436,6 +588,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                     setCriandoItem(false)
                     setNovoNome('')
                     setNovoPreco('')
+                    setNovaCategoriaId(null)
                   }}
                 >
                   Cancelar
@@ -482,6 +635,156 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
             Cancelar
           </Button>
         </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={itemEscolhendoCategoria !== null}
+        onClose={() => setItemEscolhendoCategoria(null)}
+        aria-label="Selecionar categoria"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">Categoria</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Chip
+            variant={
+              (itemEscolhendoCategoria === 'novo'
+                ? novaCategoriaId
+                : (itemEscolhendoCategoria?.categoria_id ?? null)) === null
+                ? 'teal'
+                : 'plain'
+            }
+            checked={
+              (itemEscolhendoCategoria === 'novo'
+                ? novaCategoriaId
+                : (itemEscolhendoCategoria?.categoria_id ?? null)) === null
+            }
+            onClick={() => escolherCategoria(null)}
+          >
+            Sem categoria
+          </Chip>
+          {categorias.map((categoria) => {
+            const atual =
+              itemEscolhendoCategoria === 'novo'
+                ? novaCategoriaId
+                : (itemEscolhendoCategoria?.categoria_id ?? null)
+            return (
+              <Chip
+                key={categoria.id}
+                variant={atual === categoria.id ? 'teal' : 'plain'}
+                checked={atual === categoria.id}
+                onClick={() => escolherCategoria(categoria.id)}
+              >
+                {categoria.nome}
+              </Chip>
+            )
+          })}
+        </div>
+        {categorias.length === 0 && (
+          <p className="mt-3 text-sm text-mesa-text-secondary">
+            Nenhuma categoria ainda. Toque em "Categorias" no topo do cardápio pra criar uma.
+          </p>
+        )}
+        <Button
+          variant="ghost"
+          size="md"
+          onClick={() => setItemEscolhendoCategoria(null)}
+          className="mt-6 w-full"
+        >
+          Fechar
+        </Button>
+      </BottomSheet>
+
+      <BottomSheet
+        open={gerenciandoCategorias}
+        onClose={() => setGerenciandoCategorias(false)}
+        aria-label="Gerenciar categorias"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">Categorias</h2>
+        <p className="mt-1 text-sm text-mesa-text-secondary">
+          Agrupe os itens do cardápio pra facilitar quem lança o pedido.
+        </p>
+
+        {categorias.length === 0 && (
+          <p className="mt-4 text-sm text-mesa-text-secondary">Nenhuma categoria cadastrada.</p>
+        )}
+
+        <ul className="mt-3 divide-y divide-mesa-border-subtle">
+          {categorias.map((categoria, indice) => (
+            <li key={categoria.id} className="flex items-center gap-2 py-2">
+              {editandoCategoriaId === categoria.id ? (
+                <Input
+                  autoFocus
+                  size="sm"
+                  value={nomeEdicaoCategoria}
+                  onChange={(e) => setNomeEdicaoCategoria(e.target.value)}
+                  onBlur={() => salvarEdicaoCategoria(categoria)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                    if (e.key === 'Escape') setEditandoCategoriaId(null)
+                  }}
+                  aria-label={`Nome da categoria ${categoria.nome}`}
+                  className="min-w-0 flex-1"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => iniciarEdicaoCategoria(categoria)}
+                  className="min-h-11 min-w-0 flex-1 truncate text-left text-base text-mesa-text-primary"
+                >
+                  {categoria.nome}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => moverCategoria(categoria.id, -1)}
+                disabled={indice === 0}
+                aria-label={`Mover ${categoria.nome} para cima`}
+                className="flex h-11 w-8 shrink-0 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                onClick={() => moverCategoria(categoria.id, 1)}
+                disabled={indice === categorias.length - 1}
+                aria-label={`Mover ${categoria.nome} para baixo`}
+                className="flex h-11 w-8 shrink-0 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+              >
+                ▼
+              </button>
+              <BotaoApagar onClick={() => excluirCategoria(categoria)} rotulo={`Apagar ${categoria.nome}`} />
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Input
+            size="sm"
+            value={novaCategoriaNome}
+            onChange={(e) => setNovaCategoriaNome(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && criarCategoria()}
+            placeholder="Nova categoria"
+            aria-label="Nome da nova categoria"
+            className="min-w-0 flex-1"
+          />
+          <Button
+            size="sm"
+            onClick={criarCategoria}
+            disabled={!novaCategoriaNome.trim()}
+            loading={criandoCategoria}
+          >
+            Adicionar
+          </Button>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="md"
+          onClick={() => setGerenciandoCategorias(false)}
+          className="mt-6 w-full"
+        >
+          Fechar
+        </Button>
       </BottomSheet>
     </section>
   )
@@ -930,25 +1233,27 @@ export function Ajustes() {
   const barraca = useBarracaAtual()
 
   return (
-    <div className="min-h-dvh">
-      <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 py-5 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
-        <Link
-          to={`/${barraca.slug}`}
-          aria-label="Voltar para o início"
-          className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
-        >
-          <ChevronLeft className="size-7 shrink-0" aria-hidden />
-          <h1 className="text-[32px] font-bold leading-[40px]">Ajustes</h1>
-        </Link>
-      </div>
+    <GateSenhaAdmin key={barraca.id} barracaId={barraca.id} slug={barraca.slug}>
+      <div className="min-h-dvh">
+        <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 py-5 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
+          <Link
+            to={`/${barraca.slug}`}
+            aria-label="Voltar para o início"
+            className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
+          >
+            <ChevronLeft className="size-7 shrink-0" aria-hidden />
+            <h1 className="text-[32px] font-bold leading-[40px]">Ajustes</h1>
+          </Link>
+        </div>
 
-      <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
-        <SecaoCardapio barracaId={barraca.id} />
-        <SecaoFaixas barraca={barraca} />
-        <SecaoPagamento barraca={barraca} />
-        <SecaoAparencia />
-        <Rodape />
+        <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
+          <SecaoCardapio barracaId={barraca.id} />
+          <SecaoFaixas barraca={barraca} />
+          <SecaoPagamento barraca={barraca} />
+          <SecaoAparencia />
+          <Rodape />
+        </div>
       </div>
-    </div>
+    </GateSenhaAdmin>
   )
 }
