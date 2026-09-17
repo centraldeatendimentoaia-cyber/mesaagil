@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ChefHat,
+  ChevronDown,
   History,
   LogOut,
   Moon,
@@ -14,6 +15,7 @@ import {
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { useAuth } from '../hooks/useAuth'
+import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { useTheme } from '../hooks/useTheme'
 import { formatarDataExtenso } from '../lib/datas'
 import { formatarPrecoBR } from '../lib/preco'
@@ -73,7 +75,8 @@ export function Dashboard() {
   const { online } = useSincronizacaoAtual()
   const { pedidos, contagemAFazer } = usePedidosAtual()
   const { tema, alternarTema } = useTheme()
-  const { sair } = useAuth()
+  const { usuario, sair } = useAuth()
+  const { barracas: barracasDoUsuario } = useBarracasDoUsuario(usuario)
   const escuro = tema === 'escuro'
   const [confirmandoSaida, setConfirmandoSaida] = useState(false)
 
@@ -102,9 +105,23 @@ export function Dashboard() {
     <div className="flex min-h-dvh flex-col">
       <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
         <div className="min-w-0">
-          <h1 className="text-[28px] font-bold leading-[36px] text-mesa-text-primary">
-            Bem-vindo, {barraca.nome}
-          </h1>
+          {barracasDoUsuario.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => navigate('/selecionar-barraca')}
+              className="flex min-h-11 items-center gap-1 text-left outline-none"
+              aria-label={`Trocar de barraca (atual: ${barraca.nome})`}
+            >
+              <h1 className="truncate text-[28px] font-bold leading-[36px] text-mesa-text-primary">
+                {barraca.nome}
+              </h1>
+              <ChevronDown className="size-5 shrink-0 text-mesa-text-secondary" aria-hidden />
+            </button>
+          ) : (
+            <h1 className="text-[28px] font-bold leading-[36px] text-mesa-text-primary">
+              Bem-vindo, {barraca.nome}
+            </h1>
+          )}
           <p className="mt-1 text-sm text-mesa-text-secondary">{dataFormatada}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 pt-1">

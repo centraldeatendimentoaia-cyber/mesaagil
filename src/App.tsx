@@ -14,10 +14,11 @@ import { TelaChamada } from './pages/TelaChamada'
 import { Ajustes } from './pages/Ajustes'
 import { NaoEncontrado } from './pages/NaoEncontrado'
 import { Login } from './pages/Login'
+import { Cadastro } from './pages/Cadastro'
+import { SelecionarBarraca } from './pages/SelecionarBarraca'
 import { EsqueciSenha } from './pages/EsqueciSenha'
 import { RedefinirSenha } from './pages/RedefinirSenha'
 import { Dispatcher } from './pages/Dispatcher'
-import { SelecionarBarraca } from './pages/SelecionarBarraca'
 
 function App() {
   // Fonte única de verdade do tema claro/escuro: preferência manual do
@@ -37,6 +38,7 @@ function App() {
       <GateFaceId>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 

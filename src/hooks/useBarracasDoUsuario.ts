@@ -14,6 +14,26 @@ export type BarracaComPapel = {
 // automaticamente invalidado quando o usuario_id muda (troca de conta).
 let cache: { usuarioId: string; barracas: BarracaComPapel[] } | null = null
 
+async function buscarBarracasDoUsuario(usuarioId: string): Promise<{
+  barracas: BarracaComPapel[]
+  erro: string | null
+}> {
+  const { data, error } = await supabase
+    .from('usuarios_barracas')
+    .select('barraca_id, papel, barracas(id, nome, slug, logo_url, modo, verde_ate, amarelo_ate, criada_em)')
+    .eq('usuario_id', usuarioId)
+
+  if (error) return { barracas: [], erro: error.message }
+
+  const resultado = (data ?? []).map((linha) => ({
+    barraca_id: linha.barraca_id as string,
+    papel: linha.papel as string,
+    barraca: linha.barracas as unknown as Barraca,
+  }))
+
+  return { barracas: resultado, erro: null }
+}
+
 export function useBarracasDoUsuario(usuario: User | null) {
   const [barracas, setBarracas] = useState<BarracaComPapel[]>(() => {
     if (usuario && cache?.usuarioId === usuario.id) return cache.barracas
@@ -44,34 +64,41 @@ export function useBarracasDoUsuario(usuario: User | null) {
     setCarregando(true)
     setErro(null)
 
-    supabase
-      .from('usuarios_barracas')
-      .select('barraca_id, papel, barracas(id, nome, slug, logo_url, modo, verde_ate, amarelo_ate, criada_em)')
-      .eq('usuario_id', usuario.id)
-      .then(({ data, error }) => {
-        if (cancelado) return
+    buscarBarracasDoUsuario(usuario.id).then(({ barracas: resultado, erro: erroBusca }) => {
+      if (cancelado) return
 
-        if (error) {
-          setErro(error.message)
-          setCarregando(false)
-          return
-        }
-
-        const resultado = (data ?? []).map((linha) => ({
-          barraca_id: linha.barraca_id as string,
-          papel: linha.papel as string,
-          barraca: linha.barracas as unknown as Barraca,
-        }))
-
-        cache = { usuarioId: usuario.id, barracas: resultado }
-        setBarracas(resultado)
+      if (erroBusca) {
+        setErro(erroBusca)
         setCarregando(false)
-      })
+        return
+      }
+
+      cache = { usuarioId: usuario.id, barracas: resultado }
+      setBarracas(resultado)
+      setCarregando(false)
+    })
 
     return () => {
       cancelado = true
     }
   }, [usuario])
 
-  return { barracas, carregando, erro }
+  /** Refaz a busca ignorando o cache — usa depois de criar uma barraca nova,
+   * pra ela aparecer na lista sem precisar recarregar a página. */
+  async function recarregar() {
+    if (!usuario) return
+    setCarregando(true)
+    const { barracas: resultado, erro: erroBusca } = await buscarBarracasDoUsuario(usuario.id)
+    if (erroBusca) {
+      setErro(erroBusca)
+      setCarregando(false)
+      return
+    }
+    cache = { usuarioId: usuario.id, barracas: resultado }
+    setBarracas(resultado)
+    setErro(null)
+    setCarregando(false)
+  }
+
+  return { barracas, carregando, erro, recarregar }
 }

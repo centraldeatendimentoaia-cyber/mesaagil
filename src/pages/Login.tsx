@@ -82,8 +82,11 @@ export function Login() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-mesa-text-secondary">
-          Acesso restrito aos donos e operadores cadastrados
+        <p className="mt-6 text-center text-sm text-mesa-text-secondary">
+          Não tem conta?{' '}
+          <Link to="/cadastro" className="font-medium text-mesa-teal-700 dark:text-mesa-teal-300">
+            Criar conta
+          </Link>
         </p>
       </div>
     </div>
