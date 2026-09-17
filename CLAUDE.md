@@ -9,13 +9,22 @@ Substituto do papel espetado no espeto de ferro. Operador lança o
 pedido, a cozinha vê em kanban, o cliente é chamado pela senha.
 
 ## O que o sistema NÃO é (hoje)
-Não é PDV. Não controla estoque. Não emite nota fiscal. Não processa
-pagamento do pedido em comanda — a maquininha do cliente já faz isso
-melhor nesse fluxo (operador lança, cozinha prepara, cliente é
-chamado). Nunca sugira PDV, controle de estoque ou nota fiscal — isso
-continua fora de escopo. O pagamento tem uma ressalva: ver "Roadmap
-de produto" abaixo, já existe uma direção decidida que muda essa
-regra mais pra frente.
+Não é PDV. Não controla estoque. Não processa pagamento do pedido em
+comanda — a maquininha do cliente já faz isso melhor nesse fluxo
+(operador lança, cozinha prepara, cliente é chamado). Nunca sugira
+PDV ou controle de estoque — isso continua fora de escopo. O
+pagamento tem uma ressalva: ver "Roadmap de produto" abaixo, já
+existe uma direção decidida que muda essa regra mais pra frente.
+
+Impressão de comprovante/nota NÃO está fora de escopo — decisão
+revertida em 2026-09-17 (ver Roadmap de produto): todo restaurante
+precisa desse impresso. O botão "Imprimir NFe" em ConfirmarPedido.tsx
+é hoje só um placeholder visual ("Em breve"); antes de implementar de
+verdade, confirme com o dono do produto se é (a) um comprovante/cupom
+simples de impressão térmica, sem exigência fiscal, ou (b) Nota
+Fiscal Eletrônica de verdade — a segunda opção envolve certificado
+digital e integração com a SEFAZ, é um projeto bem maior que só
+"imprimir", e muda completamente o escopo técnico.
 
 ## Regras de produto
 - Senha sequencial por pedido, reinicia todo dia
@@ -28,7 +37,11 @@ regra mais pra frente.
 - Em Pronto, botões explícitos "Voltar" e "Entregue"
 - Itens podem ser removidos de comanda já lançada por REMOÇÃO
   LÓGICA: a linha permanece no banco marcada como removida, nunca
-  DELETE
+  DELETE. Exceção confirmada: "Apagar período" em Histórico é uma
+  ação de admin pra purgar histórico antigo por completo (DELETE
+  físico mesmo) — não é a mesma coisa que remover um item de uma
+  comanda ativa, e foi confirmada como intencional pelo dono do
+  produto em 2026-09-17.
 - Multi-tenant: toda tabela tem barraca_id, toda query filtra por
   ele
 
@@ -49,6 +62,11 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
 - Cadastro self-service e múltiplas barracas por conta: já
   implementado (v2) — qualquer usuário autenticado pode criar sua
   própria barraca e trocar entre as que tem acesso.
+- Impressão de comprovante/nota (impressora térmica, Web Bluetooth —
+  ver Fase 5 do roadmap original): quando implementar, o botão
+  "Imprimir NFe" de ConfirmarPedido.tsx some como botão separado —
+  vira parte dos botões "Entregar" e "Confirmar e enviar" (cada um já
+  dispara a impressão ao confirmar, sem passo extra).
 - Cobrança de assinatura do MesaAgil (o dono da barraca paga pelo
   uso do app): só depois que o produto estiver 100% pronto/estável.
   Isso é billing SaaS MesaAgil→cliente, problema completamente

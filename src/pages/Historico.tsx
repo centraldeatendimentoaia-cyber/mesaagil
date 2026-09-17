@@ -321,6 +321,12 @@ export function Historico() {
       )
     : pedidosPorMetodo
 
+  // Só filtros ALÉM do período contam aqui — o período em si (Hoje/7
+  // dias/Mês/...) já define o que "apagar período" apaga por padrão.
+  const temFiltroAtivo = Boolean(
+    itemFiltradoId || tipoConsumo !== 'todos' || metodoFiltrado || buscaNormalizada,
+  )
+
   const nomeItemFiltrado = itemFiltradoId
     ? (itensCardapio.find((item) => item.id === itemFiltradoId)?.nome ?? null)
     : null
@@ -371,7 +377,7 @@ export function Historico() {
   }
 
   async function apagarPeriodo() {
-    const ids = pedidosDoPeriodo.map((p) => p.id)
+    const ids = pedidosExibidos.map((p) => p.id)
     if (ids.length === 0) {
       setMostrarConfirmacaoExclusao(false)
       return
@@ -399,7 +405,8 @@ export function Historico() {
       return
     }
 
-    setPedidos([])
+    const idsApagados = new Set(ids)
+    setPedidos((atual) => atual.filter((p) => !idsApagados.has(p.id)))
     setApagando(false)
     setMostrarConfirmacaoExclusao(false)
   }
@@ -529,7 +536,7 @@ export function Historico() {
           <button
             type="button"
             onClick={() => setMostrarConfirmacaoExclusao(true)}
-            disabled={pedidosDoPeriodo.length === 0}
+            disabled={pedidosExibidos.length === 0}
             className="flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-mesa-error-500 disabled:opacity-40"
           >
             <Trash2 className="size-4 shrink-0" aria-hidden />
@@ -582,10 +589,16 @@ export function Historico() {
         aria-label="Confirmar exclusão do período"
       >
         <h2 className="text-lg font-semibold text-mesa-text-primary">
-          Apagar {pedidosDoPeriodo.length} pedido{pedidosDoPeriodo.length === 1 ? '' : 's'} do
-          período selecionado?
+          Apagar {pedidosExibidos.length} pedido{pedidosExibidos.length === 1 ? '' : 's'}
+          {temFiltroAtivo ? ' filtrado' : ' do período selecionado'}
+          {temFiltroAtivo && pedidosExibidos.length !== 1 ? 's' : ''}?
         </h2>
-        <p className="mt-1 text-sm text-mesa-text-secondary">Esta ação não pode ser desfeita.</p>
+        <p className="mt-1 text-sm text-mesa-text-secondary">
+          {temFiltroAtivo
+            ? 'Só os pedidos que atendem aos filtros ativos serão apagados. '
+            : ''}
+          Esta ação não pode ser desfeita.
+        </p>
 
         {erroExclusao && <p className="mt-2 text-sm text-mesa-error-500">{erroExclusao}</p>}
 
