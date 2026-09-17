@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { centavosParaReais, formatarPrecoBR, reaisParaCentavos } from '../lib/preco'
 import type { IntervaloData } from '../lib/relatorio'
+import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 import type { Barraca, CustoDiario } from '../types/database'
 
@@ -32,55 +32,67 @@ function diasNoIntervalo(intervalo: IntervaloData): number {
 
 /** Campo de custo do dia (editável) — só faz sentido pra período de um dia
  * só, então recebe `key={intervalo.inicio}` do chamador pra remontar (e
- * resincronizar o texto inicial) toda vez que o dia muda. */
+ * resincronizar o texto inicial) toda vez que o dia muda. Salvar é
+ * explícito (botão), não automático — é um valor em dinheiro, o dono
+ * precisa de confirmação clara de que salvou, igual "Salvar faixas" em
+ * Ajustes. Pra editar depois, é só digitar de novo e salvar de novo. */
 function CampoCustoDoDia({
   valorInicial,
   onSalvar,
 }: {
   valorInicial: number
-  onSalvar: (centavos: number) => void
+  onSalvar: (centavos: number) => Promise<boolean>
 }) {
   const [texto, setTexto] = useState(() => textoPrecoInicial(valorInicial))
+  const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
-  const debounceRef = useRef<number | null>(null)
-  const salvoTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
-      if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
-    }
-  }, [])
+  const [erro, setErro] = useState(false)
 
   function aoMudar(valor: string) {
-    const limpo = valor.replace(/[^\d.,]/g, '')
-    setTexto(limpo)
+    setTexto(valor.replace(/[^\d.,]/g, ''))
+    setSalvo(false)
+    setErro(false)
+  }
 
-    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
-    debounceRef.current = window.setTimeout(() => {
-      onSalvar(reaisParaCentavos(limpo))
-      setSalvo(true)
-      if (salvoTimerRef.current !== null) window.clearTimeout(salvoTimerRef.current)
-      salvoTimerRef.current = window.setTimeout(() => setSalvo(false), 1000)
-    }, 500)
+  async function salvar() {
+    setSalvando(true)
+    setErro(false)
+
+    const ok = await onSalvar(reaisParaCentavos(texto))
+
+    setSalvando(false)
+
+    if (!ok) {
+      setErro(true)
+      return
+    }
+
+    setSalvo(true)
   }
 
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <Input
-        type="currency"
-        size="sm"
-        inputMode="decimal"
-        value={texto}
-        onChange={(e) => aoMudar(e.target.value)}
-        placeholder="0,00"
-        aria-label="Custo do dia"
-        className="w-32"
-      />
-      <span className="text-sm text-mesa-text-secondary">custo do dia (gás, ingredientes...)</span>
-      <span className="flex w-4 shrink-0 items-center justify-center">
-        {salvo && <Check className="size-4 text-mesa-teal-600" aria-label="Salvo" />}
-      </span>
+    <div className="mt-2">
+      <div className="flex items-end gap-2">
+        <Input
+          label="Custo do dia (gás, ingredientes...)"
+          type="currency"
+          size="sm"
+          inputMode="decimal"
+          value={texto}
+          onChange={(e) => aoMudar(e.target.value)}
+          placeholder="0,00"
+          aria-label="Custo do dia"
+          className="w-36"
+        />
+        <Button size="sm" onClick={salvar} loading={salvando}>
+          {salvo ? 'Salvo!' : 'Salvar'}
+        </Button>
+      </div>
+      {erro && (
+        <p className="mt-1.5 text-xs font-medium text-mesa-error-500">
+          Não foi possível salvar. Tente de novo.
+        </p>
+      )}
     </div>
   )
 }
@@ -130,10 +142,8 @@ export function SecaoCustoLucro({
   const diasComRegistro = custos.filter((c) => c.valor_centavos > 0).length
   const lucroLiquidoCentavos = receitaLiquidaCentavos - custoTotalCentavos
 
-  function salvarCustoDoDia(centavos: number) {
-    setCustos([{ id: '', barraca_id: barraca.id, data: intervalo.inicio, valor_centavos: centavos }])
-
-    supabase
+  async function salvarCustoDoDia(centavos: number): Promise<boolean> {
+    const { data, error } = await supabase
       .from('custos_diarios')
       .upsert(
         { barraca_id: barraca.id, data: intervalo.inicio, valor_centavos: centavos },
@@ -141,9 +151,11 @@ export function SecaoCustoLucro({
       )
       .select()
       .single()
-      .then(({ data, error }) => {
-        if (!error && data) setCustos([data as CustoDiario])
-      })
+
+    if (error || !data) return false
+
+    setCustos([data as CustoDiario])
+    return true
   }
 
   return (
