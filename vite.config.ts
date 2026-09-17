@@ -16,6 +16,10 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        // exceljs só carrega sob demanda (import dinâmico no botão Exportar
+        // de Histórico) — é ~1MB, não vale precachear pra todo mundo que
+        // nunca exporta nada
+        globIgnores: ['**/exceljs*.js'],
         navigateFallback: '/index.html',
         // o manifest dinâmico e a fila do Supabase nunca devem ser
         // servidos pelo shell cacheado

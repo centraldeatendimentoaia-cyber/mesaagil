@@ -43,54 +43,77 @@ function formatarHora(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatarDataCurta(iso: string): string {
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
 function minutosEntre(inicioIso: string, fimIso: string): number {
   return Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
 }
 
-function paraCelulaCsv(valor: string): string {
-  if (/[",\n]/.test(valor)) {
-    return `"${valor.replace(/"/g, '""')}"`
-  }
-  return valor
-}
+const COR_CABECALHO = 'FFF58B00' // mesa-orange-500
+const COR_FUNDO_CANCELADO = 'FFFCE8E5' // mesa-error-50
+const COR_TEXTO_CANCELADO = 'FFA62C1F' // mesa-error-700
 
-function gerarCsv(pedidos: PedidoComItens[]): string {
-  const cabecalho = [
-    'senha',
-    'mesa',
-    'viagem',
-    'observacao',
-    'itens',
-    'hora_entrada',
-    'hora_finalizacao',
-    'tempo_total_min',
+async function gerarPlanilha(pedidos: PedidoComItens[]): Promise<ArrayBuffer> {
+  const ExcelJS = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  const planilha = workbook.addWorksheet('Histórico')
+
+  planilha.columns = [
+    { header: 'Data', key: 'data', width: 12 },
+    { header: 'Senha', key: 'senha', width: 8 },
+    { header: 'Mesa', key: 'mesa', width: 10 },
+    { header: 'Viagem', key: 'viagem', width: 9 },
+    { header: 'Status', key: 'status', width: 12 },
+    { header: 'Observação', key: 'observacao', width: 28 },
+    { header: 'Itens', key: 'itens', width: 40 },
+    { header: 'Entrada', key: 'entrada', width: 10 },
+    { header: 'Finalização', key: 'finalizacao', width: 12 },
+    { header: 'Tempo total (min)', key: 'tempo', width: 16 },
   ]
 
-  const linhas = pedidos.map((pedido) => {
+  const linhaCabecalho = planilha.getRow(1)
+  linhaCabecalho.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  linhaCabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_CABECALHO } }
+  linhaCabecalho.alignment = { vertical: 'middle' }
+  linhaCabecalho.height = 20
+  planilha.views = [{ state: 'frozen', ySplit: 1 }]
+  planilha.autoFilter = { from: 'A1', to: 'J1' }
+
+  for (const pedido of pedidos) {
     const itensTexto = pedido.itens_do_pedido
       .filter((item) => !item.removido)
       .map((item) => `${item.quantidade}x ${item.nome_item}`)
-      .join('; ')
+      .join(', ')
 
-    const tempoTotal = pedido.entregue_em
-      ? String(minutosEntre(pedido.criado_em, pedido.entregue_em))
-      : ''
+    const cancelado = pedido.status === 'cancelado'
 
-    return [
-      String(pedido.senha),
-      pedido.mesa ?? '',
-      pedido.viagem ? 'sim' : 'não',
-      pedido.observacao ?? '',
-      itensTexto,
-      formatarHora(pedido.criado_em),
-      pedido.entregue_em ? formatarHora(pedido.entregue_em) : '',
-      tempoTotal,
-    ]
-      .map(paraCelulaCsv)
-      .join(',')
-  })
+    const linha = planilha.addRow({
+      data: formatarDataCurta(pedido.data_operacao),
+      senha: pedido.senha,
+      mesa: pedido.mesa ?? '',
+      viagem: pedido.viagem ? 'Sim' : 'Não',
+      status: cancelado ? 'Cancelado' : 'Entregue',
+      observacao: pedido.observacao ?? '',
+      itens: itensTexto,
+      entrada: formatarHora(pedido.criado_em),
+      finalizacao: pedido.entregue_em ? formatarHora(pedido.entregue_em) : '',
+      tempo: pedido.entregue_em ? minutosEntre(pedido.criado_em, pedido.entregue_em) : '',
+    })
 
-  return [cabecalho.join(','), ...linhas].join('\n')
+    linha.alignment = { vertical: 'middle', wrapText: false }
+
+    if (cancelado) {
+      linha.eachCell((celula) => {
+        celula.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_FUNDO_CANCELADO } }
+        celula.font = { color: { argb: COR_TEXTO_CANCELADO } }
+      })
+    }
+  }
+
+  return workbook.xlsx.writeBuffer()
 }
 
 function ordenarPorEntregueEmDesc(lista: PedidoComItens[]): PedidoComItens[] {
@@ -216,6 +239,7 @@ export function Historico() {
   const [mostrarConfirmacaoExclusao, setMostrarConfirmacaoExclusao] = useState(false)
   const [apagando, setApagando] = useState(false)
   const [erroExclusao, setErroExclusao] = useState<string | null>(null)
+  const [exportando, setExportando] = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -301,6 +325,7 @@ export function Historico() {
     : null
 
   const filtroRelatorio = { tipo: periodo, dataInicio, dataFim }
+  const intervaloAtual = calcularIntervalosRelatorio(filtroRelatorio).atual
 
   async function restaurarPedido(pedido: PedidoComItens) {
     setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
@@ -315,13 +340,23 @@ export function Historico() {
     }
   }
 
-  function exportarCsv() {
-    const csv = gerarCsv(pedidosExibidos)
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  async function exportarPlanilha() {
+    setExportando(true)
+    const buffer = await gerarPlanilha(pedidosExibidos)
+    setExportando(false)
+
+    const nomePeriodo =
+      intervaloAtual.inicio === intervaloAtual.fim
+        ? intervaloAtual.inicio
+        : `${intervaloAtual.inicio}_a_${intervaloAtual.fim}`
+
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `historico-${barraca.slug}-${hojeISO()}.csv`
+    link.download = `historico-${barraca.slug}-${nomePeriodo}.xlsx`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -381,8 +416,9 @@ export function Historico() {
             variant="outline"
             size="sm"
             icon={<Download className="size-4" aria-hidden />}
-            onClick={exportarCsv}
+            onClick={exportarPlanilha}
             disabled={pedidosExibidos.length === 0}
+            loading={exportando}
           >
             Exportar
           </Button>
