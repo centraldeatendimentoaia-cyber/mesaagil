@@ -30,6 +30,13 @@ export type Categoria = {
   criada_em: string
 }
 
+export type CustoDiario = {
+  id: string
+  barraca_id: string
+  data: string
+  valor_centavos: number
+}
+
 export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'
 
 export type Pedido = {

@@ -10,6 +10,7 @@ import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { GraficoBarras } from './charts/GraficoBarras'
 import { ListaBarras } from './charts/ListaBarras'
+import { SecaoCustoLucro } from './SecaoCustoLucro'
 import type { Barraca } from '../types/database'
 
 function formatarDataCurta(iso: string): string {
@@ -334,6 +335,12 @@ export function PainelRelatorio({
           </p>
         </Secao>
       )}
+
+      <SecaoCustoLucro
+        barraca={barraca}
+        intervalo={intervalos.atual}
+        receitaLiquidaCentavos={atual.estimativaLiquida?.totalLiquido ?? atual.totalBruto}
+      />
 
       <Secao titulo="Mais vendidos">
         {atual.maisVendidos.length === 0 ? (
