@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
+import { useAuth } from './hooks/useAuth'
 import { desbloquearAudio } from './lib/sons'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
@@ -26,6 +27,8 @@ function App() {
   // modo da barraca no Supabase é legado e não é mais lido por nada.
   useTheme()
 
+  const { usuario } = useAuth()
+
   // Destrava o áudio dos sons de notificação no primeiro toque/clique em
   // qualquer lugar do app — navegadores só liberam reprodução depois de um
   // gesto do usuário. Uma vez só, não precisa remover o listener de novo.
@@ -35,7 +38,10 @@ function App() {
 
   return (
     <BrowserRouter>
-      <GateFaceId>
+      {/* key força remontar ao trocar de usuário (login/logout na mesma
+          aba) — reseta bloqueado/jaTentouAuto do zero em vez de herdar
+          estado de quem usou o aparelho antes. */}
+      <GateFaceId key={usuario?.id ?? 'anon'}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />

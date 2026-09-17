@@ -1,23 +1,30 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ScanFace } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { desbloquearComFaceId, emailFaceId, faceIdAtivado } from '../lib/faceId'
 import { Button } from './ui/Button'
 
-const CHAVE_SESSAO = 'mesaagil:faceid_ok'
+function chaveSessao(usuarioId: string): string {
+  return `mesaagil:faceid_ok:${usuarioId}`
+}
 
-function liberadoNaSessao(): boolean {
+// Escopado por usuário (não só por aparelho): sem isso, a pessoa A
+// desbloqueia com Face ID, sai, e a pessoa B loga na mesma aba/aparelho —
+// como o flag era uma chave fixa, B herdava o desbloqueio de A e o gate
+// nunca pedia biometria de novo pra ela. Cada login (mesmo no mesmo
+// aparelho) agora exige seu próprio desbloqueio nessa aba.
+function liberadoNaSessao(usuarioId: string): boolean {
   try {
-    return window.sessionStorage.getItem(CHAVE_SESSAO) === '1'
+    return window.sessionStorage.getItem(chaveSessao(usuarioId)) === '1'
   } catch {
     return false
   }
 }
 
-function marcarLiberado(): void {
+function marcarLiberado(usuarioId: string): void {
   try {
-    window.sessionStorage.setItem(CHAVE_SESSAO, '1')
+    window.sessionStorage.setItem(chaveSessao(usuarioId), '1')
   } catch {
     // sessionStorage indisponível — só pede de novo na próxima navegação
   }
@@ -39,18 +46,19 @@ export function GateFaceId({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (carregando) return
-    setBloqueado(Boolean(usuario) && faceIdAtivado() && !liberadoNaSessao())
+    setBloqueado(Boolean(usuario) && faceIdAtivado() && !liberadoNaSessao(usuario?.id ?? ''))
   }, [carregando, usuario])
 
-  async function tentarDesbloquear() {
+  const tentarDesbloquear = useCallback(async () => {
+    if (!usuario) return
     setVerificando(true)
     const ok = await desbloquearComFaceId()
     setVerificando(false)
     if (ok) {
-      marcarLiberado()
+      marcarLiberado(usuario.id)
       setBloqueado(false)
     }
-  }
+  }, [usuario])
 
   // tenta uma vez sozinho ao travar (igual um app nativo perguntando Face ID
   // assim que abre) — se o navegador recusar sem gesto do usuário, o botão
@@ -59,7 +67,7 @@ export function GateFaceId({ children }: { children: ReactNode }) {
     if (!bloqueado || jaTentouAuto) return
     setJaTentouAuto(true)
     tentarDesbloquear()
-  }, [bloqueado, jaTentouAuto])
+  }, [bloqueado, jaTentouAuto, tentarDesbloquear])
 
   if (!bloqueado) return <>{children}</>
 

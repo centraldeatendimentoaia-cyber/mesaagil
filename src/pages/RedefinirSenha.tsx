@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { KeyRound, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 
@@ -22,9 +23,11 @@ export function RedefinirSenha() {
     return () => window.clearTimeout(timeout)
   }, [salvo, navigate])
 
+  const { valida: senhaValida } = validarSenhaForte(novaSenha)
+
   async function aoSubmeter(e: FormEvent) {
     e.preventDefault()
-    if (salvando) return
+    if (salvando || !senhaValida) return
 
     setSalvando(true)
     setErro(null)
@@ -70,14 +73,36 @@ export function RedefinirSenha() {
                 autoComplete="new-password"
                 autoFocus
                 required
-                minLength={6}
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
               />
 
+              <ul className="flex flex-col gap-1">
+                {REQUISITOS_SENHA.map((requisito) => {
+                  const atendido = requisito.testar(novaSenha)
+                  return (
+                    <li
+                      key={requisito.chave}
+                      className={`flex items-center gap-1.5 text-xs ${
+                        atendido ? 'text-mesa-teal-600' : 'text-mesa-text-tertiary'
+                      }`}
+                    >
+                      <span aria-hidden>{atendido ? '✓' : '✗'}</span>
+                      {requisito.label}
+                    </li>
+                  )
+                })}
+              </ul>
+
               {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
 
-              <Button type="submit" size="xl" loading={salvando} className="w-full">
+              <Button
+                type="submit"
+                size="xl"
+                loading={salvando}
+                disabled={!senhaValida}
+                className="w-full"
+              >
                 Salvar nova senha
               </Button>
             </form>

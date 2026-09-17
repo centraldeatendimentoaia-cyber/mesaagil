@@ -333,7 +333,13 @@ export function Historico() {
 
     const { error } = await supabase
       .from('pedidos')
-      .update({ status: 'a_fazer', pronto_em: null, entregue_em: null })
+      .update({
+        status: 'a_fazer',
+        pronto_em: null,
+        entregue_em: null,
+        cancelado_em: null,
+        motivo_cancelamento: null,
+      })
       .eq('id', pedido.id)
 
     if (error) {
