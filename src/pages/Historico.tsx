@@ -10,6 +10,7 @@ import { hojeISO } from '../lib/datas'
 import { calcularIntervalosRelatorio, calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import type { TipoFiltroRelatorio } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
+import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
@@ -398,6 +399,7 @@ export function Historico() {
   }
 
   return (
+    <GateSenhaAdmin key={barraca.id} barracaId={barraca.id} slug={barraca.slug}>
     <div className="min-h-dvh pb-24">
       <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
         <div className="flex items-center justify-between gap-3">
@@ -605,5 +607,6 @@ export function Historico() {
         </div>
       </BottomSheet>
     </div>
+    </GateSenhaAdmin>
   )
 }

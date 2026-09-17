@@ -3,7 +3,7 @@
 // Aparência.
 
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Check, ChevronLeft, Moon, Plus, Sun, Trash, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -1151,7 +1151,103 @@ function SecaoAparencia() {
   )
 }
 
-function Rodape() {
+const PIN_INVALIDO = 'O PIN precisa ter exatamente 4 números'
+
+function BottomSheetSenhaAdmin({
+  barracaId,
+  open,
+  onClose,
+  onSucesso,
+}: {
+  barracaId: string
+  open: boolean
+  onClose: () => void
+  onSucesso: () => void
+}) {
+  const [pin, setPin] = useState('')
+  const [pinConfirmacao, setPinConfirmacao] = useState('')
+  const [processando, setProcessando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  function fechar() {
+    setPin('')
+    setPinConfirmacao('')
+    setErro(null)
+    onClose()
+  }
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    if (processando) return
+
+    if (!/^[0-9]{4}$/.test(pin)) {
+      setErro(PIN_INVALIDO)
+      return
+    }
+    if (pin !== pinConfirmacao) {
+      setErro('Os dois PINs não conferem')
+      return
+    }
+
+    setProcessando(true)
+    setErro(null)
+
+    const { error } = await supabase.rpc('definir_senha_admin', {
+      p_barraca_id: barracaId,
+      p_pin: pin,
+    })
+
+    setProcessando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    fechar()
+    onSucesso()
+  }
+
+  return (
+    <BottomSheet open={open} onClose={fechar} aria-label="Alterar senha administrativa">
+      <h2 className="text-lg font-semibold text-mesa-text-primary">Senha administrativa</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Esse PIN protege o acesso a Ajustes e Histórico.
+      </p>
+
+      <form onSubmit={salvar} className="mt-4 flex flex-col gap-4">
+        <Input
+          label="Novo PIN"
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={4}
+          autoFocus
+          autoComplete="off"
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          className="text-center"
+        />
+        <Input
+          label="Confirmar PIN"
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={4}
+          autoComplete="off"
+          value={pinConfirmacao}
+          onChange={(e) => setPinConfirmacao(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        />
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+        <Button type="submit" size="xl" loading={processando} className="w-full">
+          Salvar
+        </Button>
+      </form>
+    </BottomSheet>
+  )
+}
+
+function Rodape({ barracaId }: { barracaId: string }) {
   const navigate = useNavigate()
   const { usuario, sair } = useAuth()
   const [mostrarModal, setMostrarModal] = useState(false)
@@ -1162,6 +1258,9 @@ function Rodape() {
   const [faceIdLigado, setFaceIdLigado] = useState(() => faceIdAtivado())
   const [processandoFaceId, setProcessandoFaceId] = useState(false)
   const [erroFaceId, setErroFaceId] = useState<string | null>(null)
+
+  const [mostrarSenhaAdmin, setMostrarSenhaAdmin] = useState(false)
+  const [sucessoSenhaAdmin, setSucessoSenhaAdmin] = useState(false)
 
   const email = usuario?.email ?? null
 
@@ -1232,6 +1331,24 @@ function Rodape() {
       )}
 
       <Button
+        variant="ghost"
+        size="md"
+        onClick={() => {
+          setSucessoSenhaAdmin(false)
+          setMostrarSenhaAdmin(true)
+        }}
+        className="w-full"
+      >
+        Alterar senha administrativa
+      </Button>
+
+      {sucessoSenhaAdmin && (
+        <p className="text-center text-sm font-medium text-mesa-teal-600">
+          Senha administrativa alterada
+        </p>
+      )}
+
+      <Button
         variant="textDanger"
         size="md"
         onClick={() => setConfirmandoSaida(true)}
@@ -1247,6 +1364,13 @@ function Rodape() {
           onSucesso={aoTrocarComSucesso}
         />
       )}
+
+      <BottomSheetSenhaAdmin
+        barracaId={barracaId}
+        open={mostrarSenhaAdmin}
+        onClose={() => setMostrarSenhaAdmin(false)}
+        onSucesso={() => setSucessoSenhaAdmin(true)}
+      />
 
       <BottomSheet
         open={confirmandoSaida}
@@ -1305,7 +1429,7 @@ export function Ajustes() {
           <SecaoFaixas barraca={barraca} />
           <SecaoPagamento barraca={barraca} />
           <SecaoAparencia />
-          <Rodape />
+          <Rodape barracaId={barraca.id} />
         </div>
       </div>
     </GateSenhaAdmin>

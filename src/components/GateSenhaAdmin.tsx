@@ -155,8 +155,8 @@ export function GateSenhaAdmin({
           </h1>
           <p className="mt-1 text-sm text-mesa-text-secondary">
             {estado === 'criar'
-              ? 'Escolha um PIN de 4 números para proteger os Ajustes.'
-              : 'Digite o PIN de 4 números para entrar em Ajustes.'}
+              ? 'Escolha um PIN de 4 números para proteger Ajustes e Histórico.'
+              : 'Digite o PIN de 4 números para continuar.'}
           </p>
         </div>
 
