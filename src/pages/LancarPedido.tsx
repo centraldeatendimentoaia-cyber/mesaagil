@@ -77,7 +77,7 @@ function CardItemCardapio({
         {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
       </p>
 
-      <div className="mt-3">
+      <div className="mt-auto pt-3">
         {selecionado ? (
           <>
             <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
