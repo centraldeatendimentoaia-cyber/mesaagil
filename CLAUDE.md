@@ -8,10 +8,14 @@ em prospecção: restaurante de PF.
 Substituto do papel espetado no espeto de ferro. Operador lança o
 pedido, a cozinha vê em kanban, o cliente é chamado pela senha.
 
-## O que o sistema NÃO é
+## O que o sistema NÃO é (hoje)
 Não é PDV. Não controla estoque. Não emite nota fiscal. Não processa
-pagamento. A maquininha do cliente já faz isso melhor. Nunca sugira
-essas funcionalidades.
+pagamento do pedido em comanda — a maquininha do cliente já faz isso
+melhor nesse fluxo (operador lança, cozinha prepara, cliente é
+chamado). Nunca sugira PDV, controle de estoque ou nota fiscal — isso
+continua fora de escopo. O pagamento tem uma ressalva: ver "Roadmap
+de produto" abaixo, já existe uma direção decidida que muda essa
+regra mais pra frente.
 
 ## Regras de produto
 - Senha sequencial por pedido, reinicia todo dia
@@ -38,6 +42,25 @@ essas funcionalidades.
 - As cores do kanban (verde/amarelo/vermelho) NUNCA são
   personalizáveis — são sinal operacional
 - A cor da marca nunca aparece dentro da tela da Cozinha
+
+## Roadmap de produto (decidido, mas não é pra agora)
+Direção combinada com o dono do produto em 2026-09-17 — não iniciar
+nenhum item daqui sozinho, só quando for pedido explicitamente.
+- Cadastro self-service e múltiplas barracas por conta: já
+  implementado (v2) — qualquer usuário autenticado pode criar sua
+  própria barraca e trocar entre as que tem acesso.
+- Cobrança de assinatura do MesaAgil (o dono da barraca paga pelo
+  uso do app): só depois que o produto estiver 100% pronto/estável.
+  Isso é billing SaaS MesaAgil→cliente, problema completamente
+  diferente do pagamento de pedido cliente-final→barraca citado
+  acima — não misturar os dois ao planejar.
+- Cardápio por barraca com fotos, descrição, tempo de preparo e
+  preço, permitindo que o cliente final peça e pague via Pix sem
+  enfrentar fila: essa fase VAI exigir processar pagamento de
+  pedido, contradizendo a regra "não processa pagamento" acima —
+  isso é intencional, uma decisão consciente do dono do produto, não
+  um erro a corrigir de volta pra regra antiga quando chegar a vez
+  de implementar.
 
 ## Regras técnicas invioláveis
 - Telas de lançar pedido e cozinha funcionam offline
