@@ -6,8 +6,9 @@ import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { formatarPrecoBR } from '../lib/preco'
 import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
-import { deslocarDias, hojeISO } from '../lib/datas'
-import { calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
+import { hojeISO } from '../lib/datas'
+import { calcularIntervalosRelatorio, calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
+import type { TipoFiltroRelatorio } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
@@ -28,14 +29,15 @@ function rotuloMetodo(chave: string | null): string {
   return metodo ? `${metodo.icone} ${metodo.label}` : humanizarMetodo(chave)
 }
 
-type Periodo = 'hoje' | 'ontem' | '7dias' | 'data'
-
-const PERIODOS: { valor: Periodo; rotulo: string }[] = [
+const PERIODOS: { valor: TipoFiltroRelatorio; rotulo: string }[] = [
   { valor: 'hoje', rotulo: 'Hoje' },
   { valor: 'ontem', rotulo: 'Ontem' },
   { valor: '7dias', rotulo: '7 dias' },
-  { valor: 'data', rotulo: 'Data' },
+  { valor: 'mes', rotulo: 'Mês' },
+  { valor: 'intervalo', rotulo: 'Período' },
 ]
+
+type TipoConsumo = 'todos' | 'mesa' | 'viagem'
 
 function formatarHora(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -201,9 +203,12 @@ export function Historico() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
 
-  const [periodo, setPeriodo] = useState<Periodo>('hoje')
-  const [dataEscolhida, setDataEscolhida] = useState(hojeISO())
+  const [periodo, setPeriodo] = useState<TipoFiltroRelatorio>('hoje')
+  const [dataInicio, setDataInicio] = useState(hojeISO())
+  const [dataFim, setDataFim] = useState(hojeISO())
   const [busca, setBusca] = useState('')
+  const [tipoConsumo, setTipoConsumo] = useState<TipoConsumo>('todos')
+  const [metodoFiltrado, setMetodoFiltrado] = useState<string | null>(null)
 
   const [itensCardapio, setItensCardapio] = useState<Item[]>([])
   const [itemFiltradoId, setItemFiltradoId] = useState<string | null>(null)
@@ -217,15 +222,7 @@ export function Historico() {
     setCarregando(true)
     setErro(null)
 
-    const hoje = hojeISO()
-    const intervalo =
-      periodo === 'hoje'
-        ? { inicio: hoje, fim: hoje }
-        : periodo === 'ontem'
-          ? { inicio: deslocarDias(hoje, -1), fim: deslocarDias(hoje, -1) }
-          : periodo === '7dias'
-            ? { inicio: deslocarDias(hoje, -6), fim: hoje }
-            : { inicio: dataEscolhida, fim: dataEscolhida }
+    const intervalo = calcularIntervalosRelatorio({ tipo: periodo, dataInicio, dataFim }).atual
 
     supabase
       .from('pedidos')
@@ -253,7 +250,7 @@ export function Historico() {
     return () => {
       cancelado = true
     }
-  }, [barraca.id, periodo, dataEscolhida])
+  }, [barraca.id, periodo, dataInicio, dataFim])
 
   useEffect(() => {
     let cancelado = false
@@ -280,15 +277,30 @@ export function Historico() {
         p.itens_do_pedido.some((item) => !item.removido && item.item_id === itemFiltradoId),
       )
     : pedidosDoPeriodo
-  const pedidosExibidos = busca.trim()
-    ? pedidosDoPeriodoComItemFiltrado.filter((p) => String(p.senha).includes(busca.trim()))
-    : pedidosDoPeriodoComItemFiltrado
+
+  const pedidosPorConsumo =
+    tipoConsumo === 'todos'
+      ? pedidosDoPeriodoComItemFiltrado
+      : pedidosDoPeriodoComItemFiltrado.filter((p) => (tipoConsumo === 'viagem' ? p.viagem : !p.viagem))
+
+  const pedidosPorMetodo = metodoFiltrado
+    ? pedidosPorConsumo.filter((p) => p.metodo_pagamento === metodoFiltrado)
+    : pedidosPorConsumo
+
+  const buscaNormalizada = busca.trim().toLowerCase()
+  const pedidosExibidos = buscaNormalizada
+    ? pedidosPorMetodo.filter(
+        (p) =>
+          String(p.senha).includes(buscaNormalizada) ||
+          (p.mesa ?? '').toLowerCase().includes(buscaNormalizada),
+      )
+    : pedidosPorMetodo
 
   const nomeItemFiltrado = itemFiltradoId
     ? (itensCardapio.find((item) => item.id === itemFiltradoId)?.nome ?? null)
     : null
 
-  const filtroRelatorio = { tipo: periodo, data: dataEscolhida }
+  const filtroRelatorio = { tipo: periodo, dataInicio, dataFim }
 
   async function restaurarPedido(pedido: PedidoComItens) {
     setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
@@ -385,14 +397,27 @@ export function Historico() {
           />
         </div>
 
-        {periodo === 'data' && (
-          <input
-            type="date"
-            value={dataEscolhida}
-            max={hojeISO()}
-            onChange={(e) => setDataEscolhida(e.target.value)}
-            className="mt-3 h-10 rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-3 text-sm text-mesa-text-primary outline-none focus:border-mesa-orange-500"
-          />
+        {periodo === 'intervalo' && (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="date"
+              value={dataInicio}
+              max={dataFim}
+              onChange={(e) => setDataInicio(e.target.value)}
+              aria-label="Data de início"
+              className="h-10 min-w-0 flex-1 rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-3 text-sm text-mesa-text-primary outline-none focus:border-mesa-orange-500"
+            />
+            <span className="text-sm text-mesa-text-secondary">até</span>
+            <input
+              type="date"
+              value={dataFim}
+              min={dataInicio}
+              max={hojeISO()}
+              onChange={(e) => setDataFim(e.target.value)}
+              aria-label="Data de fim"
+              className="h-10 min-w-0 flex-1 rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-3 text-sm text-mesa-text-primary outline-none focus:border-mesa-orange-500"
+            />
+          </div>
         )}
 
         <select
@@ -410,14 +435,48 @@ export function Historico() {
 
         <Input
           type="search"
-          inputMode="numeric"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           onClear={() => setBusca('')}
-          placeholder="Buscar por senha"
-          aria-label="Buscar por senha"
+          placeholder="Buscar por senha ou mesa"
+          aria-label="Buscar por senha ou mesa"
           className="mt-3"
         />
+
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(['todos', 'mesa', 'viagem'] as const).map((valor) => (
+            <Chip
+              key={valor}
+              variant={tipoConsumo === valor ? 'teal' : 'plain'}
+              checked={tipoConsumo === valor}
+              onClick={() => setTipoConsumo(valor)}
+            >
+              {valor === 'todos' ? 'Todos' : valor === 'mesa' ? 'No local' : 'Viagem'}
+            </Chip>
+          ))}
+          <span className="mx-1 self-center text-mesa-text-tertiary" aria-hidden>
+            ·
+          </span>
+          <Chip
+            variant={metodoFiltrado === null ? 'teal' : 'plain'}
+            checked={metodoFiltrado === null}
+            onClick={() => setMetodoFiltrado(null)}
+          >
+            Qualquer método
+          </Chip>
+          {METODOS_DISPONIVEIS.filter((m) => barraca.metodos_pagamento_ativos?.includes(m.chave)).map(
+            (metodo) => (
+              <Chip
+                key={metodo.chave}
+                variant={metodoFiltrado === metodo.chave ? 'teal' : 'plain'}
+                checked={metodoFiltrado === metodo.chave}
+                onClick={() => setMetodoFiltrado(metodo.chave)}
+              >
+                {metodo.icone} {metodo.label}
+              </Chip>
+            ),
+          )}
+        </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-mesa-text-secondary">

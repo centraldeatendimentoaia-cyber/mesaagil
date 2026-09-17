@@ -1,20 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
+  calcularDivisaoPorConsumo,
   calcularDivisaoPorMetodo,
   calcularEstimativaLiquida,
   calcularIntervalosRelatorio,
   calcularMaisVendidos,
   calcularPontosAtencao,
   calcularRitmoDoDia,
+  calcularSeriePorDia,
+  calcularSeriePorHora,
   calcularTotalBruto,
 } from '../lib/relatorio'
 import type {
   DivisaoMetodo,
+  DivisaoPorConsumo,
   EstimativaLiquida,
   FiltroRelatorio,
+  IntervaloData,
   ItemMaisVendido,
   MetodoOuNaoInformado,
+  PontoSerie,
   PontosAtencao,
   RitmoDoDia,
 } from '../lib/relatorio'
@@ -27,10 +33,12 @@ export type AgregadosRelatorio = {
   totalBruto: number
   quantidadePedidos: number
   divisaoPorMetodo: Record<MetodoOuNaoInformado, DivisaoMetodo>
+  divisaoPorConsumo: DivisaoPorConsumo
   estimativaLiquida: EstimativaLiquida | null
   pontosAtencao: PontosAtencao
   maisVendidos: ItemMaisVendido[]
   ritmoDoDia: RitmoDoDia
+  serieTemporal: { granularidade: 'dia' | 'hora'; pontos: PontoSerie[] }
 }
 
 export type AgregadoProdutoIsolado = {
@@ -96,16 +104,24 @@ function agregar(
   catalogoPrecos: Map<string, number>,
   taxaDebitoBps: number | null,
   taxaCreditoBps: number | null,
+  intervalo: IntervaloData,
 ): AgregadosRelatorio {
+  const serieTemporal: AgregadosRelatorio['serieTemporal'] =
+    intervalo.inicio === intervalo.fim
+      ? { granularidade: 'hora', pontos: calcularSeriePorHora(pedidos) }
+      : { granularidade: 'dia', pontos: calcularSeriePorDia(pedidos, intervalo.inicio, intervalo.fim) }
+
   return {
     pedidos,
     totalBruto: calcularTotalBruto(pedidos),
     quantidadePedidos: pedidos.filter((p) => p.status !== 'cancelado').length,
     divisaoPorMetodo: calcularDivisaoPorMetodo(pedidos),
+    divisaoPorConsumo: calcularDivisaoPorConsumo(pedidos),
     estimativaLiquida: calcularEstimativaLiquida(pedidos, taxaDebitoBps, taxaCreditoBps),
     pontosAtencao: calcularPontosAtencao(pedidos, catalogoPrecos),
     maisVendidos: calcularMaisVendidos(pedidos),
     ritmoDoDia: calcularRitmoDoDia(pedidos),
+    serieTemporal,
   }
 }
 
@@ -198,7 +214,11 @@ export function useRelatorio(
     // passa um literal inline, então uma dependência em `filtro` mudaria de
     // referência a cada render e refaria a busca sem necessidade
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [barraca.id, filtro.tipo, filtro.data, itemFiltradoId])
+  }, [barraca.id, filtro.tipo, filtro.dataInicio, filtro.dataFim, itemFiltradoId])
+
+  // mesmo motivo do efeito acima: depende dos campos primitivos de filtro
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const intervalos = useMemo(() => calcularIntervalosRelatorio(filtro), [filtro.tipo, filtro.dataInicio, filtro.dataFim])
 
   // barraca vem inteira (não só o id) especificamente pra isso: useBarraca
   // mostra o cache offline-first na hora e só troca pela versão de verdade
@@ -208,8 +228,21 @@ export function useRelatorio(
   // Ajustes.
   const atualCompleto = useMemo(() => {
     if (itemFiltradoId || !pedidosAtuais) return null
-    return agregar(pedidosAtuais, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps)
-  }, [itemFiltradoId, pedidosAtuais, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
+    return agregar(
+      pedidosAtuais,
+      catalogoPrecos,
+      barraca.taxa_debito_bps,
+      barraca.taxa_credito_bps,
+      intervalos.atual,
+    )
+  }, [
+    itemFiltradoId,
+    pedidosAtuais,
+    catalogoPrecos,
+    barraca.taxa_debito_bps,
+    barraca.taxa_credito_bps,
+    intervalos.atual,
+  ])
 
   const comparacaoCompleto = useMemo(() => {
     if (itemFiltradoId || !pedidosComparacao) return null
@@ -218,8 +251,16 @@ export function useRelatorio(
       catalogoPrecos,
       barraca.taxa_debito_bps,
       barraca.taxa_credito_bps,
+      intervalos.comparacao,
     )
-  }, [itemFiltradoId, pedidosComparacao, catalogoPrecos, barraca.taxa_debito_bps, barraca.taxa_credito_bps])
+  }, [
+    itemFiltradoId,
+    pedidosComparacao,
+    catalogoPrecos,
+    barraca.taxa_debito_bps,
+    barraca.taxa_credito_bps,
+    intervalos.comparacao,
+  ])
 
   const atualIsolado = useMemo(() => {
     if (!itemFiltradoId || !pedidosAtuais) return null

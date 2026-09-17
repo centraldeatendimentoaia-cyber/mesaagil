@@ -178,6 +178,91 @@ export function calcularMaisVendidos(pedidos: PedidoComItens[]): ItemMaisVendido
   return [...grupos.values()].sort((a, b) => b.quantidade_total - a.quantidade_total).slice(0, 5)
 }
 
+export type DivisaoConsumo = { quantidade: number; valor: number; percentual: number }
+
+export type DivisaoPorConsumo = {
+  viagem: DivisaoConsumo
+  mesaComNumero: DivisaoConsumo
+  mesaSemNumero: DivisaoConsumo
+}
+
+/** Viagem sempre desabilita o campo mesa (regra de produto), então "mesa
+ * sem número" só existe pra quem ficou no local mas não preencheu a mesa. */
+export function calcularDivisaoPorConsumo(pedidos: PedidoComItens[]): DivisaoPorConsumo {
+  const validos = naoCancelados(pedidos)
+  const totalGeral = validos.reduce((soma, p) => soma + calcularTotalPedido(p), 0)
+
+  function bucket(filtro: (p: PedidoComItens) => boolean): DivisaoConsumo {
+    const doBucket = validos.filter(filtro)
+    const valor = doBucket.reduce((soma, p) => soma + calcularTotalPedido(p), 0)
+    return {
+      quantidade: doBucket.length,
+      valor,
+      percentual: totalGeral > 0 ? (valor / totalGeral) * 100 : 0,
+    }
+  }
+
+  return {
+    viagem: bucket((p) => p.viagem),
+    mesaComNumero: bucket((p) => !p.viagem && !!p.mesa),
+    mesaSemNumero: bucket((p) => !p.viagem && !p.mesa),
+  }
+}
+
+export type PontoSerie = { chave: string; rotulo: string; valor: number; quantidade: number }
+
+export function calcularSeriePorDia(
+  pedidos: PedidoComItens[],
+  inicio: string,
+  fim: string,
+): PontoSerie[] {
+  const validos = naoCancelados(pedidos)
+  const porDia = new Map<string, { valor: number; quantidade: number }>()
+
+  for (const pedido of validos) {
+    const atual = porDia.get(pedido.data_operacao) ?? { valor: 0, quantidade: 0 }
+    atual.valor += calcularTotalPedido(pedido)
+    atual.quantidade += 1
+    porDia.set(pedido.data_operacao, atual)
+  }
+
+  const pontos: PontoSerie[] = []
+  for (let cursor = inicio; cursor <= fim; cursor = deslocarDias(cursor, 1)) {
+    const dado = porDia.get(cursor) ?? { valor: 0, quantidade: 0 }
+    const [, mes, dia] = cursor.split('-')
+    pontos.push({ chave: cursor, rotulo: `${dia}/${mes}`, valor: dado.valor, quantidade: dado.quantidade })
+  }
+  return pontos
+}
+
+/** Recorta pras horas com movimento de verdade — mostrar as 24h de um dia
+ * inclui várias madrugadas vazias que só poluem o gráfico. */
+export function calcularSeriePorHora(pedidos: PedidoComItens[]): PontoSerie[] {
+  const validos = naoCancelados(pedidos)
+  const porHora = new Map<number, { valor: number; quantidade: number }>()
+
+  for (const pedido of validos) {
+    const hora = new Date(pedido.criado_em).getHours()
+    const atual = porHora.get(hora) ?? { valor: 0, quantidade: 0 }
+    atual.valor += calcularTotalPedido(pedido)
+    atual.quantidade += 1
+    porHora.set(hora, atual)
+  }
+
+  if (porHora.size === 0) return []
+
+  const horasComMovimento = [...porHora.keys()].sort((a, b) => a - b)
+  const primeira = horasComMovimento[0]
+  const ultima = horasComMovimento[horasComMovimento.length - 1]
+
+  const pontos: PontoSerie[] = []
+  for (let hora = primeira; hora <= ultima; hora++) {
+    const dado = porHora.get(hora) ?? { valor: 0, quantidade: 0 }
+    pontos.push({ chave: String(hora), rotulo: `${hora}h`, valor: dado.valor, quantidade: dado.quantidade })
+  }
+  return pontos
+}
+
 export type RitmoDoDia = {
   tempoMedioPreparoMin: number | null
   horarioPico: { hora: number; quantidade: number } | null
@@ -219,14 +304,32 @@ export function calcularRitmoDoDia(pedidos: PedidoComItens[]): RitmoDoDia {
   return { tempoMedioPreparoMin, horarioPico }
 }
 
-export type TipoFiltroRelatorio = 'hoje' | 'ontem' | '7dias' | 'data'
+export type TipoFiltroRelatorio = 'hoje' | 'ontem' | '7dias' | 'mes' | 'intervalo'
 
 export type FiltroRelatorio = {
   tipo: TipoFiltroRelatorio
-  data?: string
+  dataInicio?: string
+  dataFim?: string
 }
 
 export type IntervaloData = { inicio: string; fim: string }
+
+/** Período de comparação genérico: a janela imediatamente anterior, do
+ * mesmo tamanho em dias — mesma lógica que "7 dias" já usava, generalizada
+ * pra qualquer intervalo (mês, período customizado). */
+function periodoAnterior(intervalo: IntervaloData): IntervaloData {
+  const [anoI, mesI, diaI] = intervalo.inicio.split('-').map(Number)
+  const [anoF, mesF, diaF] = intervalo.fim.split('-').map(Number)
+  const diasNoIntervalo =
+    Math.round(
+      (new Date(anoF, mesF - 1, diaF).getTime() - new Date(anoI, mesI - 1, diaI).getTime()) / 86400000,
+    ) + 1
+
+  return {
+    inicio: deslocarDias(intervalo.inicio, -diasNoIntervalo),
+    fim: deslocarDias(intervalo.inicio, -1),
+  }
+}
 
 export function calcularIntervalosRelatorio(filtro: FiltroRelatorio): {
   atual: IntervaloData
@@ -250,15 +353,17 @@ export function calcularIntervalosRelatorio(filtro: FiltroRelatorio): {
   }
 
   if (filtro.tipo === '7dias') {
-    return {
-      atual: { inicio: deslocarDias(hoje, -6), fim: hoje },
-      comparacao: { inicio: deslocarDias(hoje, -13), fim: deslocarDias(hoje, -7) },
-    }
+    const atual = { inicio: deslocarDias(hoje, -6), fim: hoje }
+    return { atual, comparacao: periodoAnterior(atual) }
   }
 
-  const data = filtro.data ?? hoje
-  return {
-    atual: { inicio: data, fim: data },
-    comparacao: { inicio: deslocarDias(data, -7), fim: deslocarDias(data, -7) },
+  if (filtro.tipo === 'mes') {
+    const atual = { inicio: `${hoje.slice(0, 8)}01`, fim: hoje }
+    return { atual, comparacao: periodoAnterior(atual) }
   }
+
+  const inicio = filtro.dataInicio ?? hoje
+  const fim = filtro.dataFim && filtro.dataFim >= inicio ? filtro.dataFim : inicio
+  const atual = { inicio, fim }
+  return { atual, comparacao: periodoAnterior(atual) }
 }
