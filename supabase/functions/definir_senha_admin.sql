@@ -4,7 +4,7 @@ create or replace function public.definir_senha_admin(p_barraca_id uuid, p_pin t
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   if not usuario_tem_acesso_barraca(p_barraca_id) then

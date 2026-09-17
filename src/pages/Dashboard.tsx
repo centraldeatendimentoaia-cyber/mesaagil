@@ -1,14 +1,27 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChefHat, History, Moon, Settings, ShoppingBag, Sun, Volume2, type LucideIcon } from 'lucide-react'
+import {
+  ChefHat,
+  History,
+  LogOut,
+  Moon,
+  Settings,
+  ShoppingBag,
+  Sun,
+  Volume2,
+  type LucideIcon,
+} from 'lucide-react'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
+import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { formatarDataExtenso } from '../lib/datas'
 import { formatarPrecoBR } from '../lib/preco'
 import { calcularTotalBruto } from '../lib/relatorio'
 import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { BottomSheet } from '../components/ui/BottomSheet'
 
 function formatarSenha(senha: number): string {
   return String(senha).padStart(3, '0')
@@ -60,7 +73,9 @@ export function Dashboard() {
   const { online } = useSincronizacaoAtual()
   const { pedidos, contagemAFazer } = usePedidosAtual()
   const { tema, alternarTema } = useTheme()
+  const { sair } = useAuth()
   const escuro = tema === 'escuro'
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false)
 
   // Mesmas fontes já assinadas em tempo real por LayoutBarraca (nenhuma
   // busca nova): contagemAFazer já vem pronta do contexto, a última senha
@@ -111,6 +126,14 @@ export function Dashboard() {
           >
             <Settings className="size-5" aria-hidden />
           </Link>
+          <button
+            type="button"
+            onClick={() => setConfirmandoSaida(true)}
+            aria-label="Sair"
+            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+          >
+            <LogOut className="size-5" aria-hidden />
+          </button>
         </div>
       </div>
 
@@ -145,6 +168,38 @@ export function Dashboard() {
           onClick={() => navigate(`/${barraca.slug}/historico`)}
         />
       </div>
+
+      <BottomSheet
+        open={confirmandoSaida}
+        onClose={() => setConfirmandoSaida(false)}
+        aria-label="Confirmar saída"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">Você quer mesmo sair?</h2>
+        <p className="mt-1 text-sm text-mesa-text-secondary">
+          Vai precisar entrar com e-mail e senha de novo.
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            variant="destructive"
+            size="xl"
+            className="w-full"
+            onClick={async () => {
+              await sair()
+              navigate('/login')
+            }}
+          >
+            Sair
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            className="w-full"
+            onClick={() => setConfirmandoSaida(false)}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

@@ -4,7 +4,7 @@ create or replace function public.verificar_senha_admin(p_barraca_id uuid, p_pin
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
