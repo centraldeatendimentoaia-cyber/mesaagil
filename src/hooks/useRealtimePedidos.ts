@@ -35,6 +35,12 @@ const JANELA_IGNORAR_ECO_MS = 4000
 export function useRealtimePedidos(barracaId: string) {
   const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
   const [status, setStatus] = useState<StatusConexao>('reconectando')
+  // Sinal explícito de "o primeiro snapshot de verdade já chegou" — sem
+  // isso, quem consome esse hook não tem como distinguir "pedidos: []
+  // porque não há pedidos" de "pedidos: [] porque o fetch inicial ainda
+  // não voltou" (ex.: pra não tocar som de novidade em pedidos que já
+  // existiam antes da tela abrir).
+  const [pedidosCarregados, setPedidosCarregados] = useState(false)
 
   // Um patch otimista local (aplicarPatchPedido/aplicarPatchItem) pode ser
   // seguido por um segundo patch antes do eco do PRIMEIRO voltar via
@@ -84,6 +90,7 @@ export function useRealtimePedidos(barracaId: string) {
 
       if (cancelado || error) return
       setPedidos((data ?? []) as PedidoComItens[])
+      setPedidosCarregados(true)
     }
 
     function pararFallback() {
@@ -253,5 +260,5 @@ export function useRealtimePedidos(barracaId: string) {
     }
   }, [barracaId])
 
-  return { pedidos, status, aplicarPatchPedido, aplicarPatchItem }
+  return { pedidos, status, pedidosCarregados, aplicarPatchPedido, aplicarPatchItem }
 }

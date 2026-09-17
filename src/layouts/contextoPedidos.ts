@@ -5,6 +5,7 @@ import type { ItemDoPedido, Pedido } from '../types/database'
 export type EstadoPedidos = {
   pedidos: PedidoComItens[]
   status: StatusConexao
+  pedidosCarregados: boolean
   contagemAFazer: number
   contagemPronto: number
   aplicarPatchPedido: (id: string, patch: Partial<Pedido>) => void

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
+import { tocarSomPedidoCriado } from '../lib/sons'
 import type {
   Carrinho,
   EntregaDiretaPorItem,
@@ -154,6 +155,14 @@ export function LancarPedido() {
   // history entry até algo sobrescrever.
   useEffect(() => {
     if (estadoRecebido) navigate(location.pathname, { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Toca só ao chegar nessa tela já com um pedido recém-enviado (state de
+  // navegação vindo de ConfirmarPedido) — mount-only de propósito, senão
+  // tocaria de novo quando `senha` passa de provisória pra confirmada.
+  useEffect(() => {
+    if (senha !== null) tocarSomPedidoCriado()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

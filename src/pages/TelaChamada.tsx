@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
+import { tocarSomPedidoNaChamada } from '../lib/sons'
 
 const OPACIDADES_ANTERIORES = [0.7, 0.5, 0.3]
 
@@ -14,7 +15,7 @@ function formatarSenha(senha: number): string {
 export function TelaChamada() {
   const barraca = useBarracaAtual()
   const navigate = useNavigate()
-  const { pedidos } = usePedidosAtual()
+  const { pedidos, pedidosCarregados } = usePedidosAtual()
 
   const pedidosProntos = useMemo(
     () =>
@@ -47,6 +48,29 @@ export function TelaChamada() {
     const raf = requestAnimationFrame(() => setVisivel(true))
     return () => cancelAnimationFrame(raf)
   }, [visivel])
+
+  // Toca só pra pedidos que ficaram prontos com a tela já aberta. Espera
+  // `pedidosCarregados` (useRealtimePedidos.ts) antes de registrar a
+  // primeira leitura — sem isso, `pedidos` começa vazio ([]) até o fetch
+  // inicial responder, e os prontos que já existiam apareceriam de uma vez
+  // parecendo "todos novos" toda vez que a Chamada abre ou recarrega.
+  // Acompanha a lista toda (não só o hero) pra não soar de novo quando uma
+  // entrega reorganiza a fila e outro pedido já avisado assume o topo.
+  const idsAvisadosRef = useRef<Set<string> | null>(null)
+
+  useEffect(() => {
+    if (!pedidosCarregados) return
+
+    if (idsAvisadosRef.current === null) {
+      idsAvisadosRef.current = new Set(pedidosProntos.map((p) => p.id))
+      return
+    }
+
+    const chegouProntoNovo = pedidosProntos.some((p) => !idsAvisadosRef.current?.has(p.id))
+    if (chegouProntoNovo) tocarSomPedidoNaChamada()
+
+    idsAvisadosRef.current = new Set(pedidosProntos.map((p) => p.id))
+  }, [pedidosProntos, pedidosCarregados])
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-mesa-neutral-900 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">

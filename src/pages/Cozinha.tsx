@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
+import { tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
@@ -269,8 +270,13 @@ function BadgeStatus({ status }: { status: StatusConexao }) {
 
 export function Cozinha() {
   const barraca = useBarracaAtual()
-  const { pedidos, status: statusConexao, aplicarPatchPedido, aplicarPatchItem } =
-    usePedidosAtual()
+  const {
+    pedidos,
+    status: statusConexao,
+    pedidosCarregados,
+    aplicarPatchPedido,
+    aplicarPatchItem,
+  } = usePedidosAtual()
   const { pendentes, online } = useSincronizacaoAtual()
   const [aba, setAba] = useState<Coluna>('a_fazer')
 
@@ -307,6 +313,30 @@ export function Cozinha() {
 
     return () => window.clearInterval(intervalo)
   }, [])
+
+  // Toca só quando um pedido novo chega via realtime enquanto a tela já
+  // está aberta. Espera `pedidosCarregados` (useRealtimePedidos.ts) antes
+  // de registrar a primeira leitura — sem isso, `pedidos` começa vazio
+  // ([]) até o fetch inicial responder, e os pedidos que já existiam
+  // apareceriam de uma vez parecendo "todos novos", tocando o som toda
+  // vez que a Cozinha abre ou recarrega com pedidos pendentes.
+  const idsConhecidosRef = useRef<Set<string> | null>(null)
+
+  useEffect(() => {
+    if (!pedidosCarregados) return
+
+    if (idsConhecidosRef.current === null) {
+      idsConhecidosRef.current = new Set(pedidos.map((p) => p.id))
+      return
+    }
+
+    const chegouPedidoNovo = pedidos.some(
+      (p) => p.status === 'a_fazer' && !idsConhecidosRef.current?.has(p.id),
+    )
+    if (chegouPedidoNovo) tocarSomPedidoNaCozinha()
+
+    idsConhecidosRef.current = new Set(pedidos.map((p) => p.id))
+  }, [pedidos, pedidosCarregados])
 
   const pedidoSelecionado = pedidos.find((p) => p.id === pedidoSelecionadoId) ?? null
 

@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
+import { desbloquearAudio } from './lib/sons'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
 import { GateFaceId } from './components/GateFaceId'
@@ -22,6 +24,13 @@ function App() {
   // usuário (localStorage) > prefers-color-scheme do dispositivo. O campo
   // modo da barraca no Supabase é legado e não é mais lido por nada.
   useTheme()
+
+  // Destrava o áudio dos sons de notificação no primeiro toque/clique em
+  // qualquer lugar do app — navegadores só liberam reprodução depois de um
+  // gesto do usuário. Uma vez só, não precisa remover o listener de novo.
+  useEffect(() => {
+    window.addEventListener('pointerdown', desbloquearAudio, { once: true })
+  }, [])
 
   return (
     <BrowserRouter>

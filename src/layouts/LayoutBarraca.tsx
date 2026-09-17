@@ -13,9 +13,8 @@ export function LayoutBarraca() {
   const { slug } = useParams<{ slug: string }>()
   const { barraca, carregando, erro } = useBarraca(slug ?? '')
   const sincronizacao = useSincronizacao()
-  const { pedidos, status, aplicarPatchPedido, aplicarPatchItem } = useRealtimePedidos(
-    barraca?.id ?? '',
-  )
+  const { pedidos, status, pedidosCarregados, aplicarPatchPedido, aplicarPatchItem } =
+    useRealtimePedidos(barraca?.id ?? '')
   const location = useLocation()
   const emTelaDeChamada = location.pathname.endsWith('/chamada')
   const emCozinha = location.pathname.endsWith('/cozinha')
@@ -63,6 +62,7 @@ export function LayoutBarraca() {
   const estadoPedidos = {
     pedidos,
     status,
+    pedidosCarregados,
     contagemAFazer: pedidos.filter((p) => p.status === 'a_fazer').length,
     contagemPronto: pedidos.filter((p) => p.status === 'pronto').length,
     aplicarPatchPedido,
