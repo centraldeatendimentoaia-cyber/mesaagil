@@ -11,6 +11,7 @@ import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
+import { ativarFaceId, desativarFaceId, faceIdAtivado, faceIdSuportado } from '../lib/faceId'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
 import { ModalTrocarSenha } from '../components/ModalTrocarSenha'
@@ -1157,7 +1158,22 @@ function Rodape() {
   const [sucesso, setSucesso] = useState(false)
   const [confirmandoSaida, setConfirmandoSaida] = useState(false)
 
+  const [suportaFaceId, setSuportaFaceId] = useState(false)
+  const [faceIdLigado, setFaceIdLigado] = useState(() => faceIdAtivado())
+  const [processandoFaceId, setProcessandoFaceId] = useState(false)
+  const [erroFaceId, setErroFaceId] = useState<string | null>(null)
+
   const email = usuario?.email ?? null
+
+  useEffect(() => {
+    let cancelado = false
+    faceIdSuportado().then((suportado) => {
+      if (!cancelado) setSuportaFaceId(suportado)
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [])
 
   function aoTrocarComSucesso() {
     setMostrarModal(false)
@@ -1165,8 +1181,46 @@ function Rodape() {
     window.setTimeout(() => setSucesso(false), 3000)
   }
 
+  async function alternarFaceId() {
+    setErroFaceId(null)
+
+    if (faceIdLigado) {
+      desativarFaceId()
+      setFaceIdLigado(false)
+      return
+    }
+
+    if (!usuario?.email) return
+
+    setProcessandoFaceId(true)
+    try {
+      await ativarFaceId({ id: usuario.id, email: usuario.email })
+      setFaceIdLigado(true)
+    } catch {
+      setErroFaceId('Não foi possível ativar o Face ID neste aparelho. Tente de novo.')
+    }
+    setProcessandoFaceId(false)
+  }
+
   return (
     <section className="flex flex-col gap-1">
+      {suportaFaceId && (
+        <>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={alternarFaceId}
+            loading={processandoFaceId}
+            className="w-full"
+          >
+            {faceIdLigado ? 'Desativar Face ID neste aparelho' : 'Ativar Face ID neste aparelho'}
+          </Button>
+          {erroFaceId && (
+            <p className="text-center text-sm font-medium text-mesa-error-500">{erroFaceId}</p>
+          )}
+        </>
+      )}
+
       <Button variant="ghost" size="md" onClick={() => setMostrarModal(true)} className="w-full">
         Trocar senha
       </Button>

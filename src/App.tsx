@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import { LayoutBarraca } from './layouts/LayoutBarraca'
 import { RotaProtegida } from './components/RotaProtegida'
+import { GateFaceId } from './components/GateFaceId'
 import { Dashboard } from './pages/Dashboard'
 import { LancarPedido } from './pages/LancarPedido'
 import { ConfirmarPedido } from './pages/ConfirmarPedido'
@@ -24,41 +25,43 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+      <GateFaceId>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
-        <Route path="/" element={<Dispatcher />} />
+          <Route path="/" element={<Dispatcher />} />
 
-        <Route
-          path="/selecionar-barraca"
-          element={
-            <RotaProtegida>
-              <SelecionarBarraca />
-            </RotaProtegida>
-          }
-        />
+          <Route
+            path="/selecionar-barraca"
+            element={
+              <RotaProtegida>
+                <SelecionarBarraca />
+              </RotaProtegida>
+            }
+          />
 
-        <Route
-          path="/:slug"
-          element={
-            <RotaProtegida verificarSlug>
-              <LayoutBarraca />
-            </RotaProtegida>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="lancar" element={<LancarPedido />} />
-          <Route path="confirmar" element={<ConfirmarPedido />} />
-          <Route path="cozinha" element={<Cozinha />} />
-          <Route path="historico" element={<Historico />} />
-          <Route path="chamada" element={<TelaChamada />} />
-          <Route path="ajustes" element={<Ajustes />} />
-        </Route>
+          <Route
+            path="/:slug"
+            element={
+              <RotaProtegida verificarSlug>
+                <LayoutBarraca />
+              </RotaProtegida>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="lancar" element={<LancarPedido />} />
+            <Route path="confirmar" element={<ConfirmarPedido />} />
+            <Route path="cozinha" element={<Cozinha />} />
+            <Route path="historico" element={<Historico />} />
+            <Route path="chamada" element={<TelaChamada />} />
+            <Route path="ajustes" element={<Ajustes />} />
+          </Route>
 
-        <Route path="*" element={<NaoEncontrado />} />
-      </Routes>
+          <Route path="*" element={<NaoEncontrado />} />
+        </Routes>
+      </GateFaceId>
     </BrowserRouter>
   )
 }

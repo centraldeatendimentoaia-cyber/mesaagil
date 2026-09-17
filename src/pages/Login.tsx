@@ -1,12 +1,9 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ScanFace } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-
-const DURACAO_AVISO_FACE_ID_MS = 3000
 
 export function Login() {
   const navigate = useNavigate()
@@ -16,8 +13,6 @@ export function Login() {
   const [senha, setSenha] = useState('')
   const [entrando, setEntrando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-  const [avisoFaceId, setAvisoFaceId] = useState(false)
-  const avisoFaceIdTimerRef = useRef<number | null>(null)
 
   async function aoSubmeter(e: FormEvent) {
     e.preventDefault()
@@ -35,14 +30,6 @@ export function Login() {
     }
 
     navigate('/')
-  }
-
-  function aoClicarFaceId() {
-    setAvisoFaceId(true)
-    if (avisoFaceIdTimerRef.current !== null) window.clearTimeout(avisoFaceIdTimerRef.current)
-    avisoFaceIdTimerRef.current = window.setTimeout(() => {
-      setAvisoFaceId(false)
-    }, DURACAO_AVISO_FACE_ID_MS)
   }
 
   return (
@@ -95,29 +82,7 @@ export function Login() {
           </Button>
         </form>
 
-        <div className="mt-6 flex items-center gap-3">
-          <span className="h-px flex-1 bg-mesa-border-subtle" />
-          <span className="text-sm text-mesa-text-secondary">ou</span>
-          <span className="h-px flex-1 bg-mesa-border-subtle" />
-        </div>
-
-        <Button
-          variant="outline"
-          size="lg"
-          icon={<ScanFace className="size-5" aria-hidden />}
-          className="mt-6 w-full"
-          onClick={aoClicarFaceId}
-        >
-          Entrar com Face ID
-        </Button>
-        <p
-          role="status"
-          className="mt-2 text-center text-xs text-mesa-text-secondary"
-        >
-          {avisoFaceId ? 'Em breve' : ' '}
-        </p>
-
-        <p className="mt-4 text-center text-xs text-mesa-text-secondary">
+        <p className="mt-6 text-center text-xs text-mesa-text-secondary">
           Acesso restrito aos donos e operadores cadastrados
         </p>
       </div>

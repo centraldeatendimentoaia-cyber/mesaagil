@@ -1,0 +1,97 @@
+import { useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ScanFace } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import { desbloquearComFaceId, emailFaceId, faceIdAtivado } from '../lib/faceId'
+import { Button } from './ui/Button'
+
+const CHAVE_SESSAO = 'mesaagil:faceid_ok'
+
+function liberadoNaSessao(): boolean {
+  try {
+    return window.sessionStorage.getItem(CHAVE_SESSAO) === '1'
+  } catch {
+    return false
+  }
+}
+
+function marcarLiberado(): void {
+  try {
+    window.sessionStorage.setItem(CHAVE_SESSAO, '1')
+  } catch {
+    // sessionStorage indisponível — só pede de novo na próxima navegação
+  }
+}
+
+/** Trava a UI até o Face ID/Touch ID/Windows Hello DESSE aparelho confirmar
+ * o dono, quando ativado (ver src/lib/faceId.ts pro porquê disso não
+ * envolver verificação de servidor). Não tem nada a ver com estar logado —
+ * `sessao` do Supabase continua sendo a autenticação de verdade; isso é só
+ * uma trava local por cima dela, tipo tela de bloqueio de celular. Fica
+ * liberado pelo resto da sessão do navegador (sessionStorage), igual ao
+ * GateSenhaAdmin de Ajustes. */
+export function GateFaceId({ children }: { children: ReactNode }) {
+  const { usuario, carregando, sair } = useAuth()
+  const navigate = useNavigate()
+  const [bloqueado, setBloqueado] = useState(false)
+  const [verificando, setVerificando] = useState(false)
+  const [jaTentouAuto, setJaTentouAuto] = useState(false)
+
+  useEffect(() => {
+    if (carregando) return
+    setBloqueado(Boolean(usuario) && faceIdAtivado() && !liberadoNaSessao())
+  }, [carregando, usuario])
+
+  async function tentarDesbloquear() {
+    setVerificando(true)
+    const ok = await desbloquearComFaceId()
+    setVerificando(false)
+    if (ok) {
+      marcarLiberado()
+      setBloqueado(false)
+    }
+  }
+
+  // tenta uma vez sozinho ao travar (igual um app nativo perguntando Face ID
+  // assim que abre) — se o navegador recusar sem gesto do usuário, o botão
+  // abaixo cobre o caso
+  useEffect(() => {
+    if (!bloqueado || jaTentouAuto) return
+    setJaTentouAuto(true)
+    tentarDesbloquear()
+  }, [bloqueado, jaTentouAuto])
+
+  if (!bloqueado) return <>{children}</>
+
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center p-6 text-center [background:var(--mesa-gradient-atmosphere)]">
+      <div className="w-full max-w-[360px]">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
+          <ScanFace className="size-6 text-mesa-orange-500" aria-hidden />
+        </div>
+        <h1 className="mt-4 text-2xl font-bold leading-[32px] text-mesa-text-primary">
+          MesaAgil travado
+        </h1>
+        <p className="mt-1 text-sm text-mesa-text-secondary">
+          {emailFaceId() ? `Desbloqueie como ${emailFaceId()}` : 'Use Face ID pra continuar'}
+        </p>
+
+        <Button size="xl" loading={verificando} onClick={tentarDesbloquear} className="mt-8 w-full">
+          Desbloquear com Face ID
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="md"
+          className="mt-2 w-full"
+          onClick={async () => {
+            await sair()
+            navigate('/login')
+          }}
+        >
+          Sair e entrar com senha
+        </Button>
+      </div>
+    </div>
+  )
+}
