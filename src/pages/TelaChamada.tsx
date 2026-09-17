@@ -49,7 +49,7 @@ export function TelaChamada() {
   }, [visivel])
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-mesa-neutral-900 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
+    <div className="relative flex min-h-dvh flex-col bg-mesa-neutral-900 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
       <button
         type="button"
         onClick={() => navigate(`/${barraca.slug}`)}

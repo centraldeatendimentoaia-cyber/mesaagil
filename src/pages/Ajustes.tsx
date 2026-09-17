@@ -930,7 +930,7 @@ export function Ajustes() {
   const barraca = useBarracaAtual()
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 py-5 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
         <Link
           to={`/${barraca.slug}`}

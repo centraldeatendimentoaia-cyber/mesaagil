@@ -11,6 +11,9 @@ type Barraca = {
 const NOME_PADRAO = 'MesaAgil'
 // Cor de marca fixa do MesaAgil v2 (laranja 500) — não é mais por barraca.
 const COR_MARCA = '#F58B00'
+// Fundo da splash screen (exibido antes do app carregar) — branco puro,
+// não a cor de marca, para consistência com o manifest estático de fallback.
+const COR_FUNDO_SPLASH = '#FFFFFF'
 const ICONE_192_PADRAO = '/icons/mesaagil-192.png'
 const ICONE_512_PADRAO = '/icons/mesaagil-512.png'
 
@@ -50,7 +53,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     start_url: `/${slug}`,
     scope: `/${slug}`,
     display: 'standalone',
-    background_color: COR_MARCA,
+    background_color: COR_FUNDO_SPLASH,
     theme_color: COR_MARCA,
     icons: [
       { src: icone192, sizes: '192x192', type: 'image/png' },

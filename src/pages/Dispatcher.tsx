@@ -29,7 +29,7 @@ export function Dispatcher() {
 
   if (carregandoAuth || (usuario && carregandoBarracas)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-neutral-950">
+      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-neutral-950">
         <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
       </div>
     )
@@ -37,7 +37,7 @@ export function Dispatcher() {
 
   if (usuario && (erro || barracas.length === 0)) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white p-6 text-center dark:bg-neutral-950">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-white p-6 text-center dark:bg-neutral-950">
         <p className="text-base text-neutral-700 dark:text-neutral-300">
           Nenhuma barraca vinculada à sua conta. Entre em contato com o suporte.
         </p>

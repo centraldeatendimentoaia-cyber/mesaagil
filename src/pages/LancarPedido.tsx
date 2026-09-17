@@ -259,7 +259,7 @@ export function LancarPedido() {
   // pro operador, não pro balcão, não precisa do contraste absoluto da Chamada.
   if (senha !== null) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center">
         <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-500">
           {barraca.nome}
         </span>
@@ -306,7 +306,7 @@ export function LancarPedido() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
         <div className="flex items-center gap-1">
           <BotaoHome className="-ml-2" />

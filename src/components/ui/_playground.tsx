@@ -29,7 +29,7 @@ export default function Playground() {
 
   return (
     <div className={dark ? 'dark' : ''}>
-      <div className="min-h-screen bg-mesa-bg-base p-8 text-mesa-text-primary">
+      <div className="min-h-dvh bg-mesa-bg-base p-8 text-mesa-text-primary">
         <div className="mx-auto flex max-w-4xl flex-col gap-10">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Playground — Design System v2</h1>

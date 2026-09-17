@@ -214,7 +214,7 @@ export function ConfirmarPedido() {
   const podeEnviar = metodoSelecionado !== null && !enviando
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <div className="px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
         <div className="flex items-center gap-1">
           <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />

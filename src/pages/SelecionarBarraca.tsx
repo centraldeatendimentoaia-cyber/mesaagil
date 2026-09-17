@@ -9,14 +9,14 @@ export function SelecionarBarraca() {
 
   if (carregando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-neutral-950">
+      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-neutral-950">
         <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white p-6 dark:bg-neutral-950">
+    <div className="flex min-h-dvh flex-col bg-white p-6 dark:bg-neutral-950">
       <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Qual barraca?</h1>
 
       <div className="mt-6 flex flex-col gap-3">

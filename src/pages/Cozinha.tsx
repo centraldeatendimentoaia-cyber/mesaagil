@@ -475,7 +475,7 @@ export function Cozinha() {
   }
 
   return (
-    <div className="min-h-screen bg-mesa-bg-kanban pb-40">
+    <div className="min-h-dvh bg-mesa-bg-kanban pb-40">
       {!online && (
         <p className="border-l-[3px] border-mesa-error-500 bg-mesa-error-50 p-3 text-center text-sm font-medium text-mesa-error-700 dark:bg-mesa-error-500/15 dark:text-mesa-error-400">
           Sem conexão — os pedidos serão enviados quando a rede voltar

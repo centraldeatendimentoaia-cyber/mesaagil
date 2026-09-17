@@ -50,7 +50,7 @@ export function LayoutBarraca() {
 
   if (carregando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-cozinha-fundo">
+      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-cozinha-fundo">
         <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
       </div>
     )
@@ -75,7 +75,7 @@ export function LayoutBarraca() {
         <PedidosContext.Provider value={estadoPedidos}>
           <div
             className={clsx(
-              'min-h-screen',
+              'min-h-dvh',
               semGradiente ? 'bg-mesa-bg-kanban' : '[background:var(--mesa-gradient-atmosphere)]',
             )}
           >

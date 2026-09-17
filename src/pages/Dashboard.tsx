@@ -84,7 +84,7 @@ export function Dashboard() {
   const dataFormatada = useMemo(() => formatarDataExtenso(new Date()), [])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
         <div className="min-w-0">
           <h1 className="text-[28px] font-bold leading-[36px] text-mesa-text-primary">
