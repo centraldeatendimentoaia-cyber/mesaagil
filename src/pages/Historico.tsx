@@ -414,7 +414,7 @@ export function Historico() {
   return (
     <GateSenhaAdmin key={barraca.id} barracaId={barraca.id} slug={barraca.slug}>
     <div className="min-h-dvh pb-24">
-      <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-[var(--mesa-color-surface-blur)] px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 [backdrop-filter:blur(var(--mesa-surface-blur-strength))]">
+      <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-mesa-surface px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 shadow-mesa-1">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1">
             <BotaoHome className="-ml-2" />
