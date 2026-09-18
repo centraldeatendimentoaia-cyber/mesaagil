@@ -190,6 +190,7 @@ export function ConfirmarPedido() {
     const rotuloMetodo = METODOS_DISPONIVEIS.find((m) => m.chave === metodoSelecionado)?.label
     imprimirRecibo({
       nomeBarraca: barraca.nome,
+      logoUrl: barraca.logo_url,
       senha: senhaProvisoria,
       horario: new Date(),
       mesa: viagem ? null : mesa.trim() || null,

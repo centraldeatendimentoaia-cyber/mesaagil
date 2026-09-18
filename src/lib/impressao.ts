@@ -19,6 +19,7 @@ export type ItemRecibo = {
 
 export type DadosRecibo = {
   nomeBarraca: string
+  logoUrl: string | null
   senha: number
   horario: Date
   mesa: string | null
@@ -38,6 +39,12 @@ function escaparHtml(texto: string): string {
   const div = document.createElement('div')
   div.textContent = texto
   return div.innerHTML
+}
+
+/** Como escaparHtml, mas também escapa aspas — necessário pra usar o valor
+ * dentro de um atributo HTML (ex.: src="..."), não só em texto solto. */
+function escaparAtributo(texto: string): string {
+  return escaparHtml(texto).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 function garantirEstiloRecibo(): void {
@@ -72,6 +79,10 @@ function garantirEstiloRecibo(): void {
         line-height: 1.4;
         color: #000;
       }
+      #${CONTAINER_RECIBO_ID}, #${CONTAINER_RECIBO_ID} * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   `
   document.head.appendChild(style)
@@ -81,12 +92,20 @@ function linhaDivisoria(): string {
   return '<hr style="border:none; border-top:1px dashed #000; margin:8px 0;" />'
 }
 
+function linhaDivisoriaForte(): string {
+  return '<hr style="border:none; border-top:2px solid #000; margin:10px 0 6px;" />'
+}
+
 function montarHtmlRecibo(dados: DadosRecibo): string {
   const dataFormatada = dados.horario.toLocaleDateString('pt-BR')
   const horaFormatada = dados.horario.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
   })
+
+  const logo = dados.logoUrl
+    ? `<img src="${escaparAtributo(dados.logoUrl)}" alt="" style="max-height:48px; max-width:60mm; margin:0 auto 6px; display:block;" />`
+    : ''
 
   const linhasItens = dados.itens
     .map((item) => {
@@ -95,9 +114,16 @@ function montarHtmlRecibo(dados: DadosRecibo): string {
         item.precoCentavosUnitario > 0
           ? formatarPrecoBR(item.precoCentavosUnitario * item.quantidade)
           : '—'
-      return `<div style="display:flex; justify-content:space-between; gap:8px;">
-        <span>${item.quantidade}x ${nome}</span>
-        <span>${totalItem}</span>
+      const linhaUnitario =
+        item.quantidade > 1 && item.precoCentavosUnitario > 0
+          ? `<div style="font-size:10px; color:#333;">${formatarPrecoBR(item.precoCentavosUnitario)} cada</div>`
+          : ''
+      return `<div style="display:flex; justify-content:space-between; gap:8px; margin:4px 0;">
+        <div>
+          <span style="font-weight:bold;">${item.quantidade}x</span> ${nome}
+          ${linhaUnitario}
+        </div>
+        <span style="white-space:nowrap;">${totalItem}</span>
       </div>`
     })
     .join('')
@@ -109,28 +135,35 @@ function montarHtmlRecibo(dados: DadosRecibo): string {
       : ''
 
   const linhaObs = dados.observacao
-    ? `<p style="margin:6px 0 0; font-style:italic;">Obs: ${escaparHtml(dados.observacao)}</p>`
+    ? `${linhaDivisoria()}<p style="margin:0; font-style:italic;">Obs: ${escaparHtml(dados.observacao)}</p>`
     : ''
 
   return `
     <div style="text-align:center;">
-      <p style="margin:0; font-weight:bold; font-size:14px;">${escaparHtml(dados.nomeBarraca)}</p>
-      <p style="margin:8px 0 0; font-size:28px; font-weight:bold;">${String(dados.senha).padStart(3, '0')}</p>
-      <p style="margin:0; font-size:10px; letter-spacing:0.1em;">SENHA</p>
+      ${logo}
+      <p style="margin:0; font-weight:bold; font-size:16px; text-transform:uppercase;">${escaparHtml(dados.nomeBarraca)}</p>
     </div>
     ${linhaDivisoria()}
-    <p style="margin:0;">${dataFormatada} ${horaFormatada}</p>
+    <div style="text-align:center; background:#000; color:#fff; padding:10px 0; font-family: Arial, Helvetica, sans-serif;">
+      <p style="margin:0; font-size:10px; letter-spacing:0.2em;">SENHA</p>
+      <p style="margin:2px 0 0; font-size:40px; font-weight:800; line-height:1;">${String(dados.senha).padStart(3, '0')}</p>
+    </div>
+    ${linhaDivisoria()}
+    <p style="margin:0;">${dataFormatada} às ${horaFormatada}</p>
     ${linhaMesaOuViagem}
     ${linhaDivisoria()}
     ${linhasItens}
-    ${linhaDivisoria()}
-    <div style="display:flex; justify-content:space-between; font-weight:bold;">
-      <span>Total</span>
+    ${linhaDivisoriaForte()}
+    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:15px;">
+      <span>TOTAL</span>
       <span>${formatarPrecoBR(dados.totalCentavos)}</span>
     </div>
     <p style="margin:4px 0 0;">Pagamento: ${escaparHtml(dados.formaPagamento)}</p>
     ${linhaObs}
-    <p style="text-align:center; margin:12px 0 0; font-size:10px;">Obrigado, volte sempre!</p>
+    <div style="text-align:center; margin-top:14px;">
+      <p style="margin:0; font-size:12px;">Obrigado, volte sempre!</p>
+      <p style="margin:6px 0 0; font-size:9px; color:#555;">MesaAgil</p>
+    </div>
   `
 }
 
