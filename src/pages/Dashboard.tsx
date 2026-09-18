@@ -110,10 +110,10 @@ export function Dashboard() {
             <button
               type="button"
               onClick={() => navigate('/selecionar-barraca')}
-              className="flex min-h-11 items-center gap-1 text-left outline-none"
+              className="flex w-full min-w-0 min-h-11 items-center gap-1 text-left outline-none"
               aria-label={`Trocar de barraca (atual: ${barraca.nome})`}
             >
-              <h1 className="truncate text-[28px] font-bold leading-[36px] text-mesa-text-primary">
+              <h1 className="min-w-0 truncate text-[28px] font-bold leading-[36px] text-mesa-text-primary">
                 {barraca.nome}
               </h1>
               <ChevronDown className="size-5 shrink-0 text-mesa-text-secondary" aria-hidden />

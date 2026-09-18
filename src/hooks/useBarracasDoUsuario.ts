@@ -14,6 +14,19 @@ export type BarracaComPapel = {
 // automaticamente invalidado quando o usuario_id muda (troca de conta).
 let cache: { usuarioId: string; barracas: BarracaComPapel[] } | null = null
 
+// RotaProtegida não desmonta ao trocar de /selecionar-barraca pra /:slug
+// (React vê o mesmo componente, só com props/children diferentes), então
+// uma instância do hook já montada não reage sozinha quando OUTRA instância
+// (ex.: a de SelecionarBarraca, depois de criar uma barraca) atualiza o
+// cache. Esses listeners avisam todas as instâncias vivas pra atualizarem
+// o próprio estado quando qualquer uma delas busca dados novos.
+const listeners = new Set<(barracas: BarracaComPapel[]) => void>()
+
+function publicarCache(usuarioId: string, barracas: BarracaComPapel[]): void {
+  cache = { usuarioId, barracas }
+  listeners.forEach((ouvinte) => ouvinte(barracas))
+}
+
 async function buscarBarracasDoUsuario(usuarioId: string): Promise<{
   barracas: BarracaComPapel[]
   erro: string | null
@@ -53,18 +66,29 @@ export function useBarracasDoUsuario(usuario: User | null) {
       return
     }
 
-    if (cache?.usuarioId === usuario.id) {
+    const usuarioId = usuario.id
+
+    function ouvirAtualizacoes(novasBarracas: BarracaComPapel[]) {
+      setBarracas(novasBarracas)
+      setCarregando(false)
+      setErro(null)
+    }
+    listeners.add(ouvirAtualizacoes)
+
+    if (cache?.usuarioId === usuarioId) {
       setBarracas(cache.barracas)
       setCarregando(false)
       setErro(null)
-      return
+      return () => {
+        listeners.delete(ouvirAtualizacoes)
+      }
     }
 
     let cancelado = false
     setCarregando(true)
     setErro(null)
 
-    buscarBarracasDoUsuario(usuario.id).then(({ barracas: resultado, erro: erroBusca }) => {
+    buscarBarracasDoUsuario(usuarioId).then(({ barracas: resultado, erro: erroBusca }) => {
       if (cancelado) return
 
       if (erroBusca) {
@@ -73,18 +97,18 @@ export function useBarracasDoUsuario(usuario: User | null) {
         return
       }
 
-      cache = { usuarioId: usuario.id, barracas: resultado }
-      setBarracas(resultado)
-      setCarregando(false)
+      publicarCache(usuarioId, resultado)
     })
 
     return () => {
       cancelado = true
+      listeners.delete(ouvirAtualizacoes)
     }
   }, [usuario])
 
   /** Refaz a busca ignorando o cache — usa depois de criar uma barraca nova,
-   * pra ela aparecer na lista sem precisar recarregar a página. */
+   * pra ela aparecer na lista (em todas as instâncias do hook já montadas,
+   * como a de RotaProtegida) sem precisar recarregar a página. */
   async function recarregar() {
     if (!usuario) return
     setCarregando(true)
@@ -94,10 +118,7 @@ export function useBarracasDoUsuario(usuario: User | null) {
       setCarregando(false)
       return
     }
-    cache = { usuarioId: usuario.id, barracas: resultado }
-    setBarracas(resultado)
-    setErro(null)
-    setCarregando(false)
+    publicarCache(usuario.id, resultado)
   }
 
   return { barracas, carregando, erro, recarregar }

@@ -133,8 +133,13 @@ export function SelecionarBarraca() {
   const { barracas, carregando, recarregar } = useBarracasDoUsuario(usuario)
   const [criandoBarraca, setCriandoBarraca] = useState(false)
 
-  function aoCriarBarraca(slug: string) {
-    recarregar()
+  async function aoCriarBarraca(slug: string) {
+    // Espera recarregar terminar antes de navegar: o cache de barracas do
+    // usuário (compartilhado com RotaProtegida) só passa a incluir a
+    // barraca recém-criada depois que essa busca resolve. Navegar antes
+    // fazia RotaProtegida checar acesso com a lista antiga e mostrar
+    // "você não tem acesso a esta barraca" por engano.
+    await recarregar()
     navigate(`/${slug}`)
   }
 
