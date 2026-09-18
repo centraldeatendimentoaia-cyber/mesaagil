@@ -79,6 +79,7 @@ export function Dashboard() {
   const { barracas: barracasDoUsuario } = useBarracasDoUsuario(usuario)
   const escuro = tema === 'escuro'
   const [confirmandoSaida, setConfirmandoSaida] = useState(false)
+  const [mostrarMenuConta, setMostrarMenuConta] = useState(false)
 
   // Mesmas fontes já assinadas em tempo real por LayoutBarraca (nenhuma
   // busca nova): contagemAFazer já vem pronta do contexto, a última senha
@@ -145,8 +146,8 @@ export function Dashboard() {
           </Link>
           <button
             type="button"
-            onClick={() => setConfirmandoSaida(true)}
-            aria-label="Sair"
+            onClick={() => setMostrarMenuConta(true)}
+            aria-label="Conta"
             className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
           >
             <LogOut className="size-5" aria-hidden />
@@ -185,6 +186,37 @@ export function Dashboard() {
           onClick={() => navigate(`/${barraca.slug}/historico`)}
         />
       </div>
+
+      <BottomSheet open={mostrarMenuConta} onClose={() => setMostrarMenuConta(false)} aria-label="Conta">
+        <h2 className="text-lg font-semibold text-mesa-text-primary">Conta</h2>
+        {usuario?.email && (
+          <p className="mt-1 truncate text-sm text-mesa-text-secondary">{usuario.email}</p>
+        )}
+        <div className="mt-6 flex flex-col gap-1">
+          <Button
+            variant="ghost"
+            size="md"
+            className="w-full"
+            onClick={() => {
+              setMostrarMenuConta(false)
+              navigate('/selecionar-barraca')
+            }}
+          >
+            Trocar ou adicionar barraca
+          </Button>
+          <Button
+            variant="textDanger"
+            size="md"
+            className="w-full"
+            onClick={() => {
+              setMostrarMenuConta(false)
+              setConfirmandoSaida(true)
+            }}
+          >
+            Sair da conta
+          </Button>
+        </div>
+      </BottomSheet>
 
       <BottomSheet
         open={confirmandoSaida}

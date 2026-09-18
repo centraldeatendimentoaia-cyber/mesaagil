@@ -35,7 +35,8 @@ begin
     nome, slug, modo, verde_ate, amarelo_ate, metodos_pagamento_ativos
   )
   values (
-    v_nome, v_slug, 'claro', 15, 30, array['dinheiro', 'debito', 'credito', 'pix']
+    v_nome, v_slug, 'claro', 15, 30,
+    '["dinheiro", "debito", "credito", "pix"]'::jsonb
   )
   returning * into v_barraca;
 
