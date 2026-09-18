@@ -8,6 +8,7 @@ import { formatarPrecoBR } from '../lib/preco'
 import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { hojeISO } from '../lib/datas'
 import { calcularIntervalosRelatorio, calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
+import { useOcultarAoRolar } from '../hooks/useOcultarAoRolar'
 import type { TipoFiltroRelatorio } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
 import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
@@ -222,6 +223,7 @@ function CardHistorico({
 
 export function Historico() {
   const barraca = useBarracaAtual()
+  const filtrosEscondidos = useOcultarAoRolar()
 
   const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -414,7 +416,11 @@ export function Historico() {
   return (
     <GateSenhaAdmin key={barraca.id} barracaId={barraca.id} slug={barraca.slug}>
     <div className="min-h-dvh pb-24">
-      <div className="sticky top-0 z-[var(--mesa-z-sticky)] bg-mesa-surface px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 shadow-mesa-1">
+      <div
+        className={`sticky top-0 z-[var(--mesa-z-sticky)] bg-mesa-surface px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-4 shadow-mesa-1 transition-transform duration-300 ${
+          filtrosEscondidos ? '-translate-y-full pointer-events-none' : 'translate-y-0'
+        }`}
+      >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1">
             <BotaoHome className="-ml-2" />
