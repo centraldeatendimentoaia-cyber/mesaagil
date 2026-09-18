@@ -32,7 +32,7 @@ export function Dispatcher() {
 
   if (carregandoAuth || (usuario && carregandoBarracas)) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base">
         <p className="text-sm text-mesa-text-secondary">Carregando...</p>
       </div>
     )
@@ -40,7 +40,7 @@ export function Dispatcher() {
 
   if (usuario && erro) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-mesa-bg-base p-6 text-center">
         <p className="text-base text-mesa-text-primary">
           Não foi possível carregar suas barracas. Tente novamente.
         </p>

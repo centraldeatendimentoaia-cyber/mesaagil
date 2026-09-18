@@ -140,7 +140,7 @@ export function SelecionarBarraca() {
 
   if (carregando) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base">
         <p className="text-sm text-mesa-text-secondary">Carregando...</p>
       </div>
     )
@@ -148,7 +148,7 @@ export function SelecionarBarraca() {
 
   if (barracas.length === 0) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-mesa-bg-base p-6 text-center">
         <span className="flex size-16 items-center justify-center rounded-mesa-full bg-mesa-teal-50 dark:bg-mesa-teal-500/15">
           <Store className="size-7 text-mesa-teal-700 dark:text-mesa-teal-300" aria-hidden />
         </span>
@@ -182,7 +182,7 @@ export function SelecionarBarraca() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col p-6">
+    <div className="flex min-h-dvh flex-col bg-mesa-bg-base p-6">
       <h1 className="text-2xl font-bold text-mesa-text-primary">Qual barraca?</h1>
 
       <div className="mt-6 flex flex-col gap-3">
