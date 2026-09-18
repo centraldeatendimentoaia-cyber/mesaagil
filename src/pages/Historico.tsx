@@ -26,9 +26,15 @@ function motivoHumanizado(motivo: string | null): string {
   return MOTIVOS_CANCELAMENTO.find((m) => m.valor === motivo)?.rotulo ?? motivo ?? 'não informado'
 }
 
-function rotuloMetodo(chave: string | null): string {
+function RotuloMetodo({ chave }: { chave: string | null }) {
   const metodo = METODOS_DISPONIVEIS.find((m) => m.chave === chave)
-  return metodo ? `${metodo.icone} ${metodo.label}` : humanizarMetodo(chave)
+  if (!metodo) return <>{humanizarMetodo(chave)}</>
+  return (
+    <span className="inline-flex items-center gap-1">
+      <metodo.icone className="size-3.5" aria-hidden />
+      {metodo.label}
+    </span>
+  )
 }
 
 const PERIODOS: { valor: TipoFiltroRelatorio; rotulo: string }[] = [
@@ -181,7 +187,7 @@ function CardHistorico({
         <span
           className={`inline-flex items-center rounded-mesa-full px-3 py-1 text-xs font-medium ${corMetodo(pedido.metodo_pagamento)}`}
         >
-          {rotuloMetodo(pedido.metodo_pagamento)}
+          <RotuloMetodo chave={pedido.metodo_pagamento} />
         </span>
       </div>
 
@@ -529,7 +535,10 @@ export function Historico() {
                 checked={metodoFiltrado === metodo.chave}
                 onClick={() => setMetodoFiltrado(metodo.chave)}
               >
-                {metodo.icone} {metodo.label}
+                <span className="inline-flex items-center gap-1">
+                  <metodo.icone className="size-3.5" aria-hidden />
+                  {metodo.label}
+                </span>
               </Chip>
             ),
           )}

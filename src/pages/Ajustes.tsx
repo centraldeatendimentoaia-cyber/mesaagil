@@ -1068,8 +1068,9 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
                 htmlFor={`metodo-${metodo.chave}`}
                 className="flex cursor-pointer items-center justify-between gap-3 py-3"
               >
-                <span className="text-base text-mesa-text-primary">
-                  {metodo.icone} {metodo.label}
+                <span className="inline-flex items-center gap-2 text-base text-mesa-text-primary">
+                  <metodo.icone className="size-4 shrink-0" aria-hidden />
+                  {metodo.label}
                 </span>
                 <Toggle
                   id={`metodo-${metodo.chave}`}

@@ -1,10 +1,12 @@
+import { Banknote, CreditCard, QrCode, type LucideIcon } from 'lucide-react'
+
 export type MetodoPagamento = 'dinheiro' | 'debito' | 'credito' | 'pix'
 
-export const METODOS_DISPONIVEIS: { chave: MetodoPagamento; label: string; icone: string }[] = [
-  { chave: 'dinheiro', label: 'Dinheiro', icone: '💵' },
-  { chave: 'debito', label: 'Débito', icone: '💳' },
-  { chave: 'credito', label: 'Crédito', icone: '💳' },
-  { chave: 'pix', label: 'Pix', icone: '🔳' },
+export const METODOS_DISPONIVEIS: { chave: MetodoPagamento; label: string; icone: LucideIcon }[] = [
+  { chave: 'dinheiro', label: 'Dinheiro', icone: Banknote },
+  { chave: 'debito', label: 'Débito', icone: CreditCard },
+  { chave: 'credito', label: 'Crédito', icone: CreditCard },
+  { chave: 'pix', label: 'Pix', icone: QrCode },
 ]
 
 export function humanizarMetodo(chave: string | null): string {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Store } from 'lucide-react'
+import { Plus, Store, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
@@ -19,7 +19,17 @@ function gerarSlug(nome: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function CartaoBarraca({ nome, logoUrl, onClick }: { nome: string; logoUrl: string | null; onClick: () => void }) {
+function CartaoBarraca({
+  nome,
+  logoUrl,
+  onClick,
+  onExcluir,
+}: {
+  nome: string
+  logoUrl: string | null
+  onClick: () => void
+  onExcluir?: () => void
+}) {
   return (
     <Card interactive onClick={onClick} className="flex min-h-16 items-center gap-3 text-left">
       {logoUrl ? (
@@ -29,7 +39,20 @@ function CartaoBarraca({ nome, logoUrl, onClick }: { nome: string; logoUrl: stri
           {nome.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="text-base font-semibold text-mesa-text-primary">{nome}</span>
+      <span className="min-w-0 flex-1 truncate text-base font-semibold text-mesa-text-primary">{nome}</span>
+      {onExcluir && (
+        <button
+          type="button"
+          onClick={(e: MouseEvent) => {
+            e.stopPropagation()
+            onExcluir()
+          }}
+          aria-label={`Apagar ${nome}`}
+          className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full text-mesa-text-tertiary outline-none hover:bg-[var(--mesa-state-hover-bg)] hover:text-mesa-error-500"
+        >
+          <Trash2 className="size-5" aria-hidden />
+        </button>
+      )}
     </Card>
   )
 }
@@ -127,11 +150,86 @@ function BottomSheetNovaBarraca({
   )
 }
 
+function BottomSheetApagarBarraca({
+  barraca,
+  onClose,
+  onApagada,
+}: {
+  barraca: { id: string; nome: string } | null
+  onClose: () => void
+  onApagada: () => void
+}) {
+  const [confirmacao, setConfirmacao] = useState('')
+  const [apagando, setApagando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  function fechar() {
+    setConfirmacao('')
+    setErro(null)
+    onClose()
+  }
+
+  async function apagar() {
+    if (!barraca || confirmacao.trim() !== barraca.nome || apagando) return
+
+    setApagando(true)
+    setErro(null)
+
+    const { error } = await supabase.rpc('apagar_barraca', { p_barraca_id: barraca.id })
+
+    setApagando(false)
+
+    if (error) {
+      setErro('Não foi possível apagar a barraca. Tente novamente.')
+      return
+    }
+
+    setConfirmacao('')
+    onApagada()
+  }
+
+  return (
+    <BottomSheet open={!!barraca} onClose={fechar} aria-label="Apagar barraca">
+      <h2 className="text-lg font-semibold text-mesa-text-primary">Apagar {barraca?.nome}?</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Isso apaga pra sempre o cardápio, o histórico de pedidos e tudo mais dessa barraca. Não tem
+        como desfazer.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-4">
+        <Input
+          label={`Digite "${barraca?.nome}" pra confirmar`}
+          autoFocus
+          value={confirmacao}
+          onChange={(e) => setConfirmacao(e.target.value)}
+        />
+
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+
+        <Button
+          variant="destructive"
+          size="xl"
+          loading={apagando}
+          disabled={confirmacao.trim() !== barraca?.nome}
+          onClick={apagar}
+          className="w-full"
+        >
+          Apagar barraca
+        </Button>
+        <Button variant="ghost" size="md" onClick={fechar} className="w-full">
+          Cancelar
+        </Button>
+      </div>
+    </BottomSheet>
+  )
+}
+
 export function SelecionarBarraca() {
   const navigate = useNavigate()
   const { usuario, sair } = useAuth()
   const { barracas, carregando, recarregar } = useBarracasDoUsuario(usuario)
   const [criandoBarraca, setCriandoBarraca] = useState(false)
+  const [barracaParaApagar, setBarracaParaApagar] = useState<{ id: string; nome: string } | null>(null)
 
   async function aoCriarBarraca(slug: string) {
     // Espera recarregar terminar antes de navegar: o cache de barracas do
@@ -191,12 +289,15 @@ export function SelecionarBarraca() {
       <h1 className="text-2xl font-bold text-mesa-text-primary">Qual barraca?</h1>
 
       <div className="mt-6 flex flex-col gap-3">
-        {barracas.map(({ barraca }) => (
+        {barracas.map(({ barraca, papel }) => (
           <CartaoBarraca
             key={barraca.id}
             nome={barraca.nome}
             logoUrl={barraca.logo_url}
             onClick={() => navigate(`/${barraca.slug}`)}
+            onExcluir={
+              papel === 'dono' ? () => setBarracaParaApagar({ id: barraca.id, nome: barraca.nome }) : undefined
+            }
           />
         ))}
 
@@ -227,6 +328,15 @@ export function SelecionarBarraca() {
         open={criandoBarraca}
         onClose={() => setCriandoBarraca(false)}
         onCriada={aoCriarBarraca}
+      />
+
+      <BottomSheetApagarBarraca
+        barraca={barracaParaApagar}
+        onClose={() => setBarracaParaApagar(null)}
+        onApagada={async () => {
+          setBarracaParaApagar(null)
+          await recarregar()
+        }}
       />
     </div>
   )

@@ -53,16 +53,16 @@ function motivoEmMinusculo(chave: string): string {
   return rotulo.toLowerCase()
 }
 
-function iconeLabelMetodo(chave: MetodoOuNaoInformado): { icone: string; label: string } {
-  if (chave === 'nao_informado') return { icone: '', label: 'Método não informado' }
+function labelMetodo(chave: MetodoOuNaoInformado): string {
+  if (chave === 'nao_informado') return 'Método não informado'
   const metodo = METODOS_DISPONIVEIS.find((m) => m.chave === chave)
-  return { icone: metodo?.icone ?? '', label: metodo?.label ?? chave }
+  return metodo?.label ?? chave
 }
 
 function textoDetalhamentoLiquido(detalhamento: DetalhamentoLiquido[]): string {
   return detalhamento
     .map((d) => {
-      const { label } = iconeLabelMetodo(d.metodo)
+      const label = labelMetodo(d.metodo)
       const sufixo = d.taxaBps
         ? `após ${bpsParaPercentual(d.taxaBps)}%`
         : d.metodo === 'debito' || d.metodo === 'credito'
@@ -282,11 +282,10 @@ export function PainelRelatorio({
         <Secao titulo="Por método de pagamento">
           <ListaBarras
             itens={metodosComValor.map((chave) => {
-              const { icone, label } = iconeLabelMetodo(chave)
               const d = atual.divisaoPorMetodo[chave]
               return {
                 chave,
-                rotulo: icone ? `${icone} ${label}` : label,
+                rotulo: labelMetodo(chave),
                 valor: d.total,
                 rotuloValor: `${formatarPrecoBR(d.total)} (${Math.round(d.percentual)}%)`,
               }
