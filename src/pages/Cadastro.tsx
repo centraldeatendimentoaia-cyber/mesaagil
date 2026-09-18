@@ -73,7 +73,7 @@ export function Cadastro() {
       <div className="w-full max-w-[420px]">
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <span className="text-xl font-bold text-mesa-orange-500">MA</span>
+            <img src="/brand/mesaagil-icone-cor.png" alt="" className="size-8" />
           </div>
           <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
             Criar conta

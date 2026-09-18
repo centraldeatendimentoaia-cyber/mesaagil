@@ -36,14 +36,14 @@ export function Login() {
     <div className="flex min-h-dvh flex-col items-center justify-center p-6 [background:var(--mesa-gradient-atmosphere)]">
       <div className="w-full max-w-[420px]">
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <span className="text-xl font-bold text-mesa-orange-500">MA</span>
-          </div>
-          <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
-            MesaAgil
-          </h1>
-          <p className="mt-1 text-sm text-mesa-text-secondary">
-            by AIA · Automação Inteligente para Atendimento
+          <img src="/brand/mesaagil-logo-cor.png" alt="MesaAgil" className="h-12 w-auto dark:hidden" />
+          <img
+            src="/brand/mesaagil-logo-branco.png"
+            alt="MesaAgil"
+            className="hidden h-12 w-auto dark:block"
+          />
+          <p className="mt-3 text-sm text-mesa-text-secondary">
+            Automação Inteligente para Atendimento
           </p>
         </div>
 

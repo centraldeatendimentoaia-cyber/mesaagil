@@ -19,7 +19,10 @@ export default defineConfig({
         // exceljs só carrega sob demanda (import dinâmico no botão Exportar
         // de Histórico) — é ~1MB, não vale precachear pra todo mundo que
         // nunca exporta nada
-        globIgnores: ['**/exceljs*.js'],
+        // mesaagil-og.png só é usado por crawlers de link preview (WhatsApp,
+        // redes sociais) — o app em si nunca carrega essa imagem, não vale
+        // precachear pra instalação do PWA
+        globIgnores: ['**/exceljs*.js', '**/mesaagil-og.png'],
         navigateFallback: '/index.html',
         // o manifest dinâmico e a fila do Supabase nunca devem ser
         // servidos pelo shell cacheado
