@@ -4,6 +4,7 @@ import { ChevronLeft, FileText, Hash, Plane, type LucideIcon } from 'lucide-reac
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
+import { imprimirRecibo } from '../lib/impressao'
 import {
   proximoNumeroProvisorio,
   type EntregaDiretaPorItem,
@@ -22,7 +23,6 @@ import { SegmentedControl } from '../components/ui/SegmentedControl'
 import type { Item } from '../types/database'
 
 const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
-const DURACAO_AVISO_NFE_MS = 3000
 
 function LinhaItemConfirmar({
   item,
@@ -109,17 +109,9 @@ export function ConfirmarPedido() {
     opcoesPagamento.length === 1 ? opcoesPagamento[0].chave : null,
   )
   const [enviando, setEnviando] = useState(false)
-  const [avisoNFe, setAvisoNFe] = useState(false)
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
   const enviandoRef = useRef(false)
-  const avisoNFeTimerRef = useRef<number | null>(null)
   const clientUuidRef = useRef(crypto.randomUUID())
-
-  useEffect(() => {
-    return () => {
-      if (avisoNFeTimerRef.current !== null) window.clearTimeout(avisoNFeTimerRef.current)
-    }
-  }, [])
 
   if (!estado || Object.keys(estado.carrinho).length === 0) {
     return null
@@ -190,25 +182,38 @@ export function ConfirmarPedido() {
       p_itens: itensPedido,
     })
 
+    // Chamado uma única vez de propósito — proximoNumeroProvisorio incrementa
+    // um contador a cada chamada, então usar em dois lugares diferentes
+    // imprimiria uma senha e mostraria outra na tela seguinte.
+    const senhaProvisoria = proximoNumeroProvisorio(barraca.id)
+
+    const rotuloMetodo = METODOS_DISPONIVEIS.find((m) => m.chave === metodoSelecionado)?.label
+    imprimirRecibo({
+      nomeBarraca: barraca.nome,
+      senha: senhaProvisoria,
+      horario: new Date(),
+      mesa: viagem ? null : mesa.trim() || null,
+      viagem,
+      observacao: observacao.trim() || null,
+      itens: linhas.map(({ item, quantidade }) => ({
+        nome: item.nome,
+        quantidade,
+        precoCentavosUnitario: item.preco_centavos,
+      })),
+      totalCentavos,
+      formaPagamento: rotuloMetodo ?? metodoSelecionado,
+    })
+
     navigate(`/${barraca.slug}/lancar`, {
       replace: true,
       state: {
         senhaEnviada: {
-          valor: proximoNumeroProvisorio(barraca.id),
+          valor: senhaProvisoria,
           provisoria: true,
           idFila: operacao.id,
         },
       } satisfies EstadoPedidoEnviado,
     })
-  }
-
-  function aoClicarImprimirNFe() {
-    // TODO(fase 5): impressão real de NFe. Por enquanto o botão é só
-    // visual — fica com aparência desabilitada, mas o clique mostra este
-    // aviso em vez de silenciosamente não fazer nada.
-    setAvisoNFe(true)
-    if (avisoNFeTimerRef.current !== null) window.clearTimeout(avisoNFeTimerRef.current)
-    avisoNFeTimerRef.current = window.setTimeout(() => setAvisoNFe(false), DURACAO_AVISO_NFE_MS)
   }
 
   const podeEnviar = metodoSelecionado !== null && !enviando
@@ -305,17 +310,6 @@ export function ConfirmarPedido() {
           >
             Entregar
           </Button>
-          <Button
-            variant="outline"
-            size="xl"
-            onClick={aoClicarImprimirNFe}
-            className="w-full opacity-40"
-          >
-            Imprimir NFe
-          </Button>
-          <p role="status" className="text-center text-xs text-mesa-text-secondary">
-            {avisoNFe ? 'Em breve' : ' '}
-          </p>
 
           <button
             type="button"
