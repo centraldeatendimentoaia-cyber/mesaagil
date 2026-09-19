@@ -3,9 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ChefHat,
   ChevronDown,
+  Clock,
   History,
+  ListOrdered,
   LogOut,
   Moon,
+  Printer,
   Settings,
   ShoppingBag,
   Sun,
@@ -20,6 +23,7 @@ import { useTheme } from '../hooks/useTheme'
 import { formatarDataExtenso } from '../lib/datas'
 import { formatarPrecoBR } from '../lib/preco'
 import { calcularTotalBruto } from '../lib/relatorio'
+import { obterUltimoRecibo, reimprimirUltimoRecibo } from '../lib/impressao'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -27,6 +31,26 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 
 function formatarSenha(senha: number): string {
   return String(senha).padStart(3, '0')
+}
+
+/** Só rótulo de turno do dia (manhã/tarde/noite) pra dar contexto no Hub —
+ * derivado da hora do aparelho, não é rastreamento de turno de verdade
+ * (sem check-in/checkout, sem histórico por operador). */
+function turnoAtual(): string {
+  const hora = new Date().getHours()
+  if (hora < 12) return 'Turno Manhã'
+  if (hora < 18) return 'Turno Tarde'
+  return 'Turno Noite'
+}
+
+function calcularEsperaMediaMinutos(emFila: { criado_em: string }[]): number | null {
+  if (emFila.length === 0) return null
+  const agora = Date.now()
+  const somaMinutos = emFila.reduce(
+    (soma, p) => soma + (agora - new Date(p.criado_em).getTime()) / 60000,
+    0,
+  )
+  return Math.round(somaMinutos / emFila.length)
 }
 
 function IconeCard({ icone: Icone }: { icone: LucideIcon }) {
@@ -101,6 +125,26 @@ export function Dashboard() {
 
   const totalHojeCentavos = useMemo(() => calcularTotalBruto(pedidos), [pedidos])
   const dataFormatada = useMemo(() => formatarDataExtenso(new Date()), [])
+  const turno = useMemo(() => turnoAtual(), [])
+
+  const vendasHojeCount = useMemo(
+    () => pedidos.filter((p) => p.status !== 'cancelado').length,
+    [pedidos],
+  )
+
+  const esperaMediaMinutos = useMemo(
+    () => calcularEsperaMediaMinutos(pedidos.filter((p) => p.status === 'a_fazer')),
+    [pedidos],
+  )
+
+  const [temUltimoCupom] = useState(() => obterUltimoRecibo(barraca.id) !== null)
+  const [reimprimindo, setReimprimindo] = useState(false)
+
+  function aoReimprimirCupom() {
+    setReimprimindo(true)
+    reimprimirUltimoRecibo(barraca.id)
+    window.setTimeout(() => setReimprimindo(false), 600)
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -123,7 +167,9 @@ export function Dashboard() {
               Bem-vindo, {barraca.nome}
             </h1>
           )}
-          <p className="mt-1 text-sm text-mesa-text-secondary">{dataFormatada}</p>
+          <p className="mt-1 text-sm text-mesa-text-secondary">
+            {dataFormatada} <span aria-hidden>·</span> {turno}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 pt-1">
           <Badge variant={online ? 'success' : 'warning'} dot>
@@ -155,9 +201,14 @@ export function Dashboard() {
         </div>
       </div>
 
-      <p className="px-6 pt-6 text-base text-mesa-text-secondary">O que você vai fazer agora?</p>
+      <div className="px-6 pt-6">
+        <p className="text-base font-semibold text-mesa-text-primary">O que você vai fazer agora?</p>
+        <p className="mt-0.5 text-sm text-mesa-text-secondary">
+          Selecione o módulo de trabalho ou acompanhe o ritmo da loja
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-3 px-6 pb-10 pt-4">
+      <div className="grid grid-cols-2 gap-3 px-6 pb-4 pt-4">
         <CardDashboard
           icone={ShoppingBag}
           titulo="Caixa"
@@ -182,10 +233,56 @@ export function Dashboard() {
         <CardDashboard
           icone={History}
           titulo="Histórico"
-          subtitulo={`${formatarPrecoBR(totalHojeCentavos)} hoje`}
+          subtitulo={`${vendasHojeCount} venda${vendasHojeCount === 1 ? '' : 's'} · ${formatarPrecoBR(totalHojeCentavos)} hoje`}
           onClick={() => navigate(`/${barraca.slug}/historico`)}
         />
       </div>
+
+      <div className="px-6 pb-4">
+        <Card className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm font-semibold text-mesa-text-primary">
+              <span className="size-2 rounded-mesa-full bg-mesa-teal-500" aria-hidden />
+              Ritmo da Operação
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+                <Clock className="size-3" aria-hidden />
+                Espera média
+              </p>
+              <p className="mt-1 text-lg font-bold text-mesa-text-primary">
+                {esperaMediaMinutos === null ? '—' : `${esperaMediaMinutos} min`}
+              </p>
+            </div>
+            <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+                <ListOrdered className="size-3" aria-hidden />
+                Em fila
+              </p>
+              <p className="mt-1 text-lg font-bold text-mesa-text-primary">
+                {contagemAFazer} comanda{contagemAFazer === 1 ? '' : 's'}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {temUltimoCupom && (
+        <div className="px-6 pb-8">
+          <Button
+            variant="outline"
+            size="md"
+            icon={<Printer className="size-4" aria-hidden />}
+            loading={reimprimindo}
+            onClick={aoReimprimirCupom}
+            className="w-full"
+          >
+            Reimprimir último cupom
+          </Button>
+        </div>
+      )}
 
       <BottomSheet open={mostrarMenuConta} onClose={() => setMostrarMenuConta(false)} aria-label="Conta">
         <h2 className="text-lg font-semibold text-mesa-text-primary">Conta</h2>

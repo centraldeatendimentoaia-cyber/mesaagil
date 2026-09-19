@@ -4,7 +4,7 @@ import { ChevronLeft, FileText, Hash, Plane, type LucideIcon } from 'lucide-reac
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
-import { imprimirRecibo } from '../lib/impressao'
+import { imprimirRecibo, salvarUltimoRecibo } from '../lib/impressao'
 import {
   proximoNumeroProvisorio,
   type EntregaDiretaPorItem,
@@ -188,7 +188,7 @@ export function ConfirmarPedido() {
     const senhaProvisoria = proximoNumeroProvisorio(barraca.id)
 
     const rotuloMetodo = METODOS_DISPONIVEIS.find((m) => m.chave === metodoSelecionado)?.label
-    imprimirRecibo({
+    const dadosRecibo = {
       nomeBarraca: barraca.nome,
       logoUrl: barraca.logo_url,
       senha: senhaProvisoria,
@@ -203,7 +203,9 @@ export function ConfirmarPedido() {
       })),
       totalCentavos,
       formaPagamento: rotuloMetodo ?? metodoSelecionado,
-    })
+    }
+    imprimirRecibo(dadosRecibo)
+    salvarUltimoRecibo(barraca.id, dadosRecibo)
 
     navigate(`/${barraca.slug}/lancar`, {
       replace: true,

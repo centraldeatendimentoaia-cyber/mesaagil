@@ -181,3 +181,37 @@ export function imprimirRecibo(dados: DadosRecibo): void {
 
   window.print()
 }
+
+const CHAVE_ULTIMO_RECIBO_PREFIXO = 'mesaagil:ultimo-recibo:'
+
+type DadosReciboSerializavel = Omit<DadosRecibo, 'horario'> & { horario: string }
+
+/** Guarda o cupom mais recente por barraca — usado pelo atalho "Reimprimir
+ * último cupom" no Hub. Best-effort: se localStorage falhar (modo privado,
+ * cota cheia), só perde a reimpressão, nunca o cupom original já disparado. */
+export function salvarUltimoRecibo(barracaId: string, dados: DadosRecibo): void {
+  try {
+    const serializavel: DadosReciboSerializavel = { ...dados, horario: dados.horario.toISOString() }
+    localStorage.setItem(CHAVE_ULTIMO_RECIBO_PREFIXO + barracaId, JSON.stringify(serializavel))
+  } catch {
+    // ignora — ver comentário acima
+  }
+}
+
+export function obterUltimoRecibo(barracaId: string): DadosRecibo | null {
+  try {
+    const bruto = localStorage.getItem(CHAVE_ULTIMO_RECIBO_PREFIXO + barracaId)
+    if (!bruto) return null
+    const serializavel = JSON.parse(bruto) as DadosReciboSerializavel
+    return { ...serializavel, horario: new Date(serializavel.horario) }
+  } catch {
+    return null
+  }
+}
+
+export function reimprimirUltimoRecibo(barracaId: string): boolean {
+  const dados = obterUltimoRecibo(barracaId)
+  if (!dados) return false
+  imprimirRecibo(dados)
+  return true
+}
