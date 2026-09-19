@@ -3,6 +3,18 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Redesign "Speed Bento POS" (redesign_ux_ui_app/): corpo em Hanken
+   Grotesk, títulos em Space Grotesk. Números tabulares/monoespaçados
+   (JetBrains Mono, font-mesa-mono) ficam por conta de cada componente
+   que exibe preço/senha, não é global. */
+body {
+  font-family: var(--font-mesa-sans);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-mesa-display);
+}
+
 @theme {
   /* Cor de marca fixa do MesaAgil v2 (laranja 500 do design system).
      Não é mais definida por barraca — ver docs/design-system/MESAAGIL_DESIGN_SYSTEM.md
