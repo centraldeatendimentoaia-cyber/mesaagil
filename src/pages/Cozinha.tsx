@@ -246,7 +246,7 @@ function CardPedido({
           onClick={() => onCancelar(pedido)}
           className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
         >
-          Cancelar
+          {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
         </button>
       </div>
     </Card>
