@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ClipboardList,
   CreditCard,
-  FileText,
   Hash,
   Moon,
   Plane,
@@ -33,6 +32,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Checkbox } from '../components/ui/Checkbox'
+import { Textarea } from '../components/ui/Textarea'
 import type { Item } from '../types/database'
 
 const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
@@ -134,6 +134,11 @@ export function ConfirmarPedido() {
   const [entregaDireta, setEntregaDireta] = useState<EntregaDiretaPorItem>(
     () => estado?.entregaDireta ?? {},
   )
+  // Observação geral do pedido mudou de tela: era editada em Lançar Pedido,
+  // agora é aqui — mais perto do envio, igual o mockup "+ Adicionar
+  // observação à cozinha". Precisa ser state (não só ler de `estado`) pra
+  // dar pra editar nessa tela.
+  const [observacao, setObservacao] = useState(() => estado?.observacao ?? '')
   const [metodoSelecionado, setMetodoSelecionado] = useState<MetodoPagamento | null>(() =>
     opcoesPagamento.length === 1 ? opcoesPagamento[0].chave : null,
   )
@@ -146,7 +151,7 @@ export function ConfirmarPedido() {
     return null
   }
 
-  const { carrinho, itens, mesa, viagem, observacao } = estado
+  const { carrinho, itens, mesa, viagem } = estado
   const observacaoPorItem = estado.observacaoPorItem ?? {}
 
   const linhas = Object.entries(carrinho)
@@ -304,14 +309,22 @@ export function ConfirmarPedido() {
           ))}
         </Card>
 
-        {(mesa.trim() || viagem || observacao.trim()) && (
+        <Textarea
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          placeholder="+ Adicionar observação à cozinha (opcional)"
+          rows={2}
+          aria-label="Observação geral do pedido"
+          className="mt-3"
+        />
+
+        {(mesa.trim() || viagem) && (
           <Card className="mt-4">
             {viagem ? (
               <LinhaMeta icone={Plane} label="Viagem" valor="sim" />
             ) : mesa.trim() ? (
               <LinhaMeta icone={Hash} label="Mesa" valor={mesa.trim()} />
             ) : null}
-            {observacao.trim() && <LinhaMeta icone={FileText} label="Obs" valor={observacao.trim()} />}
           </Card>
         )}
 

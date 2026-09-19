@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, FileText, Minus, Moon, Plus, Star, Sun, type LucideIcon } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  Image,
+  LayoutGrid,
+  List,
+  Minus,
+  Moon,
+  Plus,
+  Star,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react'
+import clsx from 'clsx'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
@@ -28,6 +42,17 @@ import { Textarea } from '../components/ui/Textarea'
 import type { Categoria, Item } from '../types/database'
 
 type ModoConsumo = 'mesa' | 'balcao' | 'viagem'
+
+type ModoVisualizacaoCardapio = 'lista' | 'grade'
+const CHAVE_MODO_VISUALIZACAO = 'mesa-modo-visualizacao-cardapio'
+
+function lerModoVisualizacaoSalvo(): ModoVisualizacaoCardapio {
+  try {
+    return window.localStorage.getItem(CHAVE_MODO_VISUALIZACAO) === 'grade' ? 'grade' : 'lista'
+  } catch {
+    return 'lista'
+  }
+}
 
 type SenhaConfirmada = {
   valor: number
@@ -68,6 +93,7 @@ function CardItemCardapio({
   item,
   quantidade,
   observacao,
+  posicaoPopular,
   onIncrementar,
   onDecrementar,
   onAbrirObservacao,
@@ -75,6 +101,7 @@ function CardItemCardapio({
   item: Item
   quantidade: number
   observacao: string
+  posicaoPopular: number | null
   onIncrementar: () => void
   onDecrementar: () => void
   onAbrirObservacao: () => void
@@ -82,49 +109,147 @@ function CardItemCardapio({
   const selecionado = quantidade > 0
 
   return (
-    <Card className="flex flex-col">
-      {item.foto_url && (
-        <img
-          src={item.foto_url}
-          alt=""
-          className="-mx-4 -mt-4 mb-3 aspect-[4/3] w-[calc(100%+2rem)] rounded-t-mesa-lg object-cover"
-        />
+    <Card
+      className={clsx(
+        'flex gap-3 border-2',
+        selecionado ? 'border-mesa-teal-500' : 'border-transparent',
       )}
+    >
+      <div className="relative shrink-0">
+        {item.foto_url ? (
+          <img src={item.foto_url} alt="" className="size-[72px] rounded-mesa-md object-cover" />
+        ) : (
+          <span className="flex size-[72px] items-center justify-center rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            <Image className="size-6" aria-hidden />
+          </span>
+        )}
+        {posicaoPopular !== null && (
+          <span className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-mesa-1">
+            <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
+            {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 flex-1 text-base font-semibold text-mesa-text-primary">{item.nome}</p>
+          <div className="shrink-0">
+            {selecionado ? (
+              <div className="flex items-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1 pr-1 dark:bg-mesa-teal-500/15">
+                <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
+                <span className="min-w-[1.5ch] text-center font-mesa-mono text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
+                  {quantidade}
+                </span>
+                <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<Plus className="size-4" aria-hidden />}
+                onClick={onIncrementar}
+              >
+                Adicionar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {item.descricao && (
+          <p className="mt-0.5 line-clamp-2 text-xs text-mesa-text-secondary">{item.descricao}</p>
+        )}
+        <p className="mt-1 font-mesa-mono text-sm font-semibold text-mesa-text-primary">
+          {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : 'Sem preço'}
+        </p>
+
+        {selecionado && (
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={onAbrirObservacao}
+              className="flex min-h-11 min-w-0 items-center gap-1 truncate text-xs font-medium text-mesa-text-secondary"
+            >
+              <FileText className="size-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{observacao ? `Obs: ${observacao}` : 'Adicionar observação'}</span>
+            </button>
+            {item.preco_centavos > 0 && (
+              <span className="shrink-0 font-mesa-mono text-xs font-semibold text-mesa-teal-700 dark:text-mesa-teal-400">
+                Total: {formatarPrecoBR(item.preco_centavos * quantidade)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+/** Mesma informação do CardItemCardapio, só que compacto e em coluna —
+ * pro operador que prefere ver mais itens de uma vez em vez de detalhe
+ * (descrição, observação inline). Alternado via o botão de visualização. */
+function CardItemCardapioGrade({
+  item,
+  quantidade,
+  posicaoPopular,
+  onIncrementar,
+  onDecrementar,
+}: {
+  item: Item
+  quantidade: number
+  posicaoPopular: number | null
+  onIncrementar: () => void
+  onDecrementar: () => void
+}) {
+  const selecionado = quantidade > 0
+
+  return (
+    <Card
+      className={clsx(
+        'flex flex-col border-2',
+        selecionado ? 'border-mesa-teal-500' : 'border-transparent',
+      )}
+    >
+      <div className="relative -mx-4 -mt-4 mb-3">
+        {item.foto_url ? (
+          <img
+            src={item.foto_url}
+            alt=""
+            className="aspect-[4/3] w-[calc(100%+2rem)] rounded-t-mesa-md object-cover"
+          />
+        ) : (
+          <span className="flex aspect-[4/3] w-[calc(100%+2rem)] items-center justify-center rounded-t-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            <Image className="size-6" aria-hidden />
+          </span>
+        )}
+        {posicaoPopular !== null && (
+          <span className="absolute left-2 top-2 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-mesa-1">
+            <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
+            {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
+          </span>
+        )}
+      </div>
+
       <p className="text-base font-semibold text-mesa-text-primary">{item.nome}</p>
       {item.descricao && (
         <p className="mt-0.5 line-clamp-2 text-xs text-mesa-text-secondary">{item.descricao}</p>
       )}
-      <p className="mt-0.5 text-sm text-mesa-text-secondary">
-        {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
+      <p className="mt-1 font-mesa-mono text-sm font-semibold text-mesa-text-primary">
+        {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : 'Sem preço'}
       </p>
 
-      <div className="mt-auto pt-3">
+      <div className="mt-3">
         {selecionado ? (
-          <>
-            <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
-              <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
-              <span className="min-w-[1.5ch] text-center text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
-                {quantidade}
-              </span>
-              <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
-            </div>
-            {item.preco_centavos > 0 && (
-              <p className="mt-2 text-center text-sm font-semibold text-mesa-teal-700 dark:text-mesa-teal-400">
-                Subtotal {formatarPrecoBR(item.preco_centavos * quantidade)}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={onAbrirObservacao}
-              className="mt-2 flex min-h-11 w-full items-center justify-center gap-1 truncate px-1 text-xs font-medium text-mesa-text-secondary"
-            >
-              <FileText className="size-3.5 shrink-0" aria-hidden />
-              {observacao ? `Obs: ${observacao}` : 'Adicionar observação'}
-            </button>
-          </>
+          <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
+            <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
+            <span className="min-w-[1.5ch] text-center font-mesa-mono text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
+              {quantidade}
+            </span>
+            <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
+          </div>
         ) : (
           <Button
-            variant="confirm"
+            variant="outline"
             size="md"
             icon={<Plus className="size-4" aria-hidden />}
             onClick={onIncrementar}
@@ -180,6 +305,7 @@ export function LancarPedido() {
     return 'balcao'
   })
   const [buscaItem, setBuscaItem] = useState('')
+  const [modoVisualizacao, setModoVisualizacao] = useState<ModoVisualizacaoCardapio>(lerModoVisualizacaoSalvo)
   const [idsMaisPedidos, setIdsMaisPedidos] = useState<string[]>([])
   // null = ainda não decidiu qual chip abre selecionado (depende dos dados
   // chegarem — "Mais Pedidos" só faz sentido se existir pedido no
@@ -396,6 +522,18 @@ export function LancarPedido() {
     if (modo === 'balcao') setMesa('')
   }
 
+  function alternarModoVisualizacao() {
+    setModoVisualizacao((atual) => {
+      const novo: ModoVisualizacaoCardapio = atual === 'lista' ? 'grade' : 'lista'
+      try {
+        window.localStorage.setItem(CHAVE_MODO_VISUALIZACAO, novo)
+      } catch {
+        // localStorage indisponível — a escolha vale só pra essa sessão
+      }
+      return novo
+    })
+  }
+
   function definirObservacaoItem(itemId: string, texto: string) {
     setObservacaoPorItem((atual) => {
       if (!texto.trim()) {
@@ -541,14 +679,6 @@ export function LancarPedido() {
           />
         )}
 
-        <Textarea
-          value={observacao}
-          onChange={(e) => setObservacao(e.target.value)}
-          placeholder="Observação geral do pedido (opcional)"
-          rows={2}
-          className="mt-4"
-        />
-
         <div className="mt-6">
           {carregandoItens && (
             <p className="py-8 text-center text-sm text-mesa-text-secondary">
@@ -573,44 +703,70 @@ export function LancarPedido() {
             itens.length > 0 &&
             !buscaItem.trim() &&
             (itensMaisPedidos.length > 0 || chipsCategoria.length > 0) && (
-              <div className="rolagem-minimalista -mx-6 mb-4 flex gap-2 overflow-x-auto px-6 pb-1">
+            <div className="rolagem-minimalista mb-4 flex gap-2 overflow-x-auto pb-1">
+              <Chip
+                variant={filtroEfetivo === 'todos' ? 'teal' : 'plain'}
+                checked={filtroEfetivo === 'todos'}
+                onClick={() => setFiltroAtivo('todos')}
+                className="shrink-0"
+              >
+                Todos
+              </Chip>
+              {itensMaisPedidos.length > 0 && (
                 <Chip
-                  variant={filtroEfetivo === 'todos' ? 'teal' : 'plain'}
-                  checked={filtroEfetivo === 'todos'}
-                  onClick={() => setFiltroAtivo('todos')}
+                  variant={filtroEfetivo === 'mais-pedidos' ? 'teal' : 'plain'}
+                  checked={filtroEfetivo === 'mais-pedidos'}
+                  onClick={() => setFiltroAtivo('mais-pedidos')}
                   className="shrink-0"
                 >
-                  Todos
+                  <Star className="size-3.5 shrink-0" aria-hidden />
+                  Mais Pedidos
                 </Chip>
-                {itensMaisPedidos.length > 0 && (
-                  <Chip
-                    variant={filtroEfetivo === 'mais-pedidos' ? 'teal' : 'plain'}
-                    checked={filtroEfetivo === 'mais-pedidos'}
-                    onClick={() => setFiltroAtivo('mais-pedidos')}
-                    className="shrink-0"
-                  >
-                    <Star className="size-3.5 shrink-0" aria-hidden />
-                    Mais Pedidos
-                  </Chip>
-                )}
-                {chipsCategoria.map((chip) => (
-                  <Chip
-                    key={chip.id}
-                    variant={filtroEfetivo === chip.id ? 'teal' : 'plain'}
-                    checked={filtroEfetivo === chip.id}
-                    onClick={() => setFiltroAtivo(chip.id)}
-                    className="shrink-0"
-                  >
-                    {chip.nome} · {chip.quantidade}
-                  </Chip>
-                ))}
-              </div>
+              )}
+              {chipsCategoria.map((chip) => (
+                <Chip
+                  key={chip.id}
+                  variant={filtroEfetivo === chip.id ? 'teal' : 'plain'}
+                  checked={filtroEfetivo === chip.id}
+                  onClick={() => setFiltroAtivo(chip.id)}
+                  className="shrink-0"
+                >
+                  {chip.nome} · {chip.quantidade}
+                </Chip>
+              ))}
+            </div>
             )}
 
           {!carregandoItens && !erroItens && !buscaItem.trim() && nomeSecaoAtiva && itensFiltrados.length > 0 && (
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-700 dark:text-mesa-teal-400">
-              {nomeSecaoAtiva}
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-orange-700 dark:text-mesa-teal-400">
+                <span className="size-1.5 shrink-0 rounded-mesa-full bg-current" aria-hidden />
+                {nomeSecaoAtiva}
+                <span className="text-mesa-text-tertiary">
+                  · {itensFiltrados.length} {itensFiltrados.length === 1 ? 'item' : 'itens'}
+                </span>
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                icon={
+                  modoVisualizacao === 'lista' ? (
+                    <LayoutGrid className="size-4" aria-hidden />
+                  ) : (
+                    <List className="size-4" aria-hidden />
+                  )
+                }
+                onClick={alternarModoVisualizacao}
+                className="shrink-0"
+                aria-label={
+                  modoVisualizacao === 'lista'
+                    ? 'Mudar para visualização em grade'
+                    : 'Mudar para visualização em lista'
+                }
+              >
+                {modoVisualizacao === 'lista' ? 'View' : 'Tiles'}
+              </Button>
+            </div>
           )}
 
           {!carregandoItens && !erroItens && itensFiltrados.length === 0 && itens.length > 0 && (
@@ -619,19 +775,41 @@ export function LancarPedido() {
             </p>
           )}
 
-          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && (
+          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && modoVisualizacao === 'lista' && (
+            <div className="flex flex-col gap-3">
+              {itensFiltrados.map((item) => {
+                const indicePopular = idsMaisPedidos.indexOf(item.id)
+                return (
+                  <CardItemCardapio
+                    key={item.id}
+                    item={item}
+                    quantidade={carrinho[item.id] ?? 0}
+                    observacao={observacaoPorItem[item.id] ?? ''}
+                    posicaoPopular={indicePopular === -1 ? null : indicePopular}
+                    onIncrementar={() => incrementar(item.id)}
+                    onDecrementar={() => decrementar(item.id)}
+                    onAbrirObservacao={() => setItemObservacaoAberta(item)}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && modoVisualizacao === 'grade' && (
             <div className="grid grid-cols-2 gap-3">
-              {itensFiltrados.map((item) => (
-                <CardItemCardapio
-                  key={item.id}
-                  item={item}
-                  quantidade={carrinho[item.id] ?? 0}
-                  observacao={observacaoPorItem[item.id] ?? ''}
-                  onIncrementar={() => incrementar(item.id)}
-                  onDecrementar={() => decrementar(item.id)}
-                  onAbrirObservacao={() => setItemObservacaoAberta(item)}
-                />
-              ))}
+              {itensFiltrados.map((item) => {
+                const indicePopular = idsMaisPedidos.indexOf(item.id)
+                return (
+                  <CardItemCardapioGrade
+                    key={item.id}
+                    item={item}
+                    quantidade={carrinho[item.id] ?? 0}
+                    posicaoPopular={indicePopular === -1 ? null : indicePopular}
+                    onIncrementar={() => incrementar(item.id)}
+                    onDecrementar={() => decrementar(item.id)}
+                  />
+                )
+              })}
             </div>
           )}
         </div>
@@ -648,13 +826,13 @@ export function LancarPedido() {
           <button
             type="button"
             onClick={verNota}
-            className="flex w-full items-center justify-between gap-3 rounded-mesa-2xl bg-mesa-teal-700 py-4 pl-5 pr-2 text-left text-white shadow-mesa-3 outline-none transition-transform active:scale-[0.99] dark:bg-mesa-teal-600"
+            className="flex w-full items-center justify-between gap-3 rounded-mesa-lg bg-mesa-teal-700 py-4 pl-5 pr-2 text-left text-white shadow-mesa-3 outline-none transition-transform active:scale-[0.99] dark:bg-mesa-teal-600"
           >
             <span>
-              <span className="block text-sm text-white/80">
+              <span className="block font-mesa-mono text-sm text-white/80">
                 {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
               </span>
-              <span className="block text-2xl font-bold leading-tight">
+              <span className="block font-mesa-mono text-2xl font-bold leading-tight">
                 {formatarPrecoBR(totalCentavos)}
               </span>
             </span>
