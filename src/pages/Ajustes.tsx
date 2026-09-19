@@ -189,6 +189,12 @@ function BottomSheetDetalhesItem({
     setEnviandoFoto(false)
   }
 
+  function removerFoto() {
+    if (fotoUrl) apagarFotoItem(fotoUrl)
+    setFotoUrl(null)
+    setErro(null)
+  }
+
   async function salvar() {
     if (!item) return
     setSalvando(true)
@@ -224,15 +230,27 @@ function BottomSheetDetalhesItem({
               <Image className="size-6" aria-hidden />
             )}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Camera className="size-4" aria-hidden />}
-            loading={enviandoFoto}
-            onClick={() => inputArquivoRef.current?.click()}
-          >
-            {fotoUrl ? 'Trocar foto' : 'Adicionar foto'}
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Camera className="size-4" aria-hidden />}
+              loading={enviandoFoto}
+              onClick={() => inputArquivoRef.current?.click()}
+            >
+              {fotoUrl ? 'Trocar foto' : 'Adicionar foto'}
+            </Button>
+            {fotoUrl && (
+              <Button
+                variant="textDanger"
+                size="sm"
+                icon={<Trash className="size-4" aria-hidden />}
+                onClick={removerFoto}
+              >
+                Remover foto
+              </Button>
+            )}
+          </div>
           <input
             ref={inputArquivoRef}
             type="file"
