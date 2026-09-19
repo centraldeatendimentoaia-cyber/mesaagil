@@ -890,29 +890,35 @@ export function LancarPedido() {
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={verNota}
-            className="flex w-full items-center justify-between gap-3 rounded-mesa-lg bg-mesa-teal-700 py-4 pl-5 pr-2 text-left text-white shadow-mesa-3 outline-none transition-transform active:scale-[0.99] dark:bg-mesa-teal-600"
-          >
-            <span>
-              <span className="block font-mesa-mono text-sm text-white/80">
-                {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
-              </span>
-              <span className="block font-mesa-mono text-2xl font-bold leading-tight">
-                {formatarPrecoBR(totalCentavos)}
-              </span>
-            </span>
-            <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-teal-600 px-4 py-2.5 text-sm font-semibold dark:bg-mesa-teal-500">
-              Ver nota
-              <ArrowRight className="size-4 shrink-0" aria-hidden />
-            </span>
-          </button>
+          <div className="overflow-hidden rounded-mesa-lg bg-mesa-teal-700 shadow-mesa-3 dark:bg-mesa-teal-600">
+            <div className="flex justify-center border-b border-white/10">
+              <button
+                type="button"
+                onClick={limparFormulario}
+                className="min-h-11 px-4 text-sm font-medium text-white/70 outline-none transition-colors hover:text-white"
+              >
+                Limpar pedido
+              </button>
+            </div>
 
-          <div className="flex justify-center">
-            <Button variant="ghost" size="md" onClick={limparFormulario}>
-              Limpar pedido
-            </Button>
+            <button
+              type="button"
+              onClick={verNota}
+              className="flex w-full items-center justify-between gap-3 py-4 pl-5 pr-2 text-left text-white outline-none transition-transform active:scale-[0.99]"
+            >
+              <span>
+                <span className="block font-mesa-mono text-sm text-white/80">
+                  {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
+                </span>
+                <span className="block font-mesa-mono text-2xl font-bold leading-tight">
+                  {formatarPrecoBR(totalCentavos)}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-teal-600 px-4 py-2.5 text-sm font-semibold dark:bg-mesa-teal-500">
+                Ver nota
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </span>
+            </button>
           </div>
         </div>
       )}
