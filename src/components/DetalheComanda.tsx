@@ -196,7 +196,7 @@ export function DetalheComanda({
       {pedido && (
         <>
           <div className="flex items-center gap-3">
-            <span className="text-3xl font-black leading-none text-mesa-text-tertiary">
+            <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
               {pedido.senha}
             </span>
             {(pedido.viagem || pedido.mesa) && (
@@ -207,7 +207,7 @@ export function DetalheComanda({
                 <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
               </>
             )}
-            <span className={clsx('ml-auto flex items-center gap-1.5 text-sm font-semibold', TEXTO_COR[cor])}>
+            <span className={clsx('ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold', TEXTO_COR[cor])}>
               <Clock className="size-4 shrink-0" aria-hidden />
               {formatarMinutos(minutos)} em preparo
             </span>
@@ -244,7 +244,7 @@ export function DetalheComanda({
                   style={{ width: `${progresso}%` }}
                 />
               </div>
-              <span className="shrink-0 text-sm font-medium text-mesa-text-secondary">
+              <span className="shrink-0 font-mesa-mono text-sm font-medium text-mesa-text-secondary">
                 {entreguesCount} de {totalAtivos}
               </span>
             </div>

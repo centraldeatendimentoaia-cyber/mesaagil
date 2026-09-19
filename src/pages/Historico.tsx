@@ -150,12 +150,14 @@ function CardHistorico({
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-2xl font-black leading-none text-mesa-text-tertiary">{pedido.senha}</p>
+          <p className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
+            {pedido.senha}
+          </p>
           <p
             className={
               cancelado
-                ? 'mt-1.5 text-base font-semibold text-mesa-text-tertiary line-through'
-                : 'mt-1.5 text-base font-semibold text-mesa-text-primary'
+                ? 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-tertiary line-through'
+                : 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-primary'
             }
           >
             {formatarPrecoBR(calcularTotalPedido(pedido))}

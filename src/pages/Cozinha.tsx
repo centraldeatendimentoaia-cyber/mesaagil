@@ -145,7 +145,7 @@ function CardPedido({
   return (
     <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
       <div className="flex items-center gap-2">
-        <span className="text-2xl font-black leading-none text-mesa-text-tertiary">
+        <span className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
           {pedido.senha}
         </span>
         {mostrarIdentificacao && (
@@ -158,7 +158,7 @@ function CardPedido({
         )}
         <span
           className={clsx(
-            'ml-auto flex items-center gap-1 text-sm font-semibold',
+            'ml-auto flex items-center gap-1 font-mesa-mono text-sm font-semibold',
             coluna === 'a_fazer' ? CORES_TEXTO[cor] : 'text-mesa-text-secondary',
           )}
         >
