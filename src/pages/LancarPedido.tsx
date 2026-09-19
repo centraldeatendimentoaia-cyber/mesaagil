@@ -282,30 +282,52 @@ export function LancarPedido() {
 
   // Arrastar com o mouse em cima dos chips pra rolar a fileira, não só
   // pela scrollbar — touch já rola assim nativamente (por isso ignora
-  // pointerType 'touch'). Suprime o click do chip quando o movimento
-  // passou do limiar, senão um arrasto vira clique sem querer.
+  // pointerType 'touch'). setPointerCapture só é chamado depois que o
+  // movimento passa do limiar: chamar ele logo no pointerdown redireciona
+  // até o clique pro container (bug do Chromium com pointer capture),
+  // quebrando o clique normal nos chips mesmo sem arrastar de verdade.
   const chipsRef = useRef<HTMLDivElement>(null)
-  const arrastoChipsRef = useRef({ arrastando: false, comecouEmX: 0, scrollInicial: 0, moveu: false })
+  const arrastoChipsRef = useRef({
+    ativo: false,
+    capturado: false,
+    pointerId: 0,
+    comecouEmX: 0,
+    scrollInicial: 0,
+    moveu: false,
+  })
 
   function aoPressionarChips(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.pointerType === 'touch') return
     const el = chipsRef.current
     if (!el) return
-    el.setPointerCapture(e.pointerId)
-    arrastoChipsRef.current = { arrastando: true, comecouEmX: e.clientX, scrollInicial: el.scrollLeft, moveu: false }
+    arrastoChipsRef.current = {
+      ativo: true,
+      capturado: false,
+      pointerId: e.pointerId,
+      comecouEmX: e.clientX,
+      scrollInicial: el.scrollLeft,
+      moveu: false,
+    }
   }
 
   function aoMoverChips(e: ReactPointerEvent<HTMLDivElement>) {
     const el = chipsRef.current
     const estado = arrastoChipsRef.current
-    if (!el || !estado.arrastando) return
+    if (!el || !estado.ativo) return
+
     const delta = e.clientX - estado.comecouEmX
-    if (Math.abs(delta) > 4) estado.moveu = true
-    el.scrollLeft = estado.scrollInicial - delta
+    if (!estado.moveu && Math.abs(delta) > 4) {
+      estado.moveu = true
+      estado.capturado = true
+      el.setPointerCapture(estado.pointerId)
+    }
+    if (estado.moveu) el.scrollLeft = estado.scrollInicial - delta
   }
 
   function aoSoltarChips() {
-    arrastoChipsRef.current.arrastando = false
+    const estado = arrastoChipsRef.current
+    if (estado.capturado) chipsRef.current?.releasePointerCapture(estado.pointerId)
+    estado.ativo = false
   }
 
   function aoClicarChipsCapturando(e: ReactMouseEvent<HTMLDivElement>) {
@@ -746,7 +768,7 @@ export function LancarPedido() {
               onPointerUp={aoSoltarChips}
               onPointerLeave={aoSoltarChips}
               onClickCapture={aoClicarChipsCapturando}
-              className="rolagem-minimalista mb-4 flex cursor-grab gap-2 overflow-x-auto pb-1 active:cursor-grabbing"
+              className="rolagem-sem-barra mb-4 flex cursor-grab gap-2 overflow-x-auto pb-1 active:cursor-grabbing"
             >
               <Chip
                 variant={filtroEfetivo === 'todos' ? 'teal' : 'plain'}
