@@ -1,7 +1,7 @@
 export function NaoEncontrado() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-white p-6 dark:bg-cozinha-fundo">
-      <p className="text-center text-lg text-neutral-500 dark:text-neutral-400">
+    <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base p-6">
+      <p className="text-center text-lg text-mesa-text-secondary">
         Estabelecimento não encontrado
       </p>
     </div>

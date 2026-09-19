@@ -1,28 +1,22 @@
 /* =============================================================
    MesaAgil — Design Tokens (Tailwind v4)
 
-   Fonte: docs/design-system/tokens.css e
-   docs/design-system/MESAAGIL_DESIGN_SYSTEM.md.
+   Fonte da verdade: redesign_ux_ui_app/ (specs DESIGN.md + mockups
+   .svg do redesign "Speed Bento POS", 2026-09-18). O design system
+   anterior (docs/design-system/) foi descontinuado e removido —
+   cor de marca, tipografia e arredondamento documentados ali não
+   valem mais, ver CLAUDE.md "Regras de tema" pro resumo atual.
 
-   Todo token novo usa o prefixo "mesa" para não colidir com a
-   paleta nativa do Tailwind (neutral/orange/teal já existem por
-   padrão e são usados nos componentes atuais via classes como
-   `text-neutral-900`). Os tokens que o Tailwind v4 sabe transformar
+   Todo token usa o prefixo "mesa" para não colidir com a paleta
+   nativa do Tailwind. Os tokens que o Tailwind v4 sabe transformar
    em utilitário (--color-*, --radius-*, --shadow-*, --ease-*,
    --spacing-*, --font-*) entram com a ordem `--<namespace>-mesa-*`
    — é essa ordem que faz o Tailwind gerar `bg-mesa-orange-500`,
-   `rounded-mesa-lg` etc. Isso inverte a ordem literal do prefixo
-   de docs/design-system/tokens.css (que usa `--mesa-color-*`),
-   mas preserva nomes e valores — é só a posição do segmento
-   "mesa" que muda, por exigência da sintaxe do Tailwind v4.
+   `rounded-mesa-lg` etc.
 
    Tokens sem namespace equivalente no Tailwind (motion duration,
    ícones, avatar, gradiente, overlay, blur, z-index) ficam como
-   custom properties simples na segunda seção deste arquivo, com o
-   prefixo `--mesa-*` idêntico ao do arquivo fonte.
-
-   Nenhum componente consome estes tokens ainda — isso é trabalho
-   das próximas fases do redesign v2. Ver Fase 0 em CLAUDE.md.
+   custom properties simples na segunda seção deste arquivo.
    ============================================================= */
 
 @theme {
@@ -197,7 +191,7 @@
    duration, escala tipográfica tamanho/linha, ícone, avatar,
    toque mínimo, z-index, gradiente, overlay, blur, estados,
    focus ring). Ficam como custom properties simples, prefixo
-   `--mesa-*` preservado igual a docs/design-system/tokens.css.
+   `--mesa-*`.
    Uso: var(--mesa-*) direto em CSS, ou arbitrary value do
    Tailwind (ex: duration-[var(--mesa-duration-short)]).
    ============================================================= */

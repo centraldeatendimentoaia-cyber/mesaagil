@@ -1568,7 +1568,6 @@ function BottomSheetSenhaAdmin({
           autoComplete="off"
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          className="text-center"
         />
         <Input
           label="Confirmar PIN"

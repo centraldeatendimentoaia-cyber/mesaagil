@@ -28,17 +28,10 @@ h1, h2, h3 {
 }
 
 @theme {
-  /* Cor de marca fixa do MesaAgil v2 (laranja 500 do design system).
-     Não é mais definida por barraca — ver docs/design-system/MESAAGIL_DESIGN_SYSTEM.md
-     seção 2.1.1. --color-marca-escura usa o mesmo valor de
-     --color-mesa-orange-600 (hover) do design system. */
-  --color-marca: #F58B00;
-  --color-marca-escura: #CC7400;
-  --color-marca-texto: #FFFFFF;
-
-  --color-sinal-verde: #16A34A;
-  --color-sinal-amarelo: #EAB308;
-  --color-sinal-vermelho: #DC2626;
-  --color-sinal-pronto: #475569;
-  --color-cozinha-fundo: #0D0D0D;
+  /* Cor categórica pro método de pagamento "Dinheiro" no Histórico
+     (lib/metodoPagamento.ts) — não é sinal operacional de kanban (esse
+     é --color-mesa-kanban-green, reservado e inviolável). Mesmo tom de
+     esmeralda do redesign, só que sem namespace "kanban" pra não
+     confundir os dois usos. */
+  --color-sinal-verde: #10B981;
 }

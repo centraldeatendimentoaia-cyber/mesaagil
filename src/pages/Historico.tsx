@@ -62,9 +62,9 @@ function minutosEntre(inicioIso: string, fimIso: string): number {
   return Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
 }
 
-const COR_CABECALHO = 'FFF58B00' // mesa-orange-500
-const COR_FUNDO_CANCELADO = 'FFFCE8E5' // mesa-error-50
-const COR_TEXTO_CANCELADO = 'FFA62C1F' // mesa-error-700
+const COR_CABECALHO = 'FFF59E0B' // mesa-orange-500
+const COR_FUNDO_CANCELADO = 'FFFEF2F2' // mesa-error-50
+const COR_TEXTO_CANCELADO = 'FFB91C1C' // mesa-error-700
 
 async function gerarPlanilha(pedidos: PedidoComItens[]): Promise<ArrayBuffer> {
   const ExcelJS = await import('exceljs')
