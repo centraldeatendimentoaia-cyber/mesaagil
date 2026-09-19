@@ -315,15 +315,18 @@ export function LancarPedido() {
     filtroAtivo ?? (itensMaisPedidos.length > 0 ? 'mais-pedidos' : (chipsCategoria[0]?.id ?? null))
 
   const nomeSecaoAtiva =
-    filtroEfetivo === 'mais-pedidos'
-      ? 'Mais pedidos'
-      : (chipsCategoria.find((c) => c.id === filtroEfetivo)?.nome ?? null)
+    filtroEfetivo === 'todos'
+      ? 'Todos os itens'
+      : filtroEfetivo === 'mais-pedidos'
+        ? 'Mais pedidos'
+        : (chipsCategoria.find((c) => c.id === filtroEfetivo)?.nome ?? null)
 
   const itensFiltrados = useMemo(() => {
     const termo = buscaItem.trim().toLowerCase()
     // Busca por nome ignora o chip ativo de propósito — o operador digitando
     // um prato quer achar ele em qualquer categoria, não só na aberta.
     if (termo) return itens.filter((item) => item.nome.toLowerCase().includes(termo))
+    if (filtroEfetivo === 'todos') return itens
     if (filtroEfetivo === 'mais-pedidos') return itensMaisPedidos
     if (filtroEfetivo) return itensPorCategoria.get(filtroEfetivo) ?? []
     return itens
@@ -571,6 +574,14 @@ export function LancarPedido() {
             !buscaItem.trim() &&
             (itensMaisPedidos.length > 0 || chipsCategoria.length > 0) && (
               <div className="rolagem-minimalista -mx-6 mb-4 flex gap-2 overflow-x-auto px-6 pb-1">
+                <Chip
+                  variant={filtroEfetivo === 'todos' ? 'teal' : 'plain'}
+                  checked={filtroEfetivo === 'todos'}
+                  onClick={() => setFiltroAtivo('todos')}
+                  className="shrink-0"
+                >
+                  Todos
+                </Chip>
                 {itensMaisPedidos.length > 0 && (
                   <Chip
                     variant={filtroEfetivo === 'mais-pedidos' ? 'teal' : 'plain'}
