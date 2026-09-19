@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, FileText, Minus, Plus, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Check, FileText, Minus, Plus, Star, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
 import { tocarSomPedidoCriado } from '../lib/sons'
+import { buscarIdsMaisPedidos } from '../lib/popularidade'
 import type {
   Carrinho,
   EntregaDiretaPorItem,
@@ -19,6 +20,7 @@ import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Chip } from '../components/ui/Chip'
 import { Input } from '../components/ui/Input'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Textarea } from '../components/ui/Textarea'
@@ -175,6 +177,11 @@ export function LancarPedido() {
     return 'balcao'
   })
   const [buscaItem, setBuscaItem] = useState('')
+  const [idsMaisPedidos, setIdsMaisPedidos] = useState<string[]>([])
+  // null = ainda não decidiu qual chip abre selecionado (depende dos dados
+  // chegarem — "Mais Pedidos" só faz sentido se existir pedido no
+  // histórico, senão cai pra primeira categoria com item).
+  const [filtroAtivo, setFiltroAtivo] = useState<string | null>(null)
   const [observacao, setObservacao] = useState(() => edicaoRecebida?.observacao ?? '')
   const [observacaoPorItem, setObservacaoPorItem] = useState<ObservacaoPorItem>(
     () => edicaoRecebida?.observacaoPorItem ?? {},
@@ -252,42 +259,72 @@ export function LancarPedido() {
     }
   }, [barraca.id])
 
-  const itensFiltrados = useMemo(() => {
-    const termo = buscaItem.trim().toLowerCase()
-    if (!termo) return itens
-    return itens.filter((item) => item.nome.toLowerCase().includes(termo))
-  }, [itens, buscaItem])
+  useEffect(() => {
+    let cancelado = false
+    buscarIdsMaisPedidos(barraca.id).then((ids) => {
+      if (!cancelado) setIdsMaisPedidos(ids)
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
 
-  const gruposCardapio = useMemo(() => {
-    if (categorias.length === 0) return null
-
-    const porCategoria = new Map<string, Item[]>()
+  const itensPorCategoria = useMemo(() => {
+    const mapa = new Map<string, Item[]>()
     const semCategoria: Item[] = []
-
-    for (const item of itensFiltrados) {
+    for (const item of itens) {
       if (item.categoria_id) {
-        const lista = porCategoria.get(item.categoria_id) ?? []
+        const lista = mapa.get(item.categoria_id) ?? []
         lista.push(item)
-        porCategoria.set(item.categoria_id, lista)
+        mapa.set(item.categoria_id, lista)
       } else {
         semCategoria.push(item)
       }
     }
+    if (semCategoria.length > 0) mapa.set('sem-categoria', semCategoria)
+    return mapa
+  }, [itens])
 
-    const grupos = categorias
-      .map((categoria) => ({
-        id: categoria.id,
-        nome: categoria.nome,
-        itens: porCategoria.get(categoria.id) ?? [],
-      }))
-      .filter((grupo) => grupo.itens.length > 0)
+  const itensMaisPedidos = useMemo(
+    () => idsMaisPedidos.map((id) => itens.find((i) => i.id === id)).filter((i): i is Item => Boolean(i)),
+    [idsMaisPedidos, itens],
+  )
 
-    if (semCategoria.length > 0) {
-      grupos.push({ id: 'sem-categoria', nome: 'Outros', itens: semCategoria })
+  // Chips exibidos na fileira: "Mais Pedidos" (só se tiver histórico de
+  // pedido) + uma por categoria com item ativo + "Outros" se sobrar item
+  // sem categoria.
+  const chipsCategoria = useMemo(() => {
+    const chips: { id: string; nome: string; quantidade: number }[] = []
+    for (const categoria of categorias) {
+      const quantidade = itensPorCategoria.get(categoria.id)?.length ?? 0
+      if (quantidade > 0) chips.push({ id: categoria.id, nome: categoria.nome, quantidade })
     }
+    const semCategoria = itensPorCategoria.get('sem-categoria')?.length ?? 0
+    if (semCategoria > 0) chips.push({ id: 'sem-categoria', nome: 'Outros', quantidade: semCategoria })
+    return chips
+  }, [categorias, itensPorCategoria])
 
-    return grupos
-  }, [categorias, itensFiltrados])
+  // Chip padrão antes do operador escolher algo: prioriza "Mais Pedidos" se
+  // tiver histórico, senão a primeira categoria com item. Derivado direto do
+  // dado em vez de sincronizado por efeito — `filtroAtivo` só existe de fato
+  // depois que o operador clica em algum chip.
+  const filtroEfetivo =
+    filtroAtivo ?? (itensMaisPedidos.length > 0 ? 'mais-pedidos' : (chipsCategoria[0]?.id ?? null))
+
+  const nomeSecaoAtiva =
+    filtroEfetivo === 'mais-pedidos'
+      ? 'Mais pedidos'
+      : (chipsCategoria.find((c) => c.id === filtroEfetivo)?.nome ?? null)
+
+  const itensFiltrados = useMemo(() => {
+    const termo = buscaItem.trim().toLowerCase()
+    // Busca por nome ignora o chip ativo de propósito — o operador digitando
+    // um prato quer achar ele em qualquer categoria, não só na aberta.
+    if (termo) return itens.filter((item) => item.nome.toLowerCase().includes(termo))
+    if (filtroEfetivo === 'mais-pedidos') return itensMaisPedidos
+    if (filtroEfetivo) return itensPorCategoria.get(filtroEfetivo) ?? []
+    return itens
+  }, [itens, buscaItem, filtroEfetivo, itensMaisPedidos, itensPorCategoria])
 
   useEffect(() => {
     if (!senha?.provisoria || !senha.idFila) return
@@ -515,13 +552,50 @@ export function LancarPedido() {
             </p>
           )}
 
+          {!carregandoItens &&
+            !erroItens &&
+            itens.length > 0 &&
+            !buscaItem.trim() &&
+            (itensMaisPedidos.length > 0 || chipsCategoria.length > 0) && (
+              <div className="-mx-6 mb-4 flex gap-2 overflow-x-auto px-6 pb-1">
+                {itensMaisPedidos.length > 0 && (
+                  <Chip
+                    variant={filtroEfetivo === 'mais-pedidos' ? 'teal' : 'plain'}
+                    checked={filtroEfetivo === 'mais-pedidos'}
+                    onClick={() => setFiltroAtivo('mais-pedidos')}
+                    className="shrink-0"
+                  >
+                    <Star className="size-3.5 shrink-0" aria-hidden />
+                    Mais Pedidos
+                  </Chip>
+                )}
+                {chipsCategoria.map((chip) => (
+                  <Chip
+                    key={chip.id}
+                    variant={filtroEfetivo === chip.id ? 'teal' : 'plain'}
+                    checked={filtroEfetivo === chip.id}
+                    onClick={() => setFiltroAtivo(chip.id)}
+                    className="shrink-0"
+                  >
+                    {chip.nome} · {chip.quantidade}
+                  </Chip>
+                ))}
+              </div>
+            )}
+
+          {!carregandoItens && !erroItens && !buscaItem.trim() && nomeSecaoAtiva && itensFiltrados.length > 0 && (
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-700 dark:text-mesa-teal-400">
+              {nomeSecaoAtiva}
+            </h2>
+          )}
+
           {!carregandoItens && !erroItens && itensFiltrados.length === 0 && itens.length > 0 && (
             <p className="py-8 text-center text-sm text-mesa-text-secondary">
-              Nenhum item encontrado pra "{buscaItem}".
+              {buscaItem.trim() ? `Nenhum item encontrado pra "${buscaItem}".` : 'Nenhum item nesta categoria.'}
             </p>
           )}
 
-          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && gruposCardapio === null && (
+          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               {itensFiltrados.map((item) => (
                 <CardItemCardapio
@@ -536,30 +610,6 @@ export function LancarPedido() {
               ))}
             </div>
           )}
-
-          {!carregandoItens &&
-            !erroItens &&
-            gruposCardapio !== null &&
-            gruposCardapio.map((grupo) => (
-              <div key={grupo.id} className="mb-6 last:mb-0">
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-700 dark:text-mesa-teal-400">
-                  {grupo.nome}
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                  {grupo.itens.map((item) => (
-                    <CardItemCardapio
-                      key={item.id}
-                      item={item}
-                      quantidade={carrinho[item.id] ?? 0}
-                      observacao={observacaoPorItem[item.id] ?? ''}
-                      onIncrementar={() => incrementar(item.id)}
-                      onDecrementar={() => decrementar(item.id)}
-                      onAbrirObservacao={() => setItemObservacaoAberta(item)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
         </div>
       </div>
 
