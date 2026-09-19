@@ -18,7 +18,6 @@ import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useTheme } from '../hooks/useTheme'
 import { enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
-import { imprimirRecibo, salvarUltimoRecibo } from '../lib/impressao'
 import {
   proximoNumeroProvisorio,
   type EntregaDiretaPorItem,
@@ -220,31 +219,7 @@ export function ConfirmarPedido() {
       p_itens: itensPedido,
     })
 
-    // Chamado uma única vez de propósito — proximoNumeroProvisorio incrementa
-    // um contador a cada chamada, então usar em dois lugares diferentes
-    // imprimiria uma senha e mostraria outra na tela seguinte.
     const senhaProvisoria = proximoNumeroProvisorio(barraca.id)
-
-    const rotuloMetodo = METODOS_DISPONIVEIS.find((m) => m.chave === metodoSelecionado)?.label
-    const dadosRecibo = {
-      nomeBarraca: barraca.nome,
-      logoUrl: barraca.logo_url,
-      senha: senhaProvisoria,
-      horario: new Date(),
-      mesa: viagem ? null : mesa.trim() || null,
-      viagem,
-      observacao: observacao.trim() || null,
-      itens: linhas.map(({ item, itemId, quantidade }) => ({
-        nome: item.nome,
-        quantidade,
-        precoCentavosUnitario: item.preco_centavos,
-        observacao: observacaoPorItem[itemId] || null,
-      })),
-      totalCentavos,
-      formaPagamento: rotuloMetodo ?? metodoSelecionado,
-    }
-    imprimirRecibo(dadosRecibo)
-    salvarUltimoRecibo(barraca.id, dadosRecibo)
 
     navigate(`/${barraca.slug}/lancar`, {
       replace: true,
