@@ -66,8 +66,22 @@ export function Login() {
             />
 
             <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label
+                  htmlFor="login-senha"
+                  className="text-xs font-semibold text-mesa-neutral-700 dark:text-mesa-neutral-300"
+                >
+                  Senha de acesso
+                </label>
+                <Link
+                  to="/esqueci-senha"
+                  className="text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
               <Input
-                label="Senha de acesso"
+                id="login-senha"
                 type="password"
                 icon={<Lock aria-hidden />}
                 autoComplete="current-password"
@@ -75,12 +89,6 @@ export function Login() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
               />
-              <Link
-                to="/esqueci-senha"
-                className="mt-2 block text-right text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
-              >
-                Esqueci minha senha
-              </Link>
             </div>
 
             {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
