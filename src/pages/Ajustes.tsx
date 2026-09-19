@@ -5,7 +5,29 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Camera, Check, ChevronLeft, Image, Moon, Plus, Sun, Trash, TriangleAlert } from 'lucide-react'
+import clsx from 'clsx'
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  CreditCard,
+  Image,
+  LogOut,
+  Moon,
+  Pencil,
+  Plus,
+  Palette,
+  ShieldCheck,
+  Star,
+  Store,
+  Sun,
+  Timer,
+  Trash,
+  TriangleAlert,
+  UtensilsCrossed,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { buscarIdsMaisPedidos } from '../lib/popularidade'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
@@ -31,9 +53,10 @@ function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
 }
 
-function RotuloSecao({ children }: { children: ReactNode }) {
+function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children: ReactNode }) {
   return (
-    <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+      {Icone && <Icone className="size-3.5 shrink-0" aria-hidden />}
       {children}
     </h2>
   )
@@ -132,18 +155,31 @@ function InputPreco({ item }: { item: Item }) {
   )
 }
 
-function MiniaturaItem({ fotoUrl, onClick, rotulo }: { fotoUrl: string | null; onClick: () => void; rotulo: string }) {
+function MiniaturaItem({
+  fotoUrl,
+  onClick,
+  rotulo,
+  tamanho = 'md',
+}: {
+  fotoUrl: string | null
+  onClick: () => void
+  rotulo: string
+  tamanho?: 'md' | 'lg'
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={rotulo}
-      className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary outline-none focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700"
+      className={clsx(
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary outline-none focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700',
+        tamanho === 'lg' ? 'size-14' : 'size-11',
+      )}
     >
       {fotoUrl ? (
         <img src={fotoUrl} alt="" className="size-full object-cover" />
       ) : (
-        <Image className="size-4" aria-hidden />
+        <Image className={tamanho === 'lg' ? 'size-6' : 'size-4'} aria-hidden />
       )}
     </button>
   )
@@ -298,6 +334,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   const [excluindo, setExcluindo] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
+  const [idsMaisPedidos, setIdsMaisPedidos] = useState<string[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [novaCategoriaId, setNovaCategoriaId] = useState<string | null>(null)
   const [gerenciandoCategorias, setGerenciandoCategorias] = useState(false)
@@ -344,6 +381,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
         if (!error) setCategorias((data ?? []) as Categoria[])
       })
 
+    return () => {
+      cancelado = true
+    }
+  }, [barracaId])
+
+  useEffect(() => {
+    let cancelado = false
+    buscarIdsMaisPedidos(barracaId).then((ids) => {
+      if (!cancelado) setIdsMaisPedidos(ids)
+    })
     return () => {
       cancelado = true
     }
@@ -583,7 +630,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <RotuloSecao>Cardápio</RotuloSecao>
+        <RotuloSecao icone={UtensilsCrossed}>Cardápio</RotuloSecao>
         <button
           type="button"
           onClick={() => setGerenciandoCategorias(true)}
@@ -612,89 +659,118 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                   key={item.id}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => aoSoltar(item.id)}
-                  className={`flex flex-col gap-1 py-2 ${item.ativo ? '' : 'opacity-50'}`}
+                  className={`flex gap-3 py-3 ${item.ativo ? '' : 'opacity-50'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <MiniaturaItem
-                      fotoUrl={item.foto_url}
-                      onClick={() => setItemDetalhes(item)}
-                      rotulo={`Foto e descrição de ${item.nome}`}
-                    />
-                    {editandoId === item.id ? (
-                      <Input
-                        autoFocus
-                        size="sm"
-                        value={nomeEdicao}
-                        onChange={(e) => setNomeEdicao(e.target.value)}
-                        onBlur={() => salvarEdicao(item)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.currentTarget.blur()
-                          if (e.key === 'Escape') setEditandoId(null)
-                        }}
-                        aria-label={`Nome do item ${item.nome}`}
-                        className="min-w-0 flex-1"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => iniciarEdicao(item)}
-                        className="min-h-11 min-w-0 flex-1 truncate text-left text-base text-mesa-text-primary"
+                  <MiniaturaItem
+                    fotoUrl={item.foto_url}
+                    onClick={() => setItemDetalhes(item)}
+                    rotulo={`Foto e descrição de ${item.nome}`}
+                    tamanho="lg"
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {editandoId === item.id ? (
+                        <Input
+                          autoFocus
+                          size="sm"
+                          value={nomeEdicao}
+                          onChange={(e) => setNomeEdicao(e.target.value)}
+                          onBlur={() => salvarEdicao(item)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur()
+                            if (e.key === 'Escape') setEditandoId(null)
+                          }}
+                          aria-label={`Nome do item ${item.nome}`}
+                          className="min-w-0 flex-1"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => iniciarEdicao(item)}
+                          className="min-h-11 min-w-0 truncate text-left text-base font-semibold text-mesa-text-primary"
+                        >
+                          {item.nome}
+                        </button>
+                      )}
+                      <Chip
+                        variant="plain"
+                        onClick={() => setItemEscolhendoCategoria(item)}
+                        aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
                       >
-                        {item.nome}
-                      </button>
+                        {nomeCategoria(item.categoria_id)}
+                      </Chip>
+                      {idsMaisPedidos.includes(item.id) && (
+                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-mesa-full bg-mesa-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
+                          <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
+                          Popular
+                        </span>
+                      )}
+                    </div>
+
+                    {item.descricao && (
+                      <p className="mt-0.5 line-clamp-1 text-xs text-mesa-text-secondary">
+                        {item.descricao}
+                      </p>
                     )}
 
-                    <InputPreco item={item} />
-                    <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
-                  </div>
+                    <div className="mt-1.5">
+                      <InputPreco item={item} />
+                    </div>
 
-                  <div className="flex flex-wrap items-center gap-1 pl-1">
-                    <Chip
-                      variant="plain"
-                      onClick={() => setItemEscolhendoCategoria(item)}
-                      aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
-                    >
-                      {nomeCategoria(item.categoria_id)}
-                    </Chip>
-                    <span
-                      draggable
-                      onDragStart={() => {
-                        arrastandoIdRef.current = item.id
-                      }}
-                      aria-hidden
-                      className="hidden cursor-grab select-none px-1 text-base text-mesa-text-tertiary sm:inline"
-                    >
-                      ⠿
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => moverItem(item.id, -1)}
-                      disabled={indice === 0}
-                      aria-label={`Mover ${item.nome} para cima`}
-                      className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moverItem(item.id, 1)}
-                      disabled={indice === itens.length - 1}
-                      aria-label={`Mover ${item.nome} para baixo`}
-                      className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
-                    >
-                      ▼
-                    </button>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setItemDetalhes(item)}
+                        className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                      >
+                        <Pencil className="size-3.5 shrink-0" aria-hidden />
+                        Editar Foto & Info
+                      </button>
 
-                    <span className="ml-auto flex items-center gap-2">
-                      <span className="text-xs text-mesa-text-secondary">
-                        {item.ativo ? 'Ativo' : 'Inativo'}
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-mesa-text-secondary">
+                          {item.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                        <Toggle
+                          checked={item.ativo}
+                          onChange={() => alternarAtivo(item)}
+                          aria-label={`${item.nome} ativo no cardápio`}
+                        />
+                        <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
                       </span>
-                      <Toggle
-                        checked={item.ativo}
-                        onChange={() => alternarAtivo(item)}
-                        aria-label={`${item.nome} ativo no cardápio`}
-                      />
-                    </span>
+                    </div>
+
+                    <div className="mt-1 flex items-center gap-1">
+                      <span
+                        draggable
+                        onDragStart={() => {
+                          arrastandoIdRef.current = item.id
+                        }}
+                        aria-hidden
+                        className="hidden cursor-grab select-none px-1 text-base text-mesa-text-tertiary sm:inline"
+                      >
+                        ⠿
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moverItem(item.id, -1)}
+                        disabled={indice === 0}
+                        aria-label={`Mover ${item.nome} para cima`}
+                        className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moverItem(item.id, 1)}
+                        disabled={indice === itens.length - 1}
+                        aria-label={`Mover ${item.nome} para baixo`}
+                        className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                      >
+                        ▼
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}
@@ -1013,7 +1089,7 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao>Identidade da barraca</RotuloSecao>
+      <RotuloSecao icone={Store}>Identidade da barraca</RotuloSecao>
       <Card>
         <div className="flex items-center gap-3">
           <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
@@ -1102,7 +1178,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao>Faixas de tempo</RotuloSecao>
+      <RotuloSecao icone={Timer}>Faixas de tempo</RotuloSecao>
       <Card>
         <ul className="divide-y divide-mesa-border-subtle">
           <li className="flex items-center justify-between gap-3 py-2">
@@ -1330,7 +1406,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao>Pagamento e taxas</RotuloSecao>
+      <RotuloSecao icone={CreditCard}>Pagamento e taxas</RotuloSecao>
       <Card>
         {aviso && <AvisoInline>{aviso}</AvisoInline>}
 
@@ -1407,7 +1483,7 @@ function SecaoAparencia() {
 
   return (
     <section>
-      <RotuloSecao>Aparência</RotuloSecao>
+      <RotuloSecao icone={Palette}>Aparência</RotuloSecao>
       <Card>
         <div className="flex items-center justify-between gap-3">
           <span className="text-base text-mesa-text-primary">Tema</span>
@@ -1577,6 +1653,8 @@ function Rodape({ barracaId }: { barracaId: string }) {
 
   return (
     <section className="flex flex-col gap-1">
+      <RotuloSecao icone={ShieldCheck}>Segurança e operador</RotuloSecao>
+
       {suportaFaceId && (
         <>
           <Button
@@ -1595,7 +1673,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       )}
 
       <Button variant="ghost" size="md" onClick={() => setMostrarModal(true)} className="w-full">
-        Trocar senha
+        Trocar senha de operador
       </Button>
 
       {sucesso && (
@@ -1613,7 +1691,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
         }}
         className="w-full"
       >
-        Alterar senha administrativa
+        Alterar senha administrativa / Mestre
       </Button>
 
       {sucessoSenhaAdmin && (
@@ -1623,12 +1701,13 @@ function Rodape({ barracaId }: { barracaId: string }) {
       )}
 
       <Button
-        variant="textDanger"
-        size="md"
+        variant="destructive"
+        size="lg"
+        icon={<LogOut className="size-4" aria-hidden />}
         onClick={() => setConfirmandoSaida(true)}
-        className="w-full"
+        className="mt-3 w-full"
       >
-        Sair
+        Sair da conta
       </Button>
 
       {mostrarModal && email && (
