@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, FileText, Hash, Plane, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, FileText, Hash, Moon, Plane, Sun, type LucideIcon } from 'lucide-react'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
 import { enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
 import { imprimirRecibo, salvarUltimoRecibo } from '../lib/impressao'
@@ -94,6 +95,8 @@ export function ConfirmarPedido() {
   const barraca = useBarracaAtual()
   const navigate = useNavigate()
   const location = useLocation()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
 
   const estado = (location.state as EstadoParaConfirmar | null) ?? null
 
@@ -234,21 +237,31 @@ export function ConfirmarPedido() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <div className="px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
-        <div className="flex items-center gap-1">
-          <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />
-          <button
-            type="button"
-            onClick={voltarEEditar}
-            className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
-          >
-            <ChevronLeft className="size-7 shrink-0" aria-hidden />
-            <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
-          </button>
+      <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1">
+            <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />
+            <button
+              type="button"
+              onClick={voltarEEditar}
+              className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
+            >
+              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-mesa-text-secondary">
+            A senha é gerada só depois de confirmar
+          </p>
         </div>
-        <p className="mt-1 text-sm text-mesa-text-secondary">
-          A senha é gerada só depois de confirmar
-        </p>
+        <button
+          type="button"
+          onClick={alternarTema}
+          aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+        >
+          {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+        </button>
       </div>
 
       <div className="flex-1 px-6 pb-10 pt-5">

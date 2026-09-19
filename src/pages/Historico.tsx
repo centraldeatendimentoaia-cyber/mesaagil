@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Download, Trash2 } from 'lucide-react'
+import { ChevronLeft, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { formatarPrecoBR } from '../lib/preco'
 import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
@@ -231,6 +232,8 @@ function CardHistorico({
 export function Historico() {
   const barraca = useBarracaAtual()
   const filtrosEscondidos = useOcultarAoRolar()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
 
   const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -440,16 +443,26 @@ export function Historico() {
               <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
             </Link>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Download className="size-4" aria-hidden />}
-            onClick={exportarPlanilha}
-            disabled={pedidosExibidos.length === 0}
-            loading={exportando}
-          >
-            Exportar
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={alternarTema}
+              aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+              className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none dark:bg-mesa-neutral-700"
+            >
+              {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Download className="size-4" aria-hidden />}
+              onClick={exportarPlanilha}
+              disabled={pedidosExibidos.length === 0}
+              loading={exportando}
+            >
+              Exportar
+            </Button>
+          </div>
         </div>
 
         <div className="mt-4">

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, ListChecks, ShoppingBag, TriangleAlert } from 'lucide-react'
+import { Check, Clock, ListChecks, Moon, ShoppingBag, Sun, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
 import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
@@ -290,6 +291,8 @@ export function Cozinha() {
     aplicarPatchItem,
   } = usePedidosAtual()
   const { pendentes, online } = useSincronizacaoAtual()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
   const [aba, setAba] = useState<Coluna>('a_fazer')
 
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
@@ -565,6 +568,14 @@ export function Cozinha() {
             </Badge>
           )}
           <BadgeStatus status={statusConexao} />
+          <button
+            type="button"
+            onClick={alternarTema}
+            aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none dark:bg-mesa-neutral-700"
+          >
+            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+          </button>
           <Link
             to={`/${barraca.slug}/historico`}
             className="flex min-h-11 items-center rounded-mesa-full bg-mesa-neutral-100 px-4 text-sm font-semibold text-mesa-text-primary dark:bg-mesa-neutral-700"

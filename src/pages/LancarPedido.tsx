@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, FileText, Minus, Plus, Star, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Check, FileText, Minus, Moon, Plus, Star, Sun, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
 import { aoConcluirCriacaoPedido } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
 import { tocarSomPedidoCriado } from '../lib/sons'
@@ -150,6 +151,8 @@ export function LancarPedido() {
   const navigate = useNavigate()
   const location = useLocation()
   const { pendentes, online } = useSincronizacaoAtual()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
 
   // Estado recebido ao voltar de ConfirmarPedido ("Voltar e editar") ou
   // logo depois de um envio confirmado por lá — ver src/lib/carrinho.ts
@@ -477,15 +480,25 @@ export function LancarPedido() {
             Lançar Pedido
           </h1>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5 pt-1">
-          <Badge variant={online ? 'success' : 'warning'} dot>
-            {online ? 'Online' : 'Offline'}
-          </Badge>
-          {pendentes > 0 && (
-            <Badge variant="neutral">
-              {pendentes} pendente{pendentes === 1 ? '' : 's'}
+        <div className="flex shrink-0 items-start gap-2 pt-1">
+          <div className="flex flex-col items-end gap-1.5">
+            <Badge variant={online ? 'success' : 'warning'} dot>
+              {online ? 'Online' : 'Offline'}
             </Badge>
-          )}
+            {pendentes > 0 && (
+              <Badge variant="neutral">
+                {pendentes} pendente{pendentes === 1 ? '' : 's'}
+              </Badge>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={alternarTema}
+            aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+          >
+            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+          </button>
         </div>
       </div>
 
