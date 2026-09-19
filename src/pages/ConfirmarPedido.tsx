@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, FileText, Hash, Moon, Plane, Sun, type LucideIcon } from 'lucide-react'
+import {
+  ChevronLeft,
+  ClipboardList,
+  CreditCard,
+  FileText,
+  Hash,
+  Moon,
+  Plane,
+  Rocket,
+  Sun,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react'
+import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
 import { enfileirar } from '../lib/fila'
@@ -20,7 +33,6 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Checkbox } from '../components/ui/Checkbox'
-import { SegmentedControl } from '../components/ui/SegmentedControl'
 import type { Item } from '../types/database'
 
 const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
@@ -50,6 +62,13 @@ function LinhaItemConfirmar({
           aria-label={`Entregar ${item.nome} direto sem passar na cozinha`}
         />
       </div>
+      {item.foto_url && (
+        <img
+          src={item.foto_url}
+          alt=""
+          className="size-11 shrink-0 rounded-mesa-sm object-cover"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-base font-semibold text-mesa-text-primary">
           {quantidade}× {item.nome}
@@ -265,8 +284,12 @@ export function ConfirmarPedido() {
       </div>
 
       <div className="flex-1 px-6 pb-10 pt-5">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+        <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <ClipboardList className="size-3.5 shrink-0" aria-hidden />
           Itens do pedido
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 px-1.5 text-[11px] font-bold normal-case tracking-normal text-mesa-text-secondary dark:bg-mesa-neutral-700">
+            {linhas.length}
+          </span>
         </h2>
         <Card>
           {linhas.map(({ item, itemId, quantidade }) => (
@@ -299,7 +322,8 @@ export function ConfirmarPedido() {
           </span>
         </div>
 
-        <h2 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+        <h2 className="mb-3 mt-6 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <CreditCard className="size-3.5 shrink-0" aria-hidden />
           Forma de pagamento
         </h2>
         {opcoesPagamento.length === 0 ? (
@@ -307,20 +331,54 @@ export function ConfirmarPedido() {
             Configure ao menos um método de pagamento em Ajustes.
           </p>
         ) : (
-          <SegmentedControl
-            aria-label="Forma de pagamento"
-            items={opcoesPagamento.map((m) => ({ label: m.label }))}
-            activeIndex={
-              metodoSelecionado ? opcoesPagamento.findIndex((m) => m.chave === metodoSelecionado) : -1
-            }
-            onChange={(indice) => setMetodoSelecionado(opcoesPagamento[indice].chave)}
-          />
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Forma de pagamento">
+            {opcoesPagamento.map((metodo) => {
+              const selecionado = metodoSelecionado === metodo.chave
+              return (
+                <button
+                  key={metodo.chave}
+                  type="button"
+                  role="radio"
+                  aria-checked={selecionado}
+                  onClick={() => setMetodoSelecionado(metodo.chave)}
+                  className={clsx(
+                    'flex items-center gap-3 rounded-mesa-lg border-2 p-4 text-left outline-none transition-colors',
+                    selecionado
+                      ? 'border-mesa-teal-500 bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
+                      : 'border-mesa-border-subtle bg-mesa-surface',
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      'flex size-10 shrink-0 items-center justify-center rounded-mesa-md',
+                      selecionado
+                        ? 'bg-mesa-teal-500 text-white'
+                        : 'bg-mesa-neutral-100 text-mesa-text-secondary dark:bg-mesa-neutral-700',
+                    )}
+                  >
+                    <metodo.icone className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-mesa-text-primary">
+                      {metodo.label}
+                    </span>
+                    {selecionado && (
+                      <span className="block text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-400">
+                        Selecionado
+                      </span>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         )}
 
         <div className="mt-8 flex flex-col gap-3">
           <Button
             variant="primary"
             size="xl"
+            icon={<Rocket className="size-5" aria-hidden />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => enviarPedido(false)}
@@ -331,6 +389,7 @@ export function ConfirmarPedido() {
           <Button
             variant="confirm"
             size="xl"
+            icon={<Truck className="size-5" aria-hidden />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => enviarPedido(true)}
