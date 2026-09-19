@@ -20,6 +20,8 @@ export type Item = {
   ordem: number
   preco_centavos: number
   categoria_id: string | null
+  foto_url: string | null
+  descricao: string | null
 }
 
 export type Categoria = {

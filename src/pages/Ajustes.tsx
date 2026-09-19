@@ -3,14 +3,15 @@
 // Aparência.
 
 import { useEffect, useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, ChevronLeft, Moon, Plus, Sun, Trash, TriangleAlert } from 'lucide-react'
+import { Camera, Check, ChevronLeft, Image, Moon, Plus, Sun, Trash, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
+import { apagarFotoItem, enviarFotoItem } from '../lib/fotoItem'
 import { ativarFaceId, desativarFaceId, faceIdAtivado, faceIdSuportado } from '../lib/faceId'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
@@ -20,6 +21,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
 import { Input } from '../components/ui/Input'
+import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import type { Barraca, Categoria, Item } from '../types/database'
@@ -129,6 +131,134 @@ function InputPreco({ item }: { item: Item }) {
   )
 }
 
+function MiniaturaItem({ fotoUrl, onClick, rotulo }: { fotoUrl: string | null; onClick: () => void; rotulo: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={rotulo}
+      className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary outline-none focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700"
+    >
+      {fotoUrl ? (
+        <img src={fotoUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <Image className="size-4" aria-hidden />
+      )}
+    </button>
+  )
+}
+
+function BottomSheetDetalhesItem({
+  item,
+  barracaId,
+  onClose,
+  onSalvo,
+}: {
+  item: Item | null
+  barracaId: string
+  onClose: () => void
+  onSalvo: (itemId: string, alteracoes: Partial<Item>) => void
+}) {
+  const [descricao, setDescricao] = useState(() => item?.descricao ?? '')
+  const [fotoUrl, setFotoUrl] = useState<string | null>(() => item?.foto_url ?? null)
+  const [enviandoFoto, setEnviandoFoto] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const inputArquivoRef = useRef<HTMLInputElement>(null)
+
+  if (!item) return null
+
+  async function aoEscolherArquivo(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!arquivo || !item) return
+
+    setEnviandoFoto(true)
+    setErro(null)
+
+    try {
+      const urlAntiga = fotoUrl
+      const novaUrl = await enviarFotoItem(barracaId, item.id, arquivo)
+      setFotoUrl(novaUrl)
+      if (urlAntiga) apagarFotoItem(urlAntiga)
+    } catch {
+      setErro('Não foi possível enviar a foto. Tente novamente.')
+    }
+
+    setEnviandoFoto(false)
+  }
+
+  async function salvar() {
+    if (!item) return
+    setSalvando(true)
+    setErro(null)
+
+    const alteracoes = { foto_url: fotoUrl, descricao: descricao.trim() || null }
+    const { error } = await supabase.from('itens').update(alteracoes).eq('id', item.id)
+
+    setSalvando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    onSalvo(item.id, alteracoes)
+    onClose()
+  }
+
+  return (
+    <BottomSheet open={!!item} onClose={onClose} aria-label={`Detalhes de ${item.nome}`}>
+      <h2 className="text-lg font-semibold text-mesa-text-primary">{item.nome}</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Foto e descrição aparecem pro operador em Lançar Pedido.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <Image className="size-6" aria-hidden />
+            )}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Camera className="size-4" aria-hidden />}
+            loading={enviandoFoto}
+            onClick={() => inputArquivoRef.current?.click()}
+          >
+            {fotoUrl ? 'Trocar foto' : 'Adicionar foto'}
+          </Button>
+          <input
+            ref={inputArquivoRef}
+            type="file"
+            accept="image/*"
+            onChange={aoEscolherArquivo}
+            className="hidden"
+          />
+        </div>
+
+        <Textarea
+          label="Descrição"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          placeholder="Ingredientes, tamanho, o que vem no prato..."
+          rows={3}
+        />
+
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+
+        <Button size="xl" loading={salvando} onClick={salvar} className="w-full">
+          Salvar
+        </Button>
+      </div>
+    </BottomSheet>
+  )
+}
+
 function SecaoCardapio({ barracaId }: { barracaId: string }) {
   const [itens, setItens] = useState<Item[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -141,6 +271,8 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
 
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nomeEdicao, setNomeEdicao] = useState('')
+
+  const [itemDetalhes, setItemDetalhes] = useState<Item | null>(null)
 
   const [itemParaExcluir, setItemParaExcluir] = useState<Item | null>(null)
   const [nomeExclusao, setNomeExclusao] = useState('')
@@ -464,6 +596,11 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                   className={`flex flex-col gap-1 py-2 ${item.ativo ? '' : 'opacity-50'}`}
                 >
                   <div className="flex items-center gap-2">
+                    <MiniaturaItem
+                      fotoUrl={item.foto_url}
+                      onClick={() => setItemDetalhes(item)}
+                      rotulo={`Foto e descrição de ${item.nome}`}
+                    />
                     {editandoId === item.id ? (
                       <Input
                         autoFocus
@@ -609,6 +746,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
           </>
         )}
       </Card>
+
+      <BottomSheetDetalhesItem
+        key={itemDetalhes?.id ?? 'fechado'}
+        item={itemDetalhes}
+        barracaId={barracaId}
+        onClose={() => setItemDetalhes(null)}
+        onSalvo={(itemId, alteracoes) =>
+          setItens((atual) => atual.map((i) => (i.id === itemId ? { ...i, ...alteracoes } : i)))
+        }
+      />
 
       <BottomSheet
         open={itemParaExcluir !== null}

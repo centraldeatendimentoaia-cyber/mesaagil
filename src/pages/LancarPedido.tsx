@@ -72,7 +72,17 @@ function CardItemCardapio({
 
   return (
     <Card className="flex flex-col">
+      {item.foto_url && (
+        <img
+          src={item.foto_url}
+          alt=""
+          className="-mx-4 -mt-4 mb-3 aspect-[4/3] w-[calc(100%+2rem)] rounded-t-mesa-lg object-cover"
+        />
+      )}
       <p className="text-base font-semibold text-mesa-text-primary">{item.nome}</p>
+      {item.descricao && (
+        <p className="mt-0.5 line-clamp-2 text-xs text-mesa-text-secondary">{item.descricao}</p>
+      )}
       <p className="mt-0.5 text-sm text-mesa-text-secondary">
         {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : '—'}
       </p>
