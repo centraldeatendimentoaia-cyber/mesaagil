@@ -201,7 +201,7 @@ function CardPedido({
       )}
 
       {itensAtivos.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {itensAtivos.map((item) => {
             if (item.entrega_direta) return <ChipEntregaDireta key={item.id} item={item} />
 
@@ -211,7 +211,7 @@ function CardPedido({
               <div
                 key={item.id}
                 className={clsx(
-                  'flex flex-wrap items-center gap-x-2 gap-y-1 rounded-mesa-md border px-3 py-2',
+                  'flex shrink-0 items-center gap-2 rounded-mesa-md border px-3 py-2',
                   item.entregue
                     ? 'border-mesa-teal-200 bg-mesa-teal-50 dark:border-mesa-teal-500/30 dark:bg-mesa-teal-500/15'
                     : 'border-mesa-border-subtle bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
