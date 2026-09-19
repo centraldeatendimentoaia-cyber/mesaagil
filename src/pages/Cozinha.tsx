@@ -139,6 +139,7 @@ function CardPedido({
     itensParaCozinha.length > 0 &&
     itensParaCozinha.every((i) => i.entregue)
   const mostrarIdentificacao = pedido.viagem || pedido.mesa
+  const itensComObservacao = itensAtivos.filter((i) => i.observacao)
 
   return (
     <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
@@ -199,14 +200,19 @@ function CardPedido({
         </div>
       )}
 
-      {pedido.observacao && (
+      {(pedido.observacao || itensComObservacao.length > 0) && (
         <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 dark:bg-mesa-orange-500/15">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-mesa-orange-700 dark:text-mesa-orange-400" aria-hidden />
-          <div>
+          <div className="flex flex-col gap-1">
             <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-orange-700 dark:text-mesa-orange-400">
               Atenção
             </p>
-            <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>
+            {pedido.observacao && <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>}
+            {itensComObservacao.map((item) => (
+              <p key={item.id} className="text-sm text-mesa-text-primary">
+                <span className="font-semibold">{item.nome_item}:</span> {item.observacao}
+              </p>
+            ))}
           </div>
         </div>
       )}

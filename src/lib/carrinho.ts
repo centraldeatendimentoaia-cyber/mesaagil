@@ -8,6 +8,9 @@ import type { Item } from '../types/database'
  */
 export type Carrinho = Record<string, number>
 export type EntregaDiretaPorItem = Record<string, boolean>
+/** Observação específica de um item da comanda (ex.: "sem cebola"),
+ * diferente de `observacao` (recado geral do pedido inteiro). */
+export type ObservacaoPorItem = Record<string, string>
 
 /** LancarPedido → ConfirmarPedido, ao clicar "Ver nota". */
 export type EstadoParaConfirmar = {
@@ -17,6 +20,7 @@ export type EstadoParaConfirmar = {
   viagem: boolean
   observacao: string
   entregaDireta?: EntregaDiretaPorItem
+  observacaoPorItem?: ObservacaoPorItem
 }
 
 /** ConfirmarPedido → LancarPedido, ao clicar "Voltar e editar". */
@@ -26,6 +30,7 @@ export type EstadoParaEditar = {
   viagem: boolean
   observacao: string
   entregaDireta?: EntregaDiretaPorItem
+  observacaoPorItem?: ObservacaoPorItem
 }
 
 /** ConfirmarPedido → LancarPedido, depois de enviar com sucesso — LancarPedido

@@ -28,11 +28,13 @@ function LinhaItemConfirmar({
   item,
   quantidade,
   marcado,
+  observacao,
   onAlternar,
 }: {
   item: Item
   quantidade: number
   marcado: boolean
+  observacao: string
   onAlternar: () => void
 }) {
   const temPreco = item.preco_centavos > 0
@@ -55,6 +57,11 @@ function LinhaItemConfirmar({
           {temPreco ? `${formatarPrecoBR(item.preco_centavos)} cada` : 'Sem preço cadastrado'}
           {marcado && ' · Entregar direto sem passar na cozinha'}
         </p>
+        {observacao && (
+          <span className="mt-1 inline-block rounded-mesa-full bg-mesa-orange-50 px-2 py-0.5 text-[11px] font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
+            {observacao}
+          </span>
+        )}
       </div>
       <p className="shrink-0 text-base font-semibold text-mesa-text-primary">
         {temPreco ? formatarPrecoBR(subtotal) : '—'}
@@ -118,6 +125,7 @@ export function ConfirmarPedido() {
   }
 
   const { carrinho, itens, mesa, viagem, observacao } = estado
+  const observacaoPorItem = estado.observacaoPorItem ?? {}
 
   const linhas = Object.entries(carrinho)
     .filter(([, quantidade]) => quantidade > 0)
@@ -146,6 +154,7 @@ export function ConfirmarPedido() {
         viagem,
         observacao,
         entregaDireta,
+        observacaoPorItem,
       } satisfies EstadoParaEditar,
     })
   }
@@ -170,6 +179,7 @@ export function ConfirmarPedido() {
       quantidade,
       preco_centavos_unitario: item.preco_centavos,
       entrega_direta: forcarEntregaDiretaEmTudo ? true : (entregaDireta[itemId] ?? false),
+      observacao: observacaoPorItem[itemId] || null,
     }))
 
     const operacao = await enfileirar('criar_pedido', {
@@ -196,10 +206,11 @@ export function ConfirmarPedido() {
       mesa: viagem ? null : mesa.trim() || null,
       viagem,
       observacao: observacao.trim() || null,
-      itens: linhas.map(({ item, quantidade }) => ({
+      itens: linhas.map(({ item, itemId, quantidade }) => ({
         nome: item.nome,
         quantidade,
         precoCentavosUnitario: item.preco_centavos,
+        observacao: observacaoPorItem[itemId] || null,
       })),
       totalCentavos,
       formaPagamento: rotuloMetodo ?? metodoSelecionado,
@@ -251,6 +262,7 @@ export function ConfirmarPedido() {
               item={item}
               quantidade={quantidade}
               marcado={entregaDireta[itemId] ?? false}
+              observacao={observacaoPorItem[itemId] ?? ''}
               onAlternar={() => alternarEntregaDireta(itemId)}
             />
           ))}

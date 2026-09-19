@@ -15,6 +15,10 @@
 -- IMPORTANTE: p_client_uuid é `text`, não `uuid`. A coluna
 -- pedidos.client_uuid no banco é text — mantido pra bater com o
 -- código do frontend, que sempre enviou string.
+--
+-- v3 (2026-09-18): aceita `observacao` (text) por item em p_itens, além
+-- do p_observacao geral do pedido que já existia — ver migração
+-- 20260918130000_add_observacao_item_pedido.sql.
 
 CREATE OR REPLACE FUNCTION public.criar_pedido(
   p_barraca_id uuid,
@@ -91,7 +95,8 @@ begin
       preco_centavos_unitario,
       entrega_direta,
       entregue,
-      entregue_em
+      entregue_em,
+      observacao
     )
     values (
       v_id,
@@ -101,7 +106,8 @@ begin
       coalesce((v_item->>'preco_centavos_unitario')::int, 0),
       v_entrega_direta,
       v_entrega_direta,
-      case when v_entrega_direta then now() else null end
+      case when v_entrega_direta then now() else null end,
+      nullif(v_item->>'observacao', '')
     );
   end loop;
 

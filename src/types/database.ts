@@ -72,6 +72,7 @@ export type ItemDoPedido = {
   entregue_em: string | null
   entrega_direta: boolean
   preco_centavos_unitario: number
+  observacao: string | null
 }
 
 export type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }

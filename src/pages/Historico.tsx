@@ -208,6 +208,7 @@ function CardHistorico({
           {itensAtivos.map((item) => (
             <Chip key={item.id} variant="plain">
               {item.quantidade}× {item.nome_item}
+              {item.observacao && ` (${item.observacao})`}
             </Chip>
           ))}
         </div>

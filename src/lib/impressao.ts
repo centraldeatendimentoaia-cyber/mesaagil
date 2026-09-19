@@ -15,6 +15,7 @@ export type ItemRecibo = {
   nome: string
   quantidade: number
   precoCentavosUnitario: number
+  observacao?: string | null
 }
 
 export type DadosRecibo = {
@@ -118,10 +119,14 @@ function montarHtmlRecibo(dados: DadosRecibo): string {
         item.quantidade > 1 && item.precoCentavosUnitario > 0
           ? `<div style="font-size:10px; color:#333;">${formatarPrecoBR(item.precoCentavosUnitario)} cada</div>`
           : ''
+      const linhaObsItem = item.observacao
+        ? `<div style="font-size:10px; font-style:italic; color:#333;">Obs: ${escaparHtml(item.observacao)}</div>`
+        : ''
       return `<div style="display:flex; justify-content:space-between; gap:8px; margin:4px 0;">
         <div>
           <span style="font-weight:bold;">${item.quantidade}x</span> ${nome}
           ${linhaUnitario}
+          ${linhaObsItem}
         </div>
         <span style="white-space:nowrap;">${totalItem}</span>
       </div>`

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Minus, Plus, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Check, FileText, Minus, Plus, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { aoConcluirCriacaoPedido } from '../lib/fila'
@@ -12,9 +12,11 @@ import type {
   EstadoParaConfirmar,
   EstadoParaEditar,
   EstadoPedidoEnviado,
+  ObservacaoPorItem,
 } from '../lib/carrinho'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
+import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -60,13 +62,17 @@ function BotaoStepper({
 function CardItemCardapio({
   item,
   quantidade,
+  observacao,
   onIncrementar,
   onDecrementar,
+  onAbrirObservacao,
 }: {
   item: Item
   quantidade: number
+  observacao: string
   onIncrementar: () => void
   onDecrementar: () => void
+  onAbrirObservacao: () => void
 }) {
   const selecionado = quantidade > 0
 
@@ -102,6 +108,14 @@ function CardItemCardapio({
                 Subtotal {formatarPrecoBR(item.preco_centavos * quantidade)}
               </p>
             )}
+            <button
+              type="button"
+              onClick={onAbrirObservacao}
+              className="mt-2 flex min-h-11 w-full items-center justify-center gap-1 truncate px-1 text-xs font-medium text-mesa-text-secondary"
+            >
+              <FileText className="size-3.5 shrink-0" aria-hidden />
+              {observacao ? `Obs: ${observacao}` : 'Adicionar observação'}
+            </button>
           </>
         ) : (
           <Button
@@ -149,6 +163,10 @@ export function LancarPedido() {
   const [mesa, setMesa] = useState(() => edicaoRecebida?.mesa ?? '')
   const [viagem, setViagem] = useState(() => edicaoRecebida?.viagem ?? false)
   const [observacao, setObservacao] = useState(() => edicaoRecebida?.observacao ?? '')
+  const [observacaoPorItem, setObservacaoPorItem] = useState<ObservacaoPorItem>(
+    () => edicaoRecebida?.observacaoPorItem ?? {},
+  )
+  const [itemObservacaoAberta, setItemObservacaoAberta] = useState<Item | null>(null)
   // Não editável nesta tela — só guardado pra devolver pra ConfirmarPedido
   // intacto se o operador for e voltar sem mudar nada.
   const [entregaDiretaHerdada] = useState<EntregaDiretaPorItem>(
@@ -306,6 +324,18 @@ export function LancarPedido() {
     setMesa('')
     setViagem(false)
     setObservacao('')
+    setObservacaoPorItem({})
+  }
+
+  function definirObservacaoItem(itemId: string, texto: string) {
+    setObservacaoPorItem((atual) => {
+      if (!texto.trim()) {
+        const copia = { ...atual }
+        delete copia[itemId]
+        return copia
+      }
+      return { ...atual, [itemId]: texto.trim() }
+    })
   }
 
   function verNota() {
@@ -318,6 +348,7 @@ export function LancarPedido() {
         viagem,
         observacao,
         entregaDireta: entregaDiretaHerdada,
+        observacaoPorItem,
       } satisfies EstadoParaConfirmar,
     })
   }
@@ -450,8 +481,10 @@ export function LancarPedido() {
                   key={item.id}
                   item={item}
                   quantidade={carrinho[item.id] ?? 0}
+                  observacao={observacaoPorItem[item.id] ?? ''}
                   onIncrementar={() => incrementar(item.id)}
                   onDecrementar={() => decrementar(item.id)}
+                  onAbrirObservacao={() => setItemObservacaoAberta(item)}
                 />
               ))}
             </div>
@@ -471,8 +504,10 @@ export function LancarPedido() {
                       key={item.id}
                       item={item}
                       quantidade={carrinho[item.id] ?? 0}
+                      observacao={observacaoPorItem[item.id] ?? ''}
                       onIncrementar={() => incrementar(item.id)}
                       onDecrementar={() => decrementar(item.id)}
+                      onAbrirObservacao={() => setItemObservacaoAberta(item)}
                     />
                   ))}
                 </div>
@@ -515,6 +550,55 @@ export function LancarPedido() {
           </div>
         </div>
       )}
+
+      <BottomSheet
+        open={itemObservacaoAberta !== null}
+        onClose={() => setItemObservacaoAberta(null)}
+        aria-label="Observação do item"
+      >
+        {itemObservacaoAberta && (
+          <ObservacaoItemForm
+            item={itemObservacaoAberta}
+            valorInicial={observacaoPorItem[itemObservacaoAberta.id] ?? ''}
+            onSalvar={(texto) => {
+              definirObservacaoItem(itemObservacaoAberta.id, texto)
+              setItemObservacaoAberta(null)
+            }}
+          />
+        )}
+      </BottomSheet>
     </div>
+  )
+}
+
+function ObservacaoItemForm({
+  item,
+  valorInicial,
+  onSalvar,
+}: {
+  item: Item
+  valorInicial: string
+  onSalvar: (texto: string) => void
+}) {
+  const [texto, setTexto] = useState(valorInicial)
+
+  return (
+    <>
+      <h2 className="text-lg font-semibold text-mesa-text-primary">Observação · {item.nome}</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Só pra esse item — restrição, ponto do prato, etc.
+      </p>
+      <Textarea
+        autoFocus
+        className="mt-4"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder="Ex.: sem cebola, alergia a amendoim"
+        rows={3}
+      />
+      <Button size="xl" onClick={() => onSalvar(texto)} className="mt-4 w-full">
+        Salvar
+      </Button>
+    </>
   )
 }
