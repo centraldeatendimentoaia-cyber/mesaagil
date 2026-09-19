@@ -211,10 +211,10 @@ function CardPedido({
               <div
                 key={item.id}
                 className={clsx(
-                  'flex flex-wrap items-center gap-x-2 gap-y-1 rounded-mesa-md px-3 py-2',
+                  'flex flex-wrap items-center gap-x-2 gap-y-1 rounded-mesa-md border px-3 py-2',
                   item.entregue
-                    ? 'bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
-                    : 'bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
+                    ? 'border-mesa-teal-200 bg-mesa-teal-50 dark:border-mesa-teal-500/30 dark:bg-mesa-teal-500/15'
+                    : 'border-mesa-border-subtle bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
                 )}
               >
                 <span
