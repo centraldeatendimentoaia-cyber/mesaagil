@@ -248,20 +248,20 @@ export function Dashboard() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
-              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+              <p className="flex items-center gap-1 font-mesa-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
                 <Clock className="size-3" aria-hidden />
                 Espera média
               </p>
-              <p className="mt-1 text-lg font-bold text-mesa-text-primary">
+              <p className="mt-1 font-mesa-mono text-lg font-bold text-mesa-text-primary">
                 {esperaMediaMinutos === null ? '—' : `${esperaMediaMinutos} min`}
               </p>
             </div>
             <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
-              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+              <p className="flex items-center gap-1 font-mesa-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
                 <ListOrdered className="size-3" aria-hidden />
                 Em fila
               </p>
-              <p className="mt-1 text-lg font-bold text-mesa-text-primary">
+              <p className="mt-1 font-mesa-mono text-lg font-bold text-mesa-text-primary">
                 {contagemAFazer} comanda{contagemAFazer === 1 ? '' : 's'}
               </p>
             </div>
