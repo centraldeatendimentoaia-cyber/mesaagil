@@ -18,6 +18,7 @@ export interface InputProps
   error?: string
   type?: InputType
   size?: InputSize
+  icon?: ReactNode
   onClear?: () => void
 }
 
@@ -54,6 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     id,
     disabled,
     value,
+    icon,
     onClear,
     ...rest
   },
@@ -74,6 +76,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     leftAffix = <span className="text-mesa-text-secondary">R$</span>
   } else if (type === 'search') {
     leftAffix = <Search className="size-4 text-mesa-text-secondary" aria-hidden />
+  } else if (icon) {
+    leftAffix = <span className="text-mesa-text-secondary [&>svg]:size-4">{icon}</span>
   }
 
   if (type === 'percentage') {
