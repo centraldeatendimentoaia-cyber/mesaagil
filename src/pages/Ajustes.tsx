@@ -305,7 +305,13 @@ function BottomSheetDetalhesItem({
 
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
 
-        <Button size="xl" loading={salvando} onClick={salvar} className="w-full">
+        <Button
+          size="xl"
+          icon={<Check className="size-5" aria-hidden />}
+          loading={salvando}
+          onClick={salvar}
+          className="w-full"
+        >
           Salvar
         </Button>
       </div>
@@ -1575,7 +1581,13 @@ function BottomSheetSenhaAdmin({
           onChange={(e) => setPinConfirmacao(e.target.value.replace(/\D/g, '').slice(0, 4))}
         />
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
-        <Button type="submit" size="xl" loading={processando} className="w-full">
+        <Button
+          type="submit"
+          size="xl"
+          icon={<Check className="size-5" aria-hidden />}
+          loading={processando}
+          className="w-full"
+        >
           Salvar
         </Button>
       </form>
