@@ -16,15 +16,17 @@ PDV ou controle de estoque — isso continua fora de escopo. O
 pagamento tem uma ressalva: ver "Roadmap de produto" abaixo, já
 existe uma direção decidida que muda essa regra mais pra frente.
 
-Impressão de comprovante/nota NÃO está fora de escopo — decisão
-revertida em 2026-09-17: todo restaurante precisa desse impresso.
-Já implementado de verdade (src/lib/impressao.ts): cupom simples via
-impressão nativa do navegador (window.print), sem exigência fiscal —
-não é Nota Fiscal Eletrônica (isso continua fora de escopo, exigiria
-certificado digital e integração com a SEFAZ). Confirmar e enviar /
-Entregar já disparam a impressão sozinhos, sem botão separado. O
-Hub também tem "Reimprimir último cupom" (guardado em localStorage
-por barraca).
+Impressão de comprovante/nota está fora de escopo de novo — decisão
+revertida em 2026-09-19 (a decisão de 2026-09-17 de implementar já
+tinha sido revertida): a primeira versão (src/lib/impressao.ts, cupom
+via window.print) foi removida por completo, junto do botão
+"Reimprimir último cupom" no Hub e do disparo automático em Confirmar
+e enviar/Entregar. Motivo: impressoras térmicas variam de tamanho
+(58mm/80mm) e o cupom precisa de uma aba de configuração de
+impressora pra escolher isso — só volta a ser implementado quando
+essa configuração existir. Continua não sendo Nota Fiscal Eletrônica
+quando voltar (isso segue fora de escopo, exigiria certificado
+digital e integração com a SEFAZ).
 
 ## Regras de produto
 - Senha sequencial por pedido, reinicia todo dia
@@ -34,8 +36,8 @@ por barraca).
   do pedido inteiro (ex.: "cliente com pressa"), e
   `itens_do_pedido.observacao` é específica de um item (ex.: "sem
   cebola") — cada item do carrinho em Lançar Pedido tem seu próprio
-  campo de observação, mostrado depois em Confirmar Pedido, Cozinha
-  (como alerta de atenção) e no cupom impresso
+  campo de observação, mostrado depois em Confirmar Pedido e Cozinha
+  (como alerta de atenção)
 - Item do cardápio pode ter foto e descrição (`itens.foto_url`,
   `itens.descricao`) — cadastradas em Ajustes, mostradas em Lançar
   Pedido. Foto sobe pro bucket de Storage `cardapio-fotos` (público
@@ -92,8 +94,9 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
 - Cadastro self-service e múltiplas barracas por conta: já
   implementado (v2) — qualquer usuário autenticado pode criar sua
   própria barraca e trocar entre as que tem acesso.
-- Impressão de comprovante/nota: já implementado — ver "O que o
-  sistema NÃO é (hoje)" no topo deste arquivo.
+- Impressão de comprovante/nota: removida de novo, aguardando a aba
+  de configuração de impressora térmica (varia por tamanho) — ver "O
+  que o sistema NÃO é (hoje)" no topo deste arquivo.
 - Cobrança de assinatura do MesaAgil (o dono da barraca paga pelo
   uso do app): só depois que o produto estiver 100% pronto/estável.
   Isso é billing SaaS MesaAgil→cliente, problema completamente

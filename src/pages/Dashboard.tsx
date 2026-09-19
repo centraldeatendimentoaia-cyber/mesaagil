@@ -8,7 +8,6 @@ import {
   ListOrdered,
   LogOut,
   Moon,
-  Printer,
   Settings,
   ShoppingBag,
   Sun,
@@ -24,7 +23,6 @@ import { useTheme } from '../hooks/useTheme'
 import { formatarDataExtenso, turnoAtual } from '../lib/datas'
 import { formatarPrecoBR } from '../lib/preco'
 import { calcularTotalBruto } from '../lib/relatorio'
-import { obterUltimoRecibo, reimprimirUltimoRecibo } from '../lib/impressao'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -127,15 +125,6 @@ export function Dashboard() {
     () => calcularEsperaMediaMinutos(pedidos.filter((p) => p.status === 'a_fazer')),
     [pedidos],
   )
-
-  const [temUltimoCupom] = useState(() => obterUltimoRecibo(barraca.id) !== null)
-  const [reimprimindo, setReimprimindo] = useState(false)
-
-  function aoReimprimirCupom() {
-    setReimprimindo(true)
-    reimprimirUltimoRecibo(barraca.id)
-    window.setTimeout(() => setReimprimindo(false), 600)
-  }
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -259,21 +248,6 @@ export function Dashboard() {
           </div>
         </Card>
       </div>
-
-      {temUltimoCupom && (
-        <div className="px-6 pb-8">
-          <Button
-            variant="outline"
-            size="md"
-            icon={<Printer className="size-4" aria-hidden />}
-            loading={reimprimindo}
-            onClick={aoReimprimirCupom}
-            className="w-full"
-          >
-            Reimprimir último cupom
-          </Button>
-        </div>
-      )}
 
       <BottomSheet open={mostrarMenuConta} onClose={() => setMostrarMenuConta(false)} aria-label="Conta">
         <h2 className="text-lg font-semibold text-mesa-text-primary">Conta</h2>
