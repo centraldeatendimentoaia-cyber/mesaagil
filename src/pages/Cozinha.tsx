@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, ListChecks, Moon, ShoppingBag, Sun, TriangleAlert } from 'lucide-react'
+import { Check, ChefHat, CircleCheck, Clock, ListChecks, Moon, ShoppingBag, Sun, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
@@ -589,8 +589,8 @@ export function Cozinha() {
         <SegmentedControl
           aria-label="Colunas da cozinha"
           items={[
-            { label: 'A Fazer', count: pedidosAFazer.length },
-            { label: 'Pronto', count: pedidosProntos.length },
+            { label: 'A Fazer', count: pedidosAFazer.length, icon: <ChefHat className="size-4" /> },
+            { label: 'Pronto', count: pedidosProntos.length, icon: <CircleCheck className="size-4" /> },
           ]}
           activeIndex={aba === 'a_fazer' ? 0 : 1}
           onChange={(indice) => setAba(indice === 0 ? 'a_fazer' : 'pronto')}

@@ -387,7 +387,7 @@ export function ConfirmarPedido() {
             Confirmar e enviar
           </Button>
           <Button
-            variant="confirm"
+            variant="outline"
             size="xl"
             icon={<Truck className="size-5" aria-hidden />}
             disabled={!podeEnviar}
