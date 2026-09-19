@@ -20,9 +20,11 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
+import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Textarea } from '../components/ui/Textarea'
-import { Toggle } from '../components/ui/Toggle'
 import type { Categoria, Item } from '../types/database'
+
+type ModoConsumo = 'mesa' | 'balcao' | 'viagem'
 
 type SenhaConfirmada = {
   valor: number
@@ -162,6 +164,17 @@ export function LancarPedido() {
   const [carrinho, setCarrinho] = useState<Carrinho>(() => edicaoRecebida?.carrinho ?? {})
   const [mesa, setMesa] = useState(() => edicaoRecebida?.mesa ?? '')
   const [viagem, setViagem] = useState(() => edicaoRecebida?.viagem ?? false)
+  // Só decide qual aba mostra marcada — mesa/viagem continuam sendo os
+  // campos de verdade que vão pro pedido. "Balcão" e "Mesa vazia" resultam
+  // no mesmo dado (mesa=null, viagem=false); essa aba só existe pra deixar
+  // a intenção explícita em vez de o operador ter que "adivinhar" deixando
+  // o campo em branco.
+  const [modoConsumo, setModoConsumo] = useState<ModoConsumo>(() => {
+    if (edicaoRecebida?.viagem) return 'viagem'
+    if (edicaoRecebida?.mesa) return 'mesa'
+    return 'balcao'
+  })
+  const [buscaItem, setBuscaItem] = useState('')
   const [observacao, setObservacao] = useState(() => edicaoRecebida?.observacao ?? '')
   const [observacaoPorItem, setObservacaoPorItem] = useState<ObservacaoPorItem>(
     () => edicaoRecebida?.observacaoPorItem ?? {},
@@ -239,13 +252,19 @@ export function LancarPedido() {
     }
   }, [barraca.id])
 
+  const itensFiltrados = useMemo(() => {
+    const termo = buscaItem.trim().toLowerCase()
+    if (!termo) return itens
+    return itens.filter((item) => item.nome.toLowerCase().includes(termo))
+  }, [itens, buscaItem])
+
   const gruposCardapio = useMemo(() => {
     if (categorias.length === 0) return null
 
     const porCategoria = new Map<string, Item[]>()
     const semCategoria: Item[] = []
 
-    for (const item of itens) {
+    for (const item of itensFiltrados) {
       if (item.categoria_id) {
         const lista = porCategoria.get(item.categoria_id) ?? []
         lista.push(item)
@@ -268,7 +287,7 @@ export function LancarPedido() {
     }
 
     return grupos
-  }, [categorias, itens])
+  }, [categorias, itensFiltrados])
 
   useEffect(() => {
     if (!senha?.provisoria || !senha.idFila) return
@@ -323,8 +342,15 @@ export function LancarPedido() {
     setCarrinho({})
     setMesa('')
     setViagem(false)
+    setModoConsumo('balcao')
     setObservacao('')
     setObservacaoPorItem({})
+  }
+
+  function selecionarModo(modo: ModoConsumo) {
+    setModoConsumo(modo)
+    setViagem(modo === 'viagem')
+    if (modo === 'balcao') setMesa('')
   }
 
   function definirObservacaoItem(itemId: string, texto: string) {
@@ -433,24 +459,39 @@ export function LancarPedido() {
       )}
 
       <div className="flex-1 overflow-y-auto px-6 pb-40 pt-5">
-        <div className="flex items-stretch gap-3">
+        <Input
+          type="search"
+          value={buscaItem}
+          onChange={(e) => setBuscaItem(e.target.value)}
+          onClear={() => setBuscaItem('')}
+          placeholder="Buscar item do cardápio"
+          aria-label="Buscar item do cardápio"
+        />
+
+        <div className="mt-4">
+          <SegmentedControl
+            aria-label="Mesa, balcão ou viagem"
+            items={[{ label: 'Mesa' }, { label: 'Balcão' }, { label: 'Viagem' }]}
+            activeIndex={modoConsumo === 'mesa' ? 0 : modoConsumo === 'balcao' ? 1 : 2}
+            onChange={(indice) => selecionarModo(indice === 0 ? 'mesa' : indice === 1 ? 'balcao' : 'viagem')}
+          />
+        </div>
+
+        {modoConsumo === 'mesa' && (
           <Input
             value={mesa}
             onChange={(e) => setMesa(e.target.value)}
-            disabled={viagem}
-            placeholder={viagem ? 'Viagem (sem mesa)' : 'Mesa (opcional)'}
+            placeholder="Número ou nome da mesa"
             aria-label="Mesa"
-            className="flex-1"
+            className="mt-3"
+            autoFocus
           />
-          <div className="flex h-12 shrink-0 items-center rounded-mesa-sm border-[1.5px] border-mesa-border-default bg-mesa-surface px-4">
-            <Toggle checked={viagem} onChange={setViagem} label="Viagem" />
-          </div>
-        </div>
+        )}
 
         <Textarea
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
-          placeholder="Observação (opcional)"
+          placeholder="Observação geral do pedido (opcional)"
           rows={2}
           className="mt-4"
         />
@@ -474,9 +515,15 @@ export function LancarPedido() {
             </p>
           )}
 
-          {!carregandoItens && !erroItens && itens.length > 0 && gruposCardapio === null && (
+          {!carregandoItens && !erroItens && itensFiltrados.length === 0 && itens.length > 0 && (
+            <p className="py-8 text-center text-sm text-mesa-text-secondary">
+              Nenhum item encontrado pra "{buscaItem}".
+            </p>
+          )}
+
+          {!carregandoItens && !erroItens && itensFiltrados.length > 0 && gruposCardapio === null && (
             <div className="grid grid-cols-2 gap-3">
-              {itens.map((item) => (
+              {itensFiltrados.map((item) => (
                 <CardItemCardapio
                   key={item.id}
                   item={item}
