@@ -1025,7 +1025,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
               <span className="size-2.5 shrink-0 rounded-mesa-full bg-mesa-kanban-red" aria-hidden />
               Acima disso
             </span>
-            <span className="text-sm font-semibold text-mesa-kanban-red">vermelho</span>
+            <span className="text-sm font-semibold text-mesa-kanban-red">vermelho + alerta sonoro</span>
           </li>
         </ul>
 

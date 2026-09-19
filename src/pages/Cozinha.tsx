@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
-import { tocarSomPedidoNaCozinha } from '../lib/sons'
+import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
@@ -316,7 +316,7 @@ export function Cozinha() {
   // `pedidos` muda por outro motivo (evento realtime, etc.) e o horário
   // exibido fica parado no valor do último render real. Um único timer aqui
   // força esse re-render — não é por card, pra não multiplicar timers.
-  const [, forcarAtualizacaoDoRelogio] = useState(0)
+  const [relogioTick, forcarAtualizacaoDoRelogio] = useState(0)
 
   useEffect(() => {
     const intervalo = window.setInterval(() => {
@@ -325,6 +325,35 @@ export function Cozinha() {
 
     return () => window.clearInterval(intervalo)
   }, [])
+
+  // Alerta sonoro de atraso crítico: dispara uma vez por pedido quando ele
+  // cruza pra faixa vermelha em "A Fazer" (não repete a cada tick do
+  // relógio nem quando o pedido sai da lista e volta sem ter mudado de
+  // faixa). idsAlertadosVermelhoRef é limpo por pedido assim que ele sai
+  // de "a_fazer" — se voltar depois via "Voltar", alerta de novo se ainda
+  // estiver no vermelho.
+  const idsAlertadosVermelhoRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    const emFazerAgoraIds = new Set(
+      pedidos.filter((p) => p.status === 'a_fazer').map((p) => p.id),
+    )
+
+    for (const id of idsAlertadosVermelhoRef.current) {
+      if (!emFazerAgoraIds.has(id)) idsAlertadosVermelhoRef.current.delete(id)
+    }
+
+    for (const pedido of pedidos) {
+      if (pedido.status !== 'a_fazer') continue
+      if (idsAlertadosVermelhoRef.current.has(pedido.id)) continue
+      if (corPorTempo(minutosDecorridos(pedido), barraca) !== 'vermelho') continue
+
+      idsAlertadosVermelhoRef.current.add(pedido.id)
+      tocarSomPedidoCritico()
+    }
+    // relogioTick força reavaliar mesmo sem `pedidos` mudar — o atraso
+    // cresce só com o tempo passando.
+  }, [pedidos, relogioTick, barraca])
 
   // Toca só quando um pedido novo chega via realtime enquanto a tela já
   // está aberta. Espera `pedidosCarregados` (useRealtimePedidos.ts) antes

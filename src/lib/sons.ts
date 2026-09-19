@@ -131,3 +131,18 @@ export function tocarSomPedidoNaChamada(): void {
   tocarNota(ctx, 1046.5, agora, 0.55, 'sine', 0.3) // C6, corpo do sino
   tocarNota(ctx, 2093, agora, 0.35, 'sine', 0.12) // C7, brilho harmônico
 }
+
+/**
+ * Som de ALERTA CRÍTICO: pedido em "A Fazer" passou da faixa vermelha
+ * (atraso). Mais insistente que os outros de propósito — três toques
+ * graves e curtos, pra se destacar do som de "pedido chegou".
+ */
+export function tocarSomPedidoCritico(): void {
+  const ctx = contextoPronto()
+  if (!ctx) return
+
+  const agora = ctx.currentTime
+  tocarNota(ctx, 392, agora, 0.12, 'triangle', 0.3) // G4
+  tocarNota(ctx, 392, agora + 0.18, 0.12, 'triangle', 0.3)
+  tocarNota(ctx, 392, agora + 0.36, 0.16, 'triangle', 0.3)
+}
