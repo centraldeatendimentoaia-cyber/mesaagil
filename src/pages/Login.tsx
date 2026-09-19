@@ -37,8 +37,12 @@ export function Login() {
     <div className="flex min-h-dvh flex-col items-center justify-center p-6 [background:var(--mesa-gradient-atmosphere)]">
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-mesa-xl border border-mesa-border-subtle bg-mesa-surface p-3 shadow-mesa-1">
-            <img src="/brand/mesaagil-icone-cor.png" alt="" className="size-full" />
+          <div className="flex size-16 items-center justify-center rounded-mesa-lg border border-mesa-border-subtle bg-white p-3 shadow-mesa-1">
+            <img
+              src="/brand/mesaagil-icone-cor.png"
+              alt=""
+              className="max-h-full max-w-full object-contain"
+            />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-wide text-mesa-text-primary">
             MESA ÁGIL
@@ -48,7 +52,7 @@ export function Login() {
           </p>
         </div>
 
-        <div className="mt-8 rounded-mesa-2xl border border-mesa-border-subtle bg-mesa-surface p-6 shadow-mesa-1">
+        <div className="mt-8 rounded-mesa-lg border border-mesa-border-subtle bg-mesa-surface p-6 shadow-mesa-1">
           <form onSubmit={aoSubmeter} className="flex flex-col gap-4">
             <Input
               label="E-mail"
