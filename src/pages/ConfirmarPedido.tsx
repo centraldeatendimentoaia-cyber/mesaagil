@@ -294,7 +294,7 @@ export function ConfirmarPedido() {
 
         <div className="mt-4 flex items-center justify-between rounded-mesa-lg bg-mesa-teal-50 px-5 py-4 dark:bg-mesa-teal-500/15">
           <span className="text-base font-semibold text-mesa-text-primary">Total</span>
-          <span className="text-2xl font-bold text-mesa-teal-700 dark:text-mesa-teal-400">
+          <span className="font-mesa-mono text-2xl font-bold text-mesa-teal-700 dark:text-mesa-teal-400">
             {formatarPrecoBR(totalCentavos)}
           </span>
         </div>
