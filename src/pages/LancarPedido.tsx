@@ -570,7 +570,7 @@ export function LancarPedido() {
             itens.length > 0 &&
             !buscaItem.trim() &&
             (itensMaisPedidos.length > 0 || chipsCategoria.length > 0) && (
-              <div className="rolagem-sem-barra -mx-6 mb-4 flex gap-2 overflow-x-auto px-6 pb-1">
+              <div className="rolagem-minimalista -mx-6 mb-4 flex gap-2 overflow-x-auto px-6 pb-1">
                 {itensMaisPedidos.length > 0 && (
                   <Chip
                     variant={filtroEfetivo === 'mais-pedidos' ? 'teal' : 'plain'}

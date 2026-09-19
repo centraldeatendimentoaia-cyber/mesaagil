@@ -15,15 +15,34 @@ h1, h2, h3 {
   font-family: var(--font-mesa-display);
 }
 
-/* Rolagem horizontal (fileira de chips etc.) sem a barra de scroll do
-   navegador — o gesto de arrastar já é intuitivo, a barra só polui. */
-.rolagem-sem-barra {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+/* Rolagem horizontal (fileira de chips etc.): barra fina em vez da
+   scrollbar padrão do navegador. Escondê-la de vez quebra o arrasto
+   por mouse/trackpad (sem gesto de swipe, é a única forma de rolar
+   com mouse) — mantemos ela, só bem discreta. */
+.rolagem-minimalista {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-mesa-neutral-300) transparent;
 }
 
-.rolagem-sem-barra::-webkit-scrollbar {
-  display: none;
+.dark .rolagem-minimalista {
+  scrollbar-color: var(--color-mesa-neutral-600) transparent;
+}
+
+.rolagem-minimalista::-webkit-scrollbar {
+  height: 4px;
+}
+
+.rolagem-minimalista::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rolagem-minimalista::-webkit-scrollbar-thumb {
+  background: var(--color-mesa-neutral-300);
+  border-radius: 999px;
+}
+
+.dark .rolagem-minimalista::-webkit-scrollbar-thumb {
+  background: var(--color-mesa-neutral-600);
 }
 
 @theme {
