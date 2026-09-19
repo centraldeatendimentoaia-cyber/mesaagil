@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChefHat, CircleCheck, Clock, ListChecks, Moon, ShoppingBag, Sun, TriangleAlert } from 'lucide-react'
+import {
+  Check,
+  CheckCheck,
+  ChefHat,
+  CircleCheck,
+  Clock,
+  ListChecks,
+  Moon,
+  ShoppingBag,
+  Sun,
+  TriangleAlert,
+  Undo2,
+} from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
@@ -199,7 +211,7 @@ function CardPedido({
               <div
                 key={item.id}
                 className={clsx(
-                  'flex items-center justify-between gap-2 rounded-mesa-md px-3 py-2',
+                  'flex flex-wrap items-center gap-x-2 gap-y-1 rounded-mesa-md px-3 py-2',
                   item.entregue
                     ? 'bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
                     : 'bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
@@ -207,13 +219,25 @@ function CardPedido({
               >
                 <span
                   className={clsx(
-                    'min-w-0 truncate text-sm font-medium',
+                    'shrink-0 font-mesa-mono text-sm font-bold',
+                    item.entregue
+                      ? 'text-mesa-teal-700 dark:text-mesa-teal-400'
+                      : coluna === 'a_fazer'
+                        ? CORES_TEXTO[cor]
+                        : 'text-mesa-text-secondary',
+                  )}
+                >
+                  {item.quantidade}×
+                </span>
+                <span
+                  className={clsx(
+                    'text-sm font-medium',
                     item.entregue
                       ? 'text-mesa-teal-700 line-through dark:text-mesa-teal-400'
                       : 'text-mesa-text-primary',
                   )}
                 >
-                  {item.quantidade}× {item.nome_item}
+                  {item.nome_item}
                 </span>
                 {categoria && (
                   <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 font-mesa-mono text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
@@ -246,19 +270,43 @@ function CardPedido({
       <div className="mt-4 flex gap-3">
         {coluna === 'a_fazer' ? (
           <>
-            <Button variant="outline" size="md" className="flex-1" onClick={() => onMoverParaPronto(pedido)}>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<Check className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onMoverParaPronto(pedido)}
+            >
               Pronto
             </Button>
-            <Button variant="confirm" size="md" className="flex-1" onClick={() => onAtalhoEntregar(pedido)}>
+            <Button
+              variant="confirm"
+              size="md"
+              icon={<CheckCheck className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onAtalhoEntregar(pedido)}
+            >
               Entregar direto
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" size="md" className="flex-1" onClick={() => onVoltar(pedido)}>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<Undo2 className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onVoltar(pedido)}
+            >
               Voltar
             </Button>
-            <Button variant="confirm" size="md" className="flex-1" onClick={() => onEntregar(pedido)}>
+            <Button
+              variant="confirm"
+              size="md"
+              icon={<CheckCheck className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onEntregar(pedido)}
+            >
               Entregue
             </Button>
           </>
@@ -269,7 +317,7 @@ function CardPedido({
         <button
           type="button"
           onClick={() => onCancelar(pedido)}
-          className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
+          className="min-h-11 px-2 font-mesa-mono text-sm font-semibold text-mesa-error-500"
         >
           {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
         </button>
