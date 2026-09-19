@@ -7,19 +7,19 @@ import { useTheme } from '../hooks/useTheme'
 import { turnoAtual } from '../lib/datas'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
+import { supabase } from '../lib/supabase'
 import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Chip } from '../components/ui/Chip'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
 import { DetalheComanda } from '../components/DetalheComanda'
 import type { MotivoCancelamento } from '../lib/cancelamento'
-import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
+import type { Barraca, Categoria, Item, ItemDoPedido, PedidoComItens } from '../types/database'
 import type { StatusConexao } from '../hooks/useRealtimePedidos'
 
 type Coluna = 'a_fazer' | 'pronto'
@@ -110,6 +110,7 @@ function CardPedido({
   pedido,
   barraca,
   coluna,
+  nomeCategoriaDoItem,
   onAbrirDetalhe,
   onMoverParaPronto,
   onVoltar,
@@ -120,6 +121,7 @@ function CardPedido({
   pedido: PedidoComItens
   barraca: Barraca
   coluna: Coluna
+  nomeCategoriaDoItem: (itemId: string | null) => string | null
   onAbrirDetalhe: (pedido: PedidoComItens) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onVoltar: (pedido: PedidoComItens) => void
@@ -187,18 +189,40 @@ function CardPedido({
       )}
 
       {itensAtivos.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {itensAtivos.map((item) =>
-            item.entrega_direta ? (
-              <ChipEntregaDireta key={item.id} item={item} />
-            ) : (
-              <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
-                <span className={item.entregue ? 'line-through' : undefined}>
+        <div className="mt-3 flex flex-col gap-2">
+          {itensAtivos.map((item) => {
+            if (item.entrega_direta) return <ChipEntregaDireta key={item.id} item={item} />
+
+            const categoria = nomeCategoriaDoItem(item.item_id)
+
+            return (
+              <div
+                key={item.id}
+                className={clsx(
+                  'flex items-center justify-between gap-2 rounded-mesa-md px-3 py-2',
+                  item.entregue
+                    ? 'bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
+                    : 'bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
+                )}
+              >
+                <span
+                  className={clsx(
+                    'min-w-0 truncate text-sm font-medium',
+                    item.entregue
+                      ? 'text-mesa-teal-700 line-through dark:text-mesa-teal-400'
+                      : 'text-mesa-text-primary',
+                  )}
+                >
                   {item.quantidade}× {item.nome_item}
                 </span>
-              </Chip>
-            ),
-          )}
+                {categoria && (
+                  <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 font-mesa-mono text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
+                    {categoria}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -335,6 +359,36 @@ export function Cozinha() {
   const { tema, alternarTema } = useTheme()
   const escuro = tema === 'escuro'
   const [aba, setAba] = useState<Coluna>('a_fazer')
+
+  // Nome real da categoria de cada item — badge por item no card do pedido,
+  // pra ajudar o chef a separar/rotear o preparo. Busca uma vez por
+  // barraca, não por pedido (mesmo padrão de Histórico.tsx).
+  const [itensCardapio, setItensCardapio] = useState<Item[]>([])
+  const [categoriasCardapio, setCategoriasCardapio] = useState<Categoria[]>([])
+
+  useEffect(() => {
+    let cancelado = false
+
+    Promise.all([
+      supabase.from('itens').select('id, categoria_id').eq('barraca_id', barraca.id),
+      supabase.from('categorias').select('id, nome').eq('barraca_id', barraca.id),
+    ]).then(([itensResultado, categoriasResultado]) => {
+      if (cancelado) return
+      if (!itensResultado.error) setItensCardapio((itensResultado.data ?? []) as Item[])
+      if (!categoriasResultado.error) setCategoriasCardapio((categoriasResultado.data ?? []) as Categoria[])
+    })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
+  function nomeCategoriaDoItem(itemId: string | null): string | null {
+    if (!itemId) return null
+    const item = itensCardapio.find((i) => i.id === itemId)
+    if (!item?.categoria_id) return null
+    return categoriasCardapio.find((c) => c.id === item.categoria_id)?.nome ?? null
+  }
 
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
 
@@ -589,6 +643,7 @@ export function Cozinha() {
             pedido={pedido}
             barraca={barraca}
             coluna={coluna}
+            nomeCategoriaDoItem={nomeCategoriaDoItem}
             onAbrirDetalhe={abrirDetalhe}
             onMoverParaPronto={moverParaPronto}
             onVoltar={voltarParaFazer}
