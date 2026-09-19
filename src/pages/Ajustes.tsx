@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { apagarFotoItem, enviarFotoItem } from '../lib/fotoItem'
+import { apagarLogoBarraca, enviarLogoBarraca } from '../lib/logoBarraca'
 import { ativarFaceId, desativarFaceId, faceIdAtivado, faceIdSuportado } from '../lib/faceId'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
@@ -938,6 +939,113 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   )
 }
 
+/** Nome e logo da barraca — sempre existiu a coluna logo_url, mas nunca
+ * teve como fazer upload de verdade, só setando direto no banco. Mesmo
+ * padrão de foto+resize do cardápio (lib/fotoItem.ts), bucket próprio
+ * (lib/logoBarraca.ts) porque o dono do upload é a barraca, não um item. */
+function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
+  const [nome, setNome] = useState(barraca.nome)
+  const [logoUrl, setLogoUrl] = useState(barraca.logo_url)
+  const [enviandoLogo, setEnviandoLogo] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const inputArquivoRef = useRef<HTMLInputElement>(null)
+
+  async function aoEscolherArquivo(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!arquivo) return
+
+    setEnviandoLogo(true)
+    setErro(null)
+
+    try {
+      const urlAntiga = logoUrl
+      const novaUrl = await enviarLogoBarraca(barraca.id, arquivo)
+      setLogoUrl(novaUrl)
+      if (urlAntiga) apagarLogoBarraca(urlAntiga)
+    } catch {
+      setErro('Não foi possível enviar o logo. Tente novamente.')
+    }
+
+    setEnviandoLogo(false)
+  }
+
+  async function salvar() {
+    if (!nome.trim()) return
+    setSalvando(true)
+    setErro(null)
+
+    const { error } = await supabase
+      .from('barracas')
+      .update({ nome: nome.trim(), logo_url: logoUrl })
+      .eq('id', barraca.id)
+
+    setSalvando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    setSalvo(true)
+    window.setTimeout(() => setSalvo(false), 3000)
+  }
+
+  return (
+    <section>
+      <RotuloSecao>Identidade da barraca</RotuloSecao>
+      <Card>
+        <div className="flex items-center gap-3">
+          <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <Image className="size-6" aria-hidden />
+            )}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Camera className="size-4" aria-hidden />}
+            loading={enviandoLogo}
+            onClick={() => inputArquivoRef.current?.click()}
+          >
+            {logoUrl ? 'Trocar logo' : 'Adicionar logo'}
+          </Button>
+          <input
+            ref={inputArquivoRef}
+            type="file"
+            accept="image/*"
+            onChange={aoEscolherArquivo}
+            className="hidden"
+          />
+        </div>
+
+        <Input
+          label="Nome da barraca"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="mt-4"
+        />
+
+        {erro && <p className="mt-2 text-sm font-medium text-mesa-error-500">{erro}</p>}
+
+        <Button
+          size="md"
+          loading={salvando}
+          disabled={!nome.trim()}
+          onClick={salvar}
+          className="mt-4 w-full"
+        >
+          {salvo ? 'Salvo!' : 'Salvar'}
+        </Button>
+      </Card>
+    </section>
+  )
+}
+
 function SecaoFaixas({ barraca }: { barraca: Barraca }) {
   const [verdeAte, setVerdeAte] = useState(String(barraca.verde_ate))
   const [amareloAte, setAmareloAte] = useState(String(barraca.amarelo_ate))
@@ -1573,6 +1681,7 @@ export function Ajustes() {
         </div>
 
         <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
+          <SecaoIdentidade barraca={barraca} />
           <SecaoCardapio barracaId={barraca.id} />
           <SecaoFaixas barraca={barraca} />
           <SecaoPagamento barraca={barraca} />
