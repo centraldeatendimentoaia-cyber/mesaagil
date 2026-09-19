@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent, MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Store, Trash2 } from 'lucide-react'
+import { ArrowRight, Info, Plus, Store, Trash2 } from 'lucide-react'
+import clsx from 'clsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
@@ -22,37 +24,65 @@ function gerarSlug(nome: string): string {
 function CartaoBarraca({
   nome,
   logoUrl,
-  onClick,
+  emFila,
+  onAcessar,
   onExcluir,
 }: {
   nome: string
   logoUrl: string | null
-  onClick: () => void
+  emFila: number
+  onAcessar: () => void
   onExcluir?: () => void
 }) {
   return (
-    <Card interactive onClick={onClick} className="flex min-h-16 items-center gap-3 text-left">
-      {logoUrl ? (
-        <img src={logoUrl} alt="" className="size-11 shrink-0 rounded-mesa-full object-cover" />
-      ) : (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-50 text-lg font-bold text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-300">
-          {nome.charAt(0).toUpperCase()}
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="size-11 shrink-0 rounded-mesa-full object-cover" />
+        ) : (
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-50 text-lg font-bold text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-300">
+            {nome.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-base font-semibold text-mesa-text-primary">{nome}</span>
+        {onExcluir && (
+          <button
+            type="button"
+            onClick={(e: MouseEvent) => {
+              e.stopPropagation()
+              onExcluir()
+            }}
+            aria-label={`Apagar ${nome}`}
+            className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full text-mesa-text-tertiary outline-none hover:bg-[var(--mesa-state-hover-bg)] hover:text-mesa-error-500"
+          >
+            <Trash2 className="size-5" aria-hidden />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span
+          className={clsx(
+            'size-2 shrink-0 rounded-mesa-full',
+            emFila > 0 ? 'bg-mesa-teal-500' : 'bg-mesa-neutral-300 dark:bg-mesa-neutral-600',
+          )}
+          aria-hidden
+        />
+        <span className="font-mesa-mono text-xs text-mesa-text-secondary">
+          {emFila > 0 ? `${emFila} em fila` : 'Sem fila agora'}
         </span>
-      )}
-      <span className="min-w-0 flex-1 truncate text-base font-semibold text-mesa-text-primary">{nome}</span>
-      {onExcluir && (
-        <button
-          type="button"
-          onClick={(e: MouseEvent) => {
-            e.stopPropagation()
-            onExcluir()
-          }}
-          aria-label={`Apagar ${nome}`}
-          className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full text-mesa-text-tertiary outline-none hover:bg-[var(--mesa-state-hover-bg)] hover:text-mesa-error-500"
-        >
-          <Trash2 className="size-5" aria-hidden />
-        </button>
-      )}
+      </div>
+
+      <Button
+        variant="confirm"
+        size="lg"
+        icon={<ArrowRight className="size-4" aria-hidden />}
+        iconPosition="right"
+        onClick={onAcessar}
+        className="w-full"
+      >
+        Acessar {nome}
+      </Button>
     </Card>
   )
 }
@@ -230,6 +260,45 @@ export function SelecionarBarraca() {
   const { barracas, carregando, recarregar } = useBarracasDoUsuario(usuario)
   const [criandoBarraca, setCriandoBarraca] = useState(false)
   const [barracaParaApagar, setBarracaParaApagar] = useState<{ id: string; nome: string } | null>(null)
+  const [filaPorBarraca, setFilaPorBarraca] = useState<Record<string, number>>({})
+  const [online, setOnline] = useState(() => navigator.onLine)
+
+  useEffect(() => {
+    function aoMudarConexao() {
+      setOnline(navigator.onLine)
+    }
+    window.addEventListener('online', aoMudarConexao)
+    window.addEventListener('offline', aoMudarConexao)
+    return () => {
+      window.removeEventListener('online', aoMudarConexao)
+      window.removeEventListener('offline', aoMudarConexao)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (barracas.length === 0) return
+
+    let cancelado = false
+    const ids = barracas.map(({ barraca }) => barraca.id)
+
+    supabase
+      .from('pedidos')
+      .select('barraca_id')
+      .in('barraca_id', ids)
+      .eq('status', 'a_fazer')
+      .then(({ data, error }) => {
+        if (cancelado || error || !data) return
+        const contagem: Record<string, number> = {}
+        for (const linha of data as { barraca_id: string }[]) {
+          contagem[linha.barraca_id] = (contagem[linha.barraca_id] ?? 0) + 1
+        }
+        setFilaPorBarraca(contagem)
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barracas])
 
   async function aoCriarBarraca(slug: string) {
     // Espera recarregar terminar antes de navegar: o cache de barracas do
@@ -285,8 +354,11 @@ export function SelecionarBarraca() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-mesa-bg-base p-6">
-      <h1 className="text-2xl font-bold text-mesa-text-primary">Qual barraca?</h1>
+    <div className="flex min-h-dvh flex-col p-6 [background:var(--mesa-gradient-atmosphere)]">
+      <div>
+        <h1 className="text-2xl font-bold text-mesa-text-primary">Qual barraca?</h1>
+        <p className="mt-1 text-sm text-mesa-text-secondary">Escolha a barraca que você vai operar agora.</p>
+      </div>
 
       <div className="mt-6 flex flex-col gap-3">
         {barracas.map(({ barraca, papel }) => (
@@ -294,35 +366,51 @@ export function SelecionarBarraca() {
             key={barraca.id}
             nome={barraca.nome}
             logoUrl={barraca.logo_url}
-            onClick={() => navigate(`/${barraca.slug}`)}
+            emFila={filaPorBarraca[barraca.id] ?? 0}
+            onAcessar={() => navigate(`/${barraca.slug}`)}
             onExcluir={
               papel === 'dono' ? () => setBarracaParaApagar({ id: barraca.id, nome: barraca.nome }) : undefined
             }
           />
         ))}
 
-        <Button
-          variant="ghost"
-          size="lg"
-          icon={<Plus className="size-4" aria-hidden />}
+        <button
+          type="button"
           onClick={() => setCriandoBarraca(true)}
-          className="w-full"
+          className="flex items-center gap-3 rounded-mesa-lg border-2 border-dashed border-mesa-border-default p-4 text-left outline-none hover:bg-[var(--mesa-state-hover-bg)]"
         >
-          Nova barraca
-        </Button>
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-secondary dark:bg-mesa-neutral-700">
+            <Plus className="size-5" aria-hidden />
+          </span>
+          <span>
+            <span className="block text-base font-semibold text-mesa-text-primary">Nova barraca</span>
+            <span className="block text-sm text-mesa-text-secondary">
+              Criar mais uma barraca pra você operar
+            </span>
+          </span>
+        </button>
+
+        <div className="flex items-start gap-2.5 rounded-mesa-lg bg-mesa-neutral-100 p-4 text-sm text-mesa-text-secondary dark:bg-mesa-neutral-800">
+          <Info className="mt-0.5 size-4 shrink-0 text-mesa-text-tertiary" aria-hidden />
+          <span>Cada barraca tem seu próprio cardápio, comandas e histórico — nada se mistura entre elas.</span>
+        </div>
       </div>
 
-      <Button
-        variant="ghost"
-        size="md"
-        onClick={async () => {
-          await sair()
-          navigate('/login')
-        }}
-        className="mt-auto self-center"
-      >
-        Sair
-      </Button>
+      <div className="mt-auto flex flex-col items-center gap-3 pt-6">
+        <Button
+          variant="ghost"
+          size="md"
+          onClick={async () => {
+            await sair()
+            navigate('/login')
+          }}
+        >
+          Sair
+        </Button>
+        <Badge variant={online ? 'success' : 'warning'} dot>
+          {online ? 'Online' : 'Offline'}
+        </Badge>
+      </div>
 
       <BottomSheetNovaBarraca
         open={criandoBarraca}
