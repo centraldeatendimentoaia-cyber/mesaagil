@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
@@ -450,7 +451,7 @@ export function Historico() {
               type="button"
               onClick={alternarTema}
               aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-              className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none dark:bg-mesa-neutral-700"
+              className={classesBotaoIcone()}
             >
               {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
             </button>

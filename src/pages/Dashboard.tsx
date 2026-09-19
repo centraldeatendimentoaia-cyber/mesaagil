@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { useTheme } from '../hooks/useTheme'
@@ -169,14 +170,14 @@ export function Dashboard() {
             type="button"
             onClick={alternarTema}
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+            className={classesBotaoIcone()}
           >
             {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>
           <Link
             to={`/${barraca.slug}/ajustes`}
             aria-label="Ajustes"
-            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+            className={classesBotaoIcone()}
           >
             <Settings className="size-5" aria-hidden />
           </Link>
@@ -184,7 +185,7 @@ export function Dashboard() {
             type="button"
             onClick={() => setMostrarMenuConta(true)}
             aria-label="Conta"
-            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+            className={classesBotaoIcone('danger')}
           >
             <LogOut className="size-5" aria-hidden />
           </button>
@@ -318,6 +319,7 @@ export function Dashboard() {
           <Button
             variant="destructive"
             size="xl"
+            icon={<LogOut className="size-5" aria-hidden />}
             className="w-full"
             onClick={async () => {
               await sair()

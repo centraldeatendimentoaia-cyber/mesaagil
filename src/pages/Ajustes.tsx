@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
@@ -1476,7 +1477,7 @@ function SecaoAparencia() {
             type="button"
             onClick={alternarTema}
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none transition-colors duration-[var(--mesa-duration-micro)] focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700"
+            className={classesBotaoIcone()}
           >
             {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>
@@ -1723,6 +1724,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
           <Button
             variant="destructive"
             size="xl"
+            icon={<LogOut className="size-5" aria-hidden />}
             className="w-full"
             onClick={async () => {
               await sair()

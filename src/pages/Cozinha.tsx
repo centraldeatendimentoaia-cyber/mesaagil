@@ -20,6 +20,7 @@ import { turnoAtual } from '../lib/datas'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
@@ -728,7 +729,7 @@ export function Cozinha() {
             type="button"
             onClick={alternarTema}
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none dark:bg-mesa-neutral-700"
+            className={classesBotaoIcone()}
           >
             {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>

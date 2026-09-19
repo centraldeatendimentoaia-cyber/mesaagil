@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
 import { aoConcluirCriacaoPedido } from '../lib/fila'
@@ -694,7 +695,7 @@ export function LancarPedido() {
             type="button"
             onClick={alternarTema}
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-surface text-mesa-text-primary shadow-mesa-1 outline-none"
+            className={classesBotaoIcone()}
           >
             {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>
