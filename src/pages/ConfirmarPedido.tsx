@@ -1,10 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, FileText, Hash, Plane, type LucideIcon } from 'lucide-react'
+import {
+  ChevronLeft,
+  ClipboardList,
+  CreditCard,
+  Hash,
+  Moon,
+  Plane,
+  Rocket,
+  Sun,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react'
+import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
+import { useTheme } from '../hooks/useTheme'
 import { enfileirar } from '../lib/fila'
 import { formatarPrecoBR } from '../lib/preco'
-import { imprimirRecibo } from '../lib/impressao'
+import { imprimirRecibo, salvarUltimoRecibo } from '../lib/impressao'
 import {
   proximoNumeroProvisorio,
   type EntregaDiretaPorItem,
@@ -19,7 +33,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Checkbox } from '../components/ui/Checkbox'
-import { SegmentedControl } from '../components/ui/SegmentedControl'
+import { Textarea } from '../components/ui/Textarea'
 import type { Item } from '../types/database'
 
 const METODOS_PADRAO: MetodoPagamento[] = ['dinheiro', 'debito', 'credito', 'pix']
@@ -28,11 +42,13 @@ function LinhaItemConfirmar({
   item,
   quantidade,
   marcado,
+  observacao,
   onAlternar,
 }: {
   item: Item
   quantidade: number
   marcado: boolean
+  observacao: string
   onAlternar: () => void
 }) {
   const temPreco = item.preco_centavos > 0
@@ -47,6 +63,13 @@ function LinhaItemConfirmar({
           aria-label={`Entregar ${item.nome} direto sem passar na cozinha`}
         />
       </div>
+      {item.foto_url && (
+        <img
+          src={item.foto_url}
+          alt=""
+          className="size-11 shrink-0 rounded-mesa-sm object-cover"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-base font-semibold text-mesa-text-primary">
           {quantidade}× {item.nome}
@@ -55,6 +78,11 @@ function LinhaItemConfirmar({
           {temPreco ? `${formatarPrecoBR(item.preco_centavos)} cada` : 'Sem preço cadastrado'}
           {marcado && ' · Entregar direto sem passar na cozinha'}
         </p>
+        {observacao && (
+          <span className="mt-1 inline-block rounded-mesa-full bg-mesa-orange-50 px-2 py-0.5 text-[11px] font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
+            {observacao}
+          </span>
+        )}
       </div>
       <p className="shrink-0 text-base font-semibold text-mesa-text-primary">
         {temPreco ? formatarPrecoBR(subtotal) : '—'}
@@ -87,6 +115,8 @@ export function ConfirmarPedido() {
   const barraca = useBarracaAtual()
   const navigate = useNavigate()
   const location = useLocation()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
 
   const estado = (location.state as EstadoParaConfirmar | null) ?? null
 
@@ -105,6 +135,11 @@ export function ConfirmarPedido() {
   const [entregaDireta, setEntregaDireta] = useState<EntregaDiretaPorItem>(
     () => estado?.entregaDireta ?? {},
   )
+  // Observação geral do pedido mudou de tela: era editada em Lançar Pedido,
+  // agora é aqui — mais perto do envio, igual o mockup "+ Adicionar
+  // observação à cozinha". Precisa ser state (não só ler de `estado`) pra
+  // dar pra editar nessa tela.
+  const [observacao, setObservacao] = useState(() => estado?.observacao ?? '')
   const [metodoSelecionado, setMetodoSelecionado] = useState<MetodoPagamento | null>(() =>
     opcoesPagamento.length === 1 ? opcoesPagamento[0].chave : null,
   )
@@ -117,7 +152,8 @@ export function ConfirmarPedido() {
     return null
   }
 
-  const { carrinho, itens, mesa, viagem, observacao } = estado
+  const { carrinho, itens, mesa, viagem } = estado
+  const observacaoPorItem = estado.observacaoPorItem ?? {}
 
   const linhas = Object.entries(carrinho)
     .filter(([, quantidade]) => quantidade > 0)
@@ -146,6 +182,7 @@ export function ConfirmarPedido() {
         viagem,
         observacao,
         entregaDireta,
+        observacaoPorItem,
       } satisfies EstadoParaEditar,
     })
   }
@@ -170,6 +207,7 @@ export function ConfirmarPedido() {
       quantidade,
       preco_centavos_unitario: item.preco_centavos,
       entrega_direta: forcarEntregaDiretaEmTudo ? true : (entregaDireta[itemId] ?? false),
+      observacao: observacaoPorItem[itemId] || null,
     }))
 
     const operacao = await enfileirar('criar_pedido', {
@@ -188,7 +226,7 @@ export function ConfirmarPedido() {
     const senhaProvisoria = proximoNumeroProvisorio(barraca.id)
 
     const rotuloMetodo = METODOS_DISPONIVEIS.find((m) => m.chave === metodoSelecionado)?.label
-    imprimirRecibo({
+    const dadosRecibo = {
       nomeBarraca: barraca.nome,
       logoUrl: barraca.logo_url,
       senha: senhaProvisoria,
@@ -196,14 +234,17 @@ export function ConfirmarPedido() {
       mesa: viagem ? null : mesa.trim() || null,
       viagem,
       observacao: observacao.trim() || null,
-      itens: linhas.map(({ item, quantidade }) => ({
+      itens: linhas.map(({ item, itemId, quantidade }) => ({
         nome: item.nome,
         quantidade,
         precoCentavosUnitario: item.preco_centavos,
+        observacao: observacaoPorItem[itemId] || null,
       })),
       totalCentavos,
       formaPagamento: rotuloMetodo ?? metodoSelecionado,
-    })
+    }
+    imprimirRecibo(dadosRecibo)
+    salvarUltimoRecibo(barraca.id, dadosRecibo)
 
     navigate(`/${barraca.slug}/lancar`, {
       replace: true,
@@ -221,26 +262,40 @@ export function ConfirmarPedido() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <div className="px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
-        <div className="flex items-center gap-1">
-          <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />
-          <button
-            type="button"
-            onClick={voltarEEditar}
-            className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
-          >
-            <ChevronLeft className="size-7 shrink-0" aria-hidden />
-            <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
-          </button>
+      <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1">
+            <BotaoHome onClick={() => setConfirmandoDescarte(true)} className="-ml-2" />
+            <button
+              type="button"
+              onClick={voltarEEditar}
+              className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
+            >
+              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-mesa-text-secondary">
+            A senha é gerada só depois de confirmar
+          </p>
         </div>
-        <p className="mt-1 text-sm text-mesa-text-secondary">
-          A senha é gerada só depois de confirmar
-        </p>
+        <button
+          type="button"
+          onClick={alternarTema}
+          aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          className={classesBotaoIcone()}
+        >
+          {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+        </button>
       </div>
 
       <div className="flex-1 px-6 pb-10 pt-5">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+        <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <ClipboardList className="size-3.5 shrink-0" aria-hidden />
           Itens do pedido
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 px-1.5 text-[11px] font-bold normal-case tracking-normal text-mesa-text-secondary dark:bg-mesa-neutral-700">
+            {linhas.length}
+          </span>
         </h2>
         <Card>
           {linhas.map(({ item, itemId, quantidade }) => (
@@ -249,30 +304,40 @@ export function ConfirmarPedido() {
               item={item}
               quantidade={quantidade}
               marcado={entregaDireta[itemId] ?? false}
+              observacao={observacaoPorItem[itemId] ?? ''}
               onAlternar={() => alternarEntregaDireta(itemId)}
             />
           ))}
         </Card>
 
-        {(mesa.trim() || viagem || observacao.trim()) && (
+        <Textarea
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          placeholder="+ Adicionar observação à cozinha (opcional)"
+          rows={2}
+          aria-label="Observação geral do pedido"
+          className="mt-3"
+        />
+
+        {(mesa.trim() || viagem) && (
           <Card className="mt-4">
             {viagem ? (
               <LinhaMeta icone={Plane} label="Viagem" valor="sim" />
             ) : mesa.trim() ? (
               <LinhaMeta icone={Hash} label="Mesa" valor={mesa.trim()} />
             ) : null}
-            {observacao.trim() && <LinhaMeta icone={FileText} label="Obs" valor={observacao.trim()} />}
           </Card>
         )}
 
         <div className="mt-4 flex items-center justify-between rounded-mesa-lg bg-mesa-teal-50 px-5 py-4 dark:bg-mesa-teal-500/15">
           <span className="text-base font-semibold text-mesa-text-primary">Total</span>
-          <span className="text-2xl font-bold text-mesa-teal-700 dark:text-mesa-teal-400">
+          <span className="font-mesa-mono text-2xl font-bold text-mesa-teal-700 dark:text-mesa-teal-400">
             {formatarPrecoBR(totalCentavos)}
           </span>
         </div>
 
-        <h2 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+        <h2 className="mb-3 mt-6 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <CreditCard className="size-3.5 shrink-0" aria-hidden />
           Forma de pagamento
         </h2>
         {opcoesPagamento.length === 0 ? (
@@ -280,20 +345,54 @@ export function ConfirmarPedido() {
             Configure ao menos um método de pagamento em Ajustes.
           </p>
         ) : (
-          <SegmentedControl
-            aria-label="Forma de pagamento"
-            items={opcoesPagamento.map((m) => ({ label: m.label }))}
-            activeIndex={
-              metodoSelecionado ? opcoesPagamento.findIndex((m) => m.chave === metodoSelecionado) : -1
-            }
-            onChange={(indice) => setMetodoSelecionado(opcoesPagamento[indice].chave)}
-          />
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Forma de pagamento">
+            {opcoesPagamento.map((metodo) => {
+              const selecionado = metodoSelecionado === metodo.chave
+              return (
+                <button
+                  key={metodo.chave}
+                  type="button"
+                  role="radio"
+                  aria-checked={selecionado}
+                  onClick={() => setMetodoSelecionado(metodo.chave)}
+                  className={clsx(
+                    'flex items-center gap-3 rounded-mesa-lg border-2 p-4 text-left outline-none transition-colors',
+                    selecionado
+                      ? 'border-mesa-teal-500 bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
+                      : 'border-mesa-border-subtle bg-mesa-surface',
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      'flex size-10 shrink-0 items-center justify-center rounded-mesa-md',
+                      selecionado
+                        ? 'bg-mesa-teal-500 text-white'
+                        : 'bg-mesa-neutral-100 text-mesa-text-secondary dark:bg-mesa-neutral-700',
+                    )}
+                  >
+                    <metodo.icone className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-mesa-text-primary">
+                      {metodo.label}
+                    </span>
+                    {selecionado && (
+                      <span className="block text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-400">
+                        Selecionado
+                      </span>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         )}
 
         <div className="mt-8 flex flex-col gap-3">
           <Button
             variant="primary"
             size="xl"
+            icon={<Rocket className="size-5" aria-hidden />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => enviarPedido(false)}
@@ -302,8 +401,9 @@ export function ConfirmarPedido() {
             Confirmar e enviar
           </Button>
           <Button
-            variant="confirm"
+            variant="outline"
             size="xl"
+            icon={<Truck className="size-5" aria-hidden />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => enviarPedido(true)}

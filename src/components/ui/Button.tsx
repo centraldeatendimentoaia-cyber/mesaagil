@@ -18,18 +18,24 @@ const baseClasses =
   'transition-[background-color,color,transform,box-shadow] duration-[var(--mesa-duration-micro)] ease-mesa-standard ' +
   'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 outline-none'
 
+// Realce tátil sutil (inset de luz no topo) nos botões de ação sólidos —
+// traço do redesign "Speed Bento POS" (emula um switch físico). Cede
+// lugar ao anel de foco quando focado via teclado, já que box-shadow não
+// acumula entre estados sem repetir o valor inteiro.
+const realceTatil = '[box-shadow:inset_0_1px_0_rgba(255,255,255,0.3)]'
+
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'rounded-mesa-full bg-mesa-orange-500 text-white hover:bg-mesa-orange-600 active:bg-mesa-orange-700 ' +
+    `rounded-mesa-lg bg-mesa-orange-500 text-white ${realceTatil} hover:bg-mesa-orange-600 active:bg-mesa-orange-700 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-primary)]',
   confirm:
-    'rounded-mesa-full bg-mesa-teal-500 text-white hover:bg-mesa-teal-600 active:bg-mesa-teal-700 ' +
+    `rounded-mesa-lg bg-mesa-teal-500 text-white ${realceTatil} hover:bg-mesa-teal-600 active:bg-mesa-teal-700 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
   destructive:
-    'rounded-mesa-full bg-mesa-error-500 text-white hover:bg-mesa-error-700 active:bg-mesa-error-700 ' +
+    `rounded-mesa-lg bg-mesa-error-500 text-white ${realceTatil} hover:bg-mesa-error-700 active:bg-mesa-error-700 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-danger)]',
   outline:
-    'rounded-mesa-full border-[1.5px] border-mesa-teal-500 bg-transparent text-mesa-teal-500 ' +
+    'rounded-mesa-lg border-[1.5px] border-mesa-teal-500 bg-transparent text-mesa-teal-500 ' +
     'hover:bg-[var(--mesa-state-hover-bg)] active:bg-[var(--mesa-state-active-bg)] ' +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
   ghost:

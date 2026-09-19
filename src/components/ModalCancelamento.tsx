@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, X } from 'lucide-react'
 import clsx from 'clsx'
 import { BottomSheet } from './ui/BottomSheet'
 import { Badge } from './ui/Badge'
@@ -60,7 +60,7 @@ export function ModalCancelamento({
   return (
     <BottomSheet open onClose={onFechar} aria-label="Cancelar comanda">
       <div className="flex items-center gap-3">
-        <span className="text-3xl font-black leading-none text-mesa-text-tertiary">
+        <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
           {pedido.senha}
         </span>
         {(pedido.viagem || pedido.mesa) && (
@@ -71,7 +71,12 @@ export function ModalCancelamento({
             <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
           </>
         )}
-        <span className={clsx('ml-auto flex items-center gap-1.5 text-sm font-semibold', TEXTO_COR[cor])}>
+        <span
+          className={clsx(
+            'ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold',
+            TEXTO_COR[cor],
+          )}
+        >
           <Clock className="size-4 shrink-0" aria-hidden />
           {formatarMinutos(minutos)} {rotuloTempo}
         </span>
@@ -98,6 +103,7 @@ export function ModalCancelamento({
         <Button
           variant="destructive"
           size="xl"
+          icon={<X className="size-5" aria-hidden />}
           disabled={!motivo}
           loading={cancelando}
           onClick={() => motivo && onConfirmar(motivo)}

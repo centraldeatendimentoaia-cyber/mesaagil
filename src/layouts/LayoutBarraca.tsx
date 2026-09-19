@@ -39,8 +39,9 @@ export function LayoutBarraca() {
       .getElementById('app-manifest')
       ?.setAttribute('href', `/${barraca.slug}/manifest.webmanifest`)
 
-    // Cor de marca fixa do MesaAgil v2 (laranja 500) — não é mais por barraca.
-    document.getElementById('app-theme-color')?.setAttribute('content', '#F58B00')
+    // Cor de marca fixa do MesaAgil (âmbar 500, redesign "Speed Bento
+    // POS") — não é mais por barraca.
+    document.getElementById('app-theme-color')?.setAttribute('content', '#F59E0B')
 
     document
       .getElementById('app-apple-icon')
@@ -49,8 +50,8 @@ export function LayoutBarraca() {
 
   if (carregando) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-cozinha-fundo">
-        <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
+      <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base">
+        <p className="text-mesa-text-secondary">Carregando...</p>
       </div>
     )
   }

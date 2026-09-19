@@ -32,7 +32,7 @@ export function Badge({ variant = 'neutral', dot = false, className, children, .
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-mesa-full px-3 py-1 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-mesa-full px-3 py-1 font-mesa-mono text-xs font-medium',
         variantClasses[variant],
         className,
       )}

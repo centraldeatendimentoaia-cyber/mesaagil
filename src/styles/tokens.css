@@ -1,79 +1,79 @@
 /* =============================================================
    MesaAgil — Design Tokens (Tailwind v4)
 
-   Fonte: docs/design-system/tokens.css e
-   docs/design-system/MESAAGIL_DESIGN_SYSTEM.md.
+   Fonte da verdade: redesign_ux_ui_app/ (specs DESIGN.md + mockups
+   .svg do redesign "Speed Bento POS", 2026-09-18). O design system
+   anterior (docs/design-system/) foi descontinuado e removido —
+   cor de marca, tipografia e arredondamento documentados ali não
+   valem mais, ver CLAUDE.md "Regras de tema" pro resumo atual.
 
-   Todo token novo usa o prefixo "mesa" para não colidir com a
-   paleta nativa do Tailwind (neutral/orange/teal já existem por
-   padrão e são usados nos componentes atuais via classes como
-   `text-neutral-900`). Os tokens que o Tailwind v4 sabe transformar
+   Todo token usa o prefixo "mesa" para não colidir com a paleta
+   nativa do Tailwind. Os tokens que o Tailwind v4 sabe transformar
    em utilitário (--color-*, --radius-*, --shadow-*, --ease-*,
    --spacing-*, --font-*) entram com a ordem `--<namespace>-mesa-*`
    — é essa ordem que faz o Tailwind gerar `bg-mesa-orange-500`,
-   `rounded-mesa-lg` etc. Isso inverte a ordem literal do prefixo
-   de docs/design-system/tokens.css (que usa `--mesa-color-*`),
-   mas preserva nomes e valores — é só a posição do segmento
-   "mesa" que muda, por exigência da sintaxe do Tailwind v4.
+   `rounded-mesa-lg` etc.
 
    Tokens sem namespace equivalente no Tailwind (motion duration,
    ícones, avatar, gradiente, overlay, blur, z-index) ficam como
-   custom properties simples na segunda seção deste arquivo, com o
-   prefixo `--mesa-*` idêntico ao do arquivo fonte.
-
-   Nenhum componente consome estes tokens ainda — isso é trabalho
-   das próximas fases do redesign v2. Ver Fase 0 em CLAUDE.md.
+   custom properties simples na segunda seção deste arquivo.
    ============================================================= */
 
 @theme {
-  /* ---------- Laranja (marca — comando) ---------- */
-  --color-mesa-orange-50:  #FFF4E5;
-  --color-mesa-orange-100: #FFDDB3;
-  --color-mesa-orange-200: #FFC580;
-  --color-mesa-orange-300: #FFAF4D;
-  --color-mesa-orange-400: #FF9D26;
-  --color-mesa-orange-500: #F58B00;
-  --color-mesa-orange-600: #CC7400;
-  --color-mesa-orange-700: #A35D00;
-  --color-mesa-orange-800: #7A4500;
-  --color-mesa-orange-900: #522E00;
+  /* ---------- Âmbar (marca — comando) ----------
+     Redesign "Speed Bento POS" (redesign_ux_ui_app/): substitui o
+     laranja pelo âmbar do design system novo (#F59E0B/#D97706),
+     mesmo papel semântico de antes (ação primária / comando). */
+  --color-mesa-orange-50:  #FFFBEB;
+  --color-mesa-orange-100: #FEF3C7;
+  --color-mesa-orange-200: #FDE68A;
+  --color-mesa-orange-300: #FCD34D;
+  --color-mesa-orange-400: #FBBF24;
+  --color-mesa-orange-500: #F59E0B;
+  --color-mesa-orange-600: #D97706;
+  --color-mesa-orange-700: #B45309;
+  --color-mesa-orange-800: #92400E;
+  --color-mesa-orange-900: #78350F;
 
-  /* ---------- Teal (marca — confirmação) ---------- */
-  --color-mesa-teal-50:  #E9F9F5;
-  --color-mesa-teal-100: #B3ECDF;
-  --color-mesa-teal-200: #80DFC9;
-  --color-mesa-teal-300: #4DD0B3;
-  --color-mesa-teal-400: #26C4A2;
-  --color-mesa-teal-500: #00B894;
-  --color-mesa-teal-600: #009B7D;
-  --color-mesa-teal-700: #007D65;
-  --color-mesa-teal-800: #005FAD;
-  --color-mesa-teal-900: #004135;
+  /* ---------- Esmeralda (marca — confirmação) ----------
+     Substitui o teal pelo verde-esmeralda do redesign (#10B981/
+     #059669) — "confirmation engine" do design system novo, mesmo
+     papel semântico de confirmação de antes. */
+  --color-mesa-teal-50:  #ECFDF5;
+  --color-mesa-teal-100: #D1FAE5;
+  --color-mesa-teal-200: #A7F3D0;
+  --color-mesa-teal-300: #6EE7B7;
+  --color-mesa-teal-400: #34D399;
+  --color-mesa-teal-500: #10B981;
+  --color-mesa-teal-600: #059669;
+  --color-mesa-teal-700: #047857;
+  --color-mesa-teal-800: #065F46;
+  --color-mesa-teal-900: #064E3B;
 
-  /* ---------- Neutros ---------- */
-  --color-mesa-neutral-50:  #F5F5F6;
-  --color-mesa-neutral-100: #E8E9EA;
-  --color-mesa-neutral-200: #A9A8B0;
-  --color-mesa-neutral-300: #7C7CB5;
-  --color-mesa-neutral-400: #55555E;
-  --color-mesa-neutral-500: #55555E;
-  --color-mesa-neutral-600: #3D3D45;
-  --color-mesa-neutral-700: #242A30;
-  --color-mesa-neutral-800: #1A1A1E;
-  --color-mesa-neutral-900: #0D0D0F;
+  /* ---------- Neutros (escala slate do redesign) ---------- */
+  --color-mesa-neutral-50:  #F8FAFC;
+  --color-mesa-neutral-100: #F1F5F9;
+  --color-mesa-neutral-200: #E2E8F0;
+  --color-mesa-neutral-300: #CBD5E1;
+  --color-mesa-neutral-400: #94A3B8;
+  --color-mesa-neutral-500: #64748B;
+  --color-mesa-neutral-600: #475569;
+  --color-mesa-neutral-700: #334155;
+  --color-mesa-neutral-800: #1E293B;
+  --color-mesa-neutral-900: #0F172A;
 
   /* ---------- Semânticas ---------- */
-  --color-mesa-success-50:  #E9F9F5;
-  --color-mesa-success-500: #00B894;
-  --color-mesa-success-700: #007D65;
+  --color-mesa-success-50:  #ECFDF5;
+  --color-mesa-success-500: #10B981;
+  --color-mesa-success-700: #047857;
 
-  --color-mesa-warning-50:  #FFF4E5;
-  --color-mesa-warning-500: #F58B00;
-  --color-mesa-warning-700: #A35D00;
+  --color-mesa-warning-50:  #FFFBEB;
+  --color-mesa-warning-500: #F59E0B;
+  --color-mesa-warning-700: #B45309;
 
-  --color-mesa-error-50:  #FCE8E5;
-  --color-mesa-error-500: #E74C3C;
-  --color-mesa-error-700: #A62C1F;
+  --color-mesa-error-50:  #FEF2F2;
+  --color-mesa-error-500: #EF4444;
+  --color-mesa-error-700: #B91C1C;
 
   --color-mesa-info-50:  #E5F2FA;
   --color-mesa-info-500: #3498DB;
@@ -82,10 +82,11 @@
   /* ---------- Semáforo operacional (inviolável) ----------
      Cores exclusivas da Cozinha, nunca reutilizadas em outro
      contexto. NÃO variam entre light/dark — por isso não são
-     redeclaradas no bloco .dark mais abaixo. */
-  --color-mesa-kanban-green:  #00B894;
-  --color-mesa-kanban-yellow: #F5A623;
-  --color-mesa-kanban-red:    #E74C3C;
+     redeclaradas no bloco .dark mais abaixo. Realinhadas ao mesmo
+     verde/âmbar/vermelho do redesign, mesmos 3 estados de sempre. */
+  --color-mesa-kanban-green:  #10B981;
+  --color-mesa-kanban-yellow: #F59E0B;
+  --color-mesa-kanban-red:    #EF4444;
 
   /* ---------- Métodos de pagamento ---------- */
   --color-mesa-payment-cash-bg:    #E9F9F5;
@@ -146,12 +147,14 @@
   --radius-mesa-full: 9999px;
 
   /* ---------- Sombras (LIGHT — default) ----------
-     Redeclaradas dentro de .dark mais abaixo. */
-  --shadow-mesa-1:       0 1px 2px rgba(15, 15, 20, 0.04), 0 4px 12px rgba(15, 15, 20, 0.06);
-  --shadow-mesa-2:       0 4px 8px rgba(15, 15, 20, 0.06), 0 12px 24px rgba(15, 15, 20, 0.08);
-  --shadow-mesa-3:       0 12px 24px rgba(15, 15, 20, 0.10), 0 32px 64px rgba(15, 15, 20, 0.12);
-  --shadow-mesa-glow:    0 0 40px rgba(245, 139, 0, 0.25);
-  --shadow-mesa-nav-top: 0 -1px 0 rgba(15, 15, 20, 0.05);
+     Valores do redesign "Speed Bento POS" (elevação tonal + sombra
+     ambiente rasa, sem profundidade pesada). Redeclaradas dentro de
+     .dark mais abaixo. */
+  --shadow-mesa-1:       0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-mesa-2:       0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  --shadow-mesa-3:       0 12px 28px -4px rgba(15, 23, 42, 0.12);
+  --shadow-mesa-glow:    0 0 40px rgba(245, 158, 11, 0.25);
+  --shadow-mesa-nav-top: 0 -1px 0 rgba(15, 23, 42, 0.05);
 
   /* ---------- Motion — easing (utilitário ease-mesa-*) ---------- */
   --ease-mesa-standard:    cubic-bezier(0.2, 0, 0, 1);
@@ -174,8 +177,13 @@
   --spacing-mesa-20: 80px;
   --spacing-mesa-24: 96px;
 
-  /* ---------- Tipografia — família (utilitário font-mesa-sans) ---------- */
-  --font-mesa-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ---------- Tipografia — família (redesign "Speed Bento POS") ----------
+     Hanken Grotesk pro corpo/UI, Space Grotesk pra títulos/números
+     grandes, JetBrains Mono pra valores monetários/rótulos técnicos.
+     Carregadas via Google Fonts em index.html. */
+  --font-mesa-sans:    'Hanken Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mesa-display: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mesa-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* =============================================================
@@ -183,7 +191,7 @@
    duration, escala tipográfica tamanho/linha, ícone, avatar,
    toque mínimo, z-index, gradiente, overlay, blur, estados,
    focus ring). Ficam como custom properties simples, prefixo
-   `--mesa-*` preservado igual a docs/design-system/tokens.css.
+   `--mesa-*`.
    Uso: var(--mesa-*) direto em CSS, ou arbitrary value do
    Tailwind (ex: duration-[var(--mesa-duration-short)]).
    ============================================================= */
@@ -254,9 +262,9 @@
   --mesa-state-selected-bg: var(--color-mesa-teal-50);
 
   /* Focus ring (usar como box-shadow) */
-  --mesa-focus-ring-primary: 0 0 0 3px rgba(245, 139, 0, 0.30);
-  --mesa-focus-ring-confirm: 0 0 0 3px rgba(0, 184, 148, 0.30);
-  --mesa-focus-ring-danger:  0 0 0 3px rgba(231, 76, 60, 0.30);
+  --mesa-focus-ring-primary: 0 0 0 3px rgba(245, 158, 11, 0.30);
+  --mesa-focus-ring-confirm: 0 0 0 3px rgba(16, 185, 129, 0.30);
+  --mesa-focus-ring-danger:  0 0 0 3px rgba(239, 68, 68, 0.30);
 
   /* Gradiente atmosférico (LIGHT) — camada 0 das telas de gestão */
   --mesa-gradient-atmosphere:
@@ -305,7 +313,7 @@
 
   --mesa-state-hover-bg:  rgba(255, 255, 255, 0.06);
   --mesa-state-active-bg: rgba(255, 255, 255, 0.10);
-  --mesa-state-selected-bg: rgba(0, 184, 148, 0.15);
+  --mesa-state-selected-bg: rgba(16, 185, 129, 0.15);
 
   --mesa-gradient-atmosphere:
     radial-gradient(1200px 800px at 100% 0%,   rgba(58, 36, 16, 0.40), transparent 60%),
@@ -318,7 +326,7 @@
   --shadow-mesa-1:       0 1px 2px rgba(0, 0, 0, 0.40), 0 4px 12px rgba(0, 0, 0, 0.30);
   --shadow-mesa-2:       0 4px 8px rgba(0, 0, 0, 0.45), 0 12px 24px rgba(0, 0, 0, 0.35);
   --shadow-mesa-3:       0 12px 24px rgba(0, 0, 0, 0.50), 0 32px 64px rgba(0, 0, 0, 0.40);
-  --shadow-mesa-glow:    0 0 48px rgba(245, 139, 0, 0.35);
+  --shadow-mesa-glow:    0 0 16px rgba(16, 185, 129, 0.35);
   --shadow-mesa-nav-top: 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 

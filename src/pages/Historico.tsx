@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Download, Trash2 } from 'lucide-react'
+import { ChevronLeft, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import { formatarPrecoBR } from '../lib/preco'
 import { corMetodo, humanizarMetodo, METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
@@ -60,9 +62,9 @@ function minutosEntre(inicioIso: string, fimIso: string): number {
   return Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
 }
 
-const COR_CABECALHO = 'FFF58B00' // mesa-orange-500
-const COR_FUNDO_CANCELADO = 'FFFCE8E5' // mesa-error-50
-const COR_TEXTO_CANCELADO = 'FFA62C1F' // mesa-error-700
+const COR_CABECALHO = 'FFF59E0B' // mesa-orange-500
+const COR_FUNDO_CANCELADO = 'FFFEF2F2' // mesa-error-50
+const COR_TEXTO_CANCELADO = 'FFB91C1C' // mesa-error-700
 
 async function gerarPlanilha(pedidos: PedidoComItens[]): Promise<ArrayBuffer> {
   const ExcelJS = await import('exceljs')
@@ -149,12 +151,14 @@ function CardHistorico({
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-2xl font-black leading-none text-mesa-text-tertiary">{pedido.senha}</p>
+          <p className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
+            {pedido.senha}
+          </p>
           <p
             className={
               cancelado
-                ? 'mt-1.5 text-base font-semibold text-mesa-text-tertiary line-through'
-                : 'mt-1.5 text-base font-semibold text-mesa-text-primary'
+                ? 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-tertiary line-through'
+                : 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-primary'
             }
           >
             {formatarPrecoBR(calcularTotalPedido(pedido))}
@@ -208,6 +212,7 @@ function CardHistorico({
           {itensAtivos.map((item) => (
             <Chip key={item.id} variant="plain">
               {item.quantidade}× {item.nome_item}
+              {item.observacao && ` (${item.observacao})`}
             </Chip>
           ))}
         </div>
@@ -230,6 +235,8 @@ function CardHistorico({
 export function Historico() {
   const barraca = useBarracaAtual()
   const filtrosEscondidos = useOcultarAoRolar()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
 
   const [pedidos, setPedidos] = useState<PedidoComItens[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -439,16 +446,26 @@ export function Historico() {
               <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
             </Link>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            icon={<Download className="size-4" aria-hidden />}
-            onClick={exportarPlanilha}
-            disabled={pedidosExibidos.length === 0}
-            loading={exportando}
-          >
-            Exportar
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={alternarTema}
+              aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+              className={classesBotaoIcone()}
+            >
+              {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Download className="size-4" aria-hidden />}
+              onClick={exportarPlanilha}
+              disabled={pedidosExibidos.length === 0}
+              loading={exportando}
+            >
+              Exportar
+            </Button>
+          </div>
         </div>
 
         <div className="mt-4">

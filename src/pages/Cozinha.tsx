@@ -1,23 +1,38 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, ListChecks, ShoppingBag } from 'lucide-react'
+import {
+  Check,
+  CheckCheck,
+  ChefHat,
+  CircleCheck,
+  Clock,
+  ListChecks,
+  Moon,
+  ShoppingBag,
+  Sun,
+  TriangleAlert,
+  Undo2,
+} from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
+import { useTheme } from '../hooks/useTheme'
+import { turnoAtual } from '../lib/datas'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
-import { tocarSomPedidoNaCozinha } from '../lib/sons'
+import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
+import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Chip } from '../components/ui/Chip'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
 import { DetalheComanda } from '../components/DetalheComanda'
 import type { MotivoCancelamento } from '../lib/cancelamento'
-import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
+import type { Barraca, Categoria, Item, ItemDoPedido, PedidoComItens } from '../types/database'
 import type { StatusConexao } from '../hooks/useRealtimePedidos'
 
 type Coluna = 'a_fazer' | 'pronto'
@@ -108,6 +123,7 @@ function CardPedido({
   pedido,
   barraca,
   coluna,
+  nomeCategoriaDoItem,
   onAbrirDetalhe,
   onMoverParaPronto,
   onVoltar,
@@ -118,6 +134,7 @@ function CardPedido({
   pedido: PedidoComItens
   barraca: Barraca
   coluna: Coluna
+  nomeCategoriaDoItem: (itemId: string | null) => string | null
   onAbrirDetalhe: (pedido: PedidoComItens) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onVoltar: (pedido: PedidoComItens) => void
@@ -139,11 +156,12 @@ function CardPedido({
     itensParaCozinha.length > 0 &&
     itensParaCozinha.every((i) => i.entregue)
   const mostrarIdentificacao = pedido.viagem || pedido.mesa
+  const itensComObservacao = itensAtivos.filter((i) => i.observacao)
 
   return (
     <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
       <div className="flex items-center gap-2">
-        <span className="text-2xl font-black leading-none text-mesa-text-tertiary">
+        <span className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
           {pedido.senha}
         </span>
         {mostrarIdentificacao && (
@@ -156,7 +174,7 @@ function CardPedido({
         )}
         <span
           className={clsx(
-            'ml-auto flex items-center gap-1 text-sm font-semibold',
+            'ml-auto flex items-center gap-1 font-mesa-mono text-sm font-semibold',
             coluna === 'a_fazer' ? CORES_TEXTO[cor] : 'text-mesa-text-secondary',
           )}
         >
@@ -184,43 +202,112 @@ function CardPedido({
       )}
 
       {itensAtivos.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {itensAtivos.map((item) =>
-            item.entrega_direta ? (
-              <ChipEntregaDireta key={item.id} item={item} />
-            ) : (
-              <Chip key={item.id} checked={item.entregue} variant={item.entregue ? 'teal' : 'plain'}>
-                <span className={item.entregue ? 'line-through' : undefined}>
-                  {item.quantidade}× {item.nome_item}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {itensAtivos.map((item) => {
+            if (item.entrega_direta) return <ChipEntregaDireta key={item.id} item={item} />
+
+            const categoria = nomeCategoriaDoItem(item.item_id)
+
+            return (
+              <div
+                key={item.id}
+                className={clsx(
+                  'flex shrink-0 items-center gap-2 rounded-mesa-md border px-3 py-2',
+                  item.entregue
+                    ? 'border-mesa-teal-200 bg-mesa-teal-50 dark:border-mesa-teal-500/30 dark:bg-mesa-teal-500/15'
+                    : 'border-mesa-border-subtle bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
+                )}
+              >
+                <span
+                  className={clsx(
+                    'shrink-0 font-mesa-mono text-sm font-bold',
+                    item.entregue
+                      ? 'text-mesa-teal-700 dark:text-mesa-teal-400'
+                      : coluna === 'a_fazer'
+                        ? CORES_TEXTO[cor]
+                        : 'text-mesa-text-secondary',
+                  )}
+                >
+                  {item.quantidade}×
                 </span>
-              </Chip>
-            ),
-          )}
+                <span
+                  className={clsx(
+                    'text-sm font-medium',
+                    item.entregue
+                      ? 'text-mesa-teal-700 line-through dark:text-mesa-teal-400'
+                      : 'text-mesa-text-primary',
+                  )}
+                >
+                  {item.nome_item}
+                </span>
+                {categoria && (
+                  <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 font-mesa-mono text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
+                    {categoria}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {pedido.observacao && (
-        <p className="mt-3 rounded-mesa-md bg-mesa-neutral-100 p-3 text-sm text-mesa-text-primary dark:bg-mesa-neutral-700">
-          {pedido.observacao}
-        </p>
+      {(pedido.observacao || itensComObservacao.length > 0) && (
+        <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 dark:bg-mesa-orange-500/15">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-mesa-orange-700 dark:text-mesa-orange-400" aria-hidden />
+          <div className="flex flex-col gap-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-orange-700 dark:text-mesa-orange-400">
+              Atenção
+            </p>
+            {pedido.observacao && <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>}
+            {itensComObservacao.map((item) => (
+              <p key={item.id} className="text-sm text-mesa-text-primary">
+                <span className="font-semibold">{item.nome_item}:</span> {item.observacao}
+              </p>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="mt-4 flex gap-3">
         {coluna === 'a_fazer' ? (
           <>
-            <Button variant="outline" size="md" className="flex-1" onClick={() => onMoverParaPronto(pedido)}>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<Check className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onMoverParaPronto(pedido)}
+            >
               Pronto
             </Button>
-            <Button variant="confirm" size="md" className="flex-1" onClick={() => onAtalhoEntregar(pedido)}>
+            <Button
+              variant="confirm"
+              size="md"
+              icon={<CheckCheck className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onAtalhoEntregar(pedido)}
+            >
               Entregar direto
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" size="md" className="flex-1" onClick={() => onVoltar(pedido)}>
+            <Button
+              variant="outline"
+              size="md"
+              icon={<Undo2 className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onVoltar(pedido)}
+            >
               Voltar
             </Button>
-            <Button variant="confirm" size="md" className="flex-1" onClick={() => onEntregar(pedido)}>
+            <Button
+              variant="confirm"
+              size="md"
+              icon={<CheckCheck className="size-4" aria-hidden />}
+              className="flex-1"
+              onClick={() => onEntregar(pedido)}
+            >
               Entregue
             </Button>
           </>
@@ -231,9 +318,9 @@ function CardPedido({
         <button
           type="button"
           onClick={() => onCancelar(pedido)}
-          className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
+          className="min-h-11 px-2 font-mesa-mono text-sm font-semibold text-mesa-error-500"
         >
-          Cancelar
+          {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
         </button>
       </div>
     </Card>
@@ -268,6 +355,46 @@ function BadgeStatus({ status }: { status: StatusConexao }) {
   )
 }
 
+/** Últimos pedidos entregues hoje — dado real (usePedidosAtual já carrega o
+ * dia inteiro, todos os status), só pra dar um retrospecto rápido de quem
+ * já saiu enquanto o operador olha o que ainda falta. */
+function SecaoDespachados({ pedidos }: { pedidos: PedidoComItens[] }) {
+  if (pedidos.length === 0) return null
+
+  return (
+    <div className="mt-6">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wider text-mesa-text-tertiary">
+          Despachados recentemente
+        </h3>
+        <span className="font-mesa-mono text-xs text-mesa-text-tertiary">{turnoAtual()}</span>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {pedidos.map((pedido) => {
+          const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
+          const resumoItens = itensAtivos
+            .map((i) => `${i.nome_item}${i.quantidade > 1 ? ` (${i.quantidade}x)` : ''}`)
+            .join(', ')
+          return (
+            <li key={pedido.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 flex-1 truncate text-mesa-text-secondary">
+                <span className="font-mesa-mono font-bold text-mesa-teal-600 dark:text-mesa-teal-400">
+                  #{pedido.senha}
+                </span>{' '}
+                {pedido.viagem ? 'Viagem' : pedido.mesa ? `Mesa ${pedido.mesa}` : 'Balcão'}
+                {resumoItens && ` · ${resumoItens}`}
+              </span>
+              <span className="shrink-0 font-mesa-mono text-xs text-mesa-text-tertiary">
+                {formatarHora(pedido.entregue_em!)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 export function Cozinha() {
   const barraca = useBarracaAtual()
   const {
@@ -278,7 +405,39 @@ export function Cozinha() {
     aplicarPatchItem,
   } = usePedidosAtual()
   const { pendentes, online } = useSincronizacaoAtual()
+  const { tema, alternarTema } = useTheme()
+  const escuro = tema === 'escuro'
   const [aba, setAba] = useState<Coluna>('a_fazer')
+
+  // Nome real da categoria de cada item — badge por item no card do pedido,
+  // pra ajudar o chef a separar/rotear o preparo. Busca uma vez por
+  // barraca, não por pedido (mesmo padrão de Histórico.tsx).
+  const [itensCardapio, setItensCardapio] = useState<Item[]>([])
+  const [categoriasCardapio, setCategoriasCardapio] = useState<Categoria[]>([])
+
+  useEffect(() => {
+    let cancelado = false
+
+    Promise.all([
+      supabase.from('itens').select('id, categoria_id').eq('barraca_id', barraca.id),
+      supabase.from('categorias').select('id, nome').eq('barraca_id', barraca.id),
+    ]).then(([itensResultado, categoriasResultado]) => {
+      if (cancelado) return
+      if (!itensResultado.error) setItensCardapio((itensResultado.data ?? []) as Item[])
+      if (!categoriasResultado.error) setCategoriasCardapio((categoriasResultado.data ?? []) as Categoria[])
+    })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
+  function nomeCategoriaDoItem(itemId: string | null): string | null {
+    if (!itemId) return null
+    const item = itensCardapio.find((i) => i.id === itemId)
+    if (!item?.categoria_id) return null
+    return categoriasCardapio.find((c) => c.id === item.categoria_id)?.nome ?? null
+  }
 
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
 
@@ -304,7 +463,7 @@ export function Cozinha() {
   // `pedidos` muda por outro motivo (evento realtime, etc.) e o horário
   // exibido fica parado no valor do último render real. Um único timer aqui
   // força esse re-render — não é por card, pra não multiplicar timers.
-  const [, forcarAtualizacaoDoRelogio] = useState(0)
+  const [relogioTick, forcarAtualizacaoDoRelogio] = useState(0)
 
   useEffect(() => {
     const intervalo = window.setInterval(() => {
@@ -313,6 +472,35 @@ export function Cozinha() {
 
     return () => window.clearInterval(intervalo)
   }, [])
+
+  // Alerta sonoro de atraso crítico: dispara uma vez por pedido quando ele
+  // cruza pra faixa vermelha em "A Fazer" (não repete a cada tick do
+  // relógio nem quando o pedido sai da lista e volta sem ter mudado de
+  // faixa). idsAlertadosVermelhoRef é limpo por pedido assim que ele sai
+  // de "a_fazer" — se voltar depois via "Voltar", alerta de novo se ainda
+  // estiver no vermelho.
+  const idsAlertadosVermelhoRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    const emFazerAgoraIds = new Set(
+      pedidos.filter((p) => p.status === 'a_fazer').map((p) => p.id),
+    )
+
+    for (const id of idsAlertadosVermelhoRef.current) {
+      if (!emFazerAgoraIds.has(id)) idsAlertadosVermelhoRef.current.delete(id)
+    }
+
+    for (const pedido of pedidos) {
+      if (pedido.status !== 'a_fazer') continue
+      if (idsAlertadosVermelhoRef.current.has(pedido.id)) continue
+      if (corPorTempo(minutosDecorridos(pedido), barraca) !== 'vermelho') continue
+
+      idsAlertadosVermelhoRef.current.add(pedido.id)
+      tocarSomPedidoCritico()
+    }
+    // relogioTick força reavaliar mesmo sem `pedidos` mudar — o atraso
+    // cresce só com o tempo passando.
+  }, [pedidos, relogioTick, barraca])
 
   // Toca só quando um pedido novo chega via realtime enquanto a tela já
   // está aberta. Espera `pedidosCarregados` (useRealtimePedidos.ts) antes
@@ -480,6 +668,18 @@ export function Cozinha() {
   const pedidosAFazer = pedidos.filter((p) => p.status === 'a_fazer')
   const pedidosProntos = pedidos.filter((p) => p.status === 'pronto')
 
+  // usePedidosAtual já carrega o dia inteiro (todos os status), não só os
+  // ativos — "despachados recentemente" é só filtrar por entregue, sem
+  // fetch novo nenhum.
+  const pedidosDespachados = useMemo(
+    () =>
+      pedidos
+        .filter((p) => p.status === 'entregue' && p.entregue_em)
+        .sort((a, b) => new Date(b.entregue_em!).getTime() - new Date(a.entregue_em!).getTime())
+        .slice(0, 5),
+    [pedidos],
+  )
+
   function renderLista(lista: PedidoComItens[], coluna: Coluna) {
     if (lista.length === 0) {
       return <p className="py-8 text-center text-sm text-mesa-text-secondary">Nenhum pedido.</p>
@@ -492,6 +692,7 @@ export function Cozinha() {
             pedido={pedido}
             barraca={barraca}
             coluna={coluna}
+            nomeCategoriaDoItem={nomeCategoriaDoItem}
             onAbrirDetalhe={abrirDetalhe}
             onMoverParaPronto={moverParaPronto}
             onVoltar={voltarParaFazer}
@@ -524,6 +725,14 @@ export function Cozinha() {
             </Badge>
           )}
           <BadgeStatus status={statusConexao} />
+          <button
+            type="button"
+            onClick={alternarTema}
+            aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+            className={classesBotaoIcone()}
+          >
+            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+          </button>
           <Link
             to={`/${barraca.slug}/historico`}
             className="flex min-h-11 items-center rounded-mesa-full bg-mesa-neutral-100 px-4 text-sm font-semibold text-mesa-text-primary dark:bg-mesa-neutral-700"
@@ -537,8 +746,8 @@ export function Cozinha() {
         <SegmentedControl
           aria-label="Colunas da cozinha"
           items={[
-            { label: 'A Fazer', count: pedidosAFazer.length },
-            { label: 'Pronto', count: pedidosProntos.length },
+            { label: 'A Fazer', count: pedidosAFazer.length, icon: <ChefHat className="size-4" /> },
+            { label: 'Pronto', count: pedidosProntos.length, icon: <CircleCheck className="size-4" /> },
           ]}
           activeIndex={aba === 'a_fazer' ? 0 : 1}
           onChange={(indice) => setAba(indice === 0 ? 'a_fazer' : 'pronto')}
@@ -548,10 +757,13 @@ export function Cozinha() {
       <div className="px-4 md:hidden">
         {renderLista(aba === 'a_fazer' ? pedidosAFazer : pedidosProntos, aba)}
         {aba === 'pronto' && (
-          <p className="mt-6 text-center text-sm text-mesa-text-secondary">
-            O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
-            cliente
-          </p>
+          <>
+            <p className="mt-6 text-center text-sm text-mesa-text-secondary">
+              O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
+              cliente
+            </p>
+            <SecaoDespachados pedidos={pedidosDespachados} />
+          </>
         )}
       </div>
 
@@ -571,6 +783,7 @@ export function Cozinha() {
             O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
             cliente
           </p>
+          <SecaoDespachados pedidos={pedidosDespachados} />
         </div>
       </div>
 

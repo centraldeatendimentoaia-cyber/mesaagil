@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
+import { Button } from './ui/Button'
 
 export function RotaProtegida({
   children,
@@ -24,16 +25,16 @@ export function RotaProtegida({
 
   if (carregandoAuth || !usuario) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-neutral-950">
-        <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
+      <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base">
+        <p className="text-mesa-text-secondary">Carregando...</p>
       </div>
     )
   }
 
   if (carregandoBarracas) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white dark:bg-neutral-950">
-        <p className="text-neutral-500 dark:text-neutral-400">Carregando...</p>
+      <div className="flex min-h-dvh items-center justify-center bg-mesa-bg-base">
+        <p className="text-mesa-text-secondary">Carregando...</p>
       </div>
     )
   }
@@ -44,17 +45,13 @@ export function RotaProtegida({
 
     if (!temAcesso) {
       return (
-        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-white p-6 text-center dark:bg-neutral-950">
-          <p className="text-base text-neutral-700 dark:text-neutral-300">
+        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-mesa-bg-base p-6 text-center">
+          <p className="text-base text-mesa-text-secondary">
             Você não tem acesso a esta barraca.
           </p>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="min-h-11 rounded-2xl bg-neutral-200 px-6 text-base font-medium text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100"
-          >
+          <Button variant="primary" size="lg" onClick={() => navigate('/')}>
             Ir para minhas barracas
-          </button>
+          </Button>
         </div>
       )
     }

@@ -27,6 +27,33 @@ export default defineConfig({
         // o manifest dinâmico e a fila do Supabase nunca devem ser
         // servidos pelo shell cacheado
         navigateFallbackDenylist: [/\/manifest\.webmanifest$/, /^\/rest\//, /^\/auth\//],
+        // Fontes do redesign (Space Grotesk, Hanken Grotesk, JetBrains
+        // Mono) são carregadas do Google Fonts — sem isso, elas não
+        // ficariam disponíveis offline, quebrando a regra de Lançar
+        // Pedido/Cozinha funcionarem sem internet.
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],

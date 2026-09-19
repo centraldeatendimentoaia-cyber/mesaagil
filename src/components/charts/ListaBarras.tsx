@@ -18,7 +18,9 @@ export function ListaBarras({ itens }: { itens: ItemListaBarras[] }) {
         <li key={item.chave}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
             <span className="truncate text-mesa-text-primary">{item.rotulo}</span>
-            <span className="shrink-0 font-semibold text-mesa-text-primary">{item.rotuloValor}</span>
+            <span className="shrink-0 font-mesa-mono font-semibold text-mesa-text-primary">
+              {item.rotuloValor}
+            </span>
           </div>
           <div className="mt-1 h-1.5 overflow-hidden rounded-mesa-full bg-mesa-neutral-100 dark:bg-mesa-neutral-800">
             <div

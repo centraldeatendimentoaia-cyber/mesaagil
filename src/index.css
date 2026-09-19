@@ -3,18 +3,35 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  /* Cor de marca fixa do MesaAgil v2 (laranja 500 do design system).
-     Não é mais definida por barraca — ver docs/design-system/MESAAGIL_DESIGN_SYSTEM.md
-     seção 2.1.1. --color-marca-escura usa o mesmo valor de
-     --color-mesa-orange-600 (hover) do design system. */
-  --color-marca: #F58B00;
-  --color-marca-escura: #CC7400;
-  --color-marca-texto: #FFFFFF;
+/* Redesign "Speed Bento POS" (redesign_ux_ui_app/): corpo em Hanken
+   Grotesk, títulos em Space Grotesk. Números tabulares/monoespaçados
+   (JetBrains Mono, font-mesa-mono) ficam por conta de cada componente
+   que exibe preço/senha, não é global. */
+body {
+  font-family: var(--font-mesa-sans);
+}
 
-  --color-sinal-verde: #16A34A;
-  --color-sinal-amarelo: #EAB308;
-  --color-sinal-vermelho: #DC2626;
-  --color-sinal-pronto: #475569;
-  --color-cozinha-fundo: #0D0D0D;
+h1, h2, h3 {
+  font-family: var(--font-mesa-display);
+}
+
+/* Rolagem horizontal (fileira de chips etc.) sem a barra de scroll do
+   navegador — o próprio conteúdo já responde a clicar-e-arrastar (ver
+   LancarPedido.tsx), então a barra não faz mais falta como fallback. */
+.rolagem-sem-barra {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rolagem-sem-barra::-webkit-scrollbar {
+  display: none;
+}
+
+@theme {
+  /* Cor categórica pro método de pagamento "Dinheiro" no Histórico
+     (lib/metodoPagamento.ts) — não é sinal operacional de kanban (esse
+     é --color-mesa-kanban-green, reservado e inviolável). Mesmo tom de
+     esmeralda do redesign, só que sem namespace "kanban" pra não
+     confundir os dois usos. */
+  --color-sinal-verde: #10B981;
 }

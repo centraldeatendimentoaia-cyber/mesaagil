@@ -98,7 +98,7 @@ export function TelaChamada() {
             <span
               aria-live="polite"
               className={clsx(
-                'text-[96px] font-bold leading-[104px] tracking-tight text-white',
+                'font-mesa-mono text-[96px] font-bold leading-[104px] tracking-tight text-white',
                 'transition-opacity duration-[250ms]',
                 visivel ? 'opacity-100' : 'opacity-0',
               )}
@@ -129,7 +129,7 @@ export function TelaChamada() {
             {anteriores.map((pedido, indice) => (
               <span
                 key={pedido.id}
-                className="text-2xl font-bold text-white"
+                className="font-mesa-mono text-2xl font-bold text-white"
                 style={{ opacity: OPACIDADES_ANTERIORES[indice] }}
               >
                 {formatarSenha(pedido.senha)}

@@ -20,6 +20,8 @@ export type Item = {
   ordem: number
   preco_centavos: number
   categoria_id: string | null
+  foto_url: string | null
+  descricao: string | null
 }
 
 export type Categoria = {
@@ -70,6 +72,7 @@ export type ItemDoPedido = {
   entregue_em: string | null
   entrega_direta: boolean
   preco_centavos_unitario: number
+  observacao: string | null
 }
 
 export type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }

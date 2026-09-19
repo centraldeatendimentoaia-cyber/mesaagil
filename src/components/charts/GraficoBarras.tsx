@@ -74,7 +74,7 @@ export function GraficoBarras({
         })}
       </svg>
 
-      <div className="mt-1 flex text-[10px] text-mesa-text-tertiary">
+      <div className="mt-1 flex font-mesa-mono text-[10px] text-mesa-text-tertiary">
         {pontos.map((ponto, indice) =>
           indice % passoRotulo === 0 || indice === pontos.length - 1 ? (
             <span key={ponto.chave} style={{ width: `${100 / pontos.length}%` }} className="text-center">
@@ -88,7 +88,7 @@ export function GraficoBarras({
 
       {pontoExibido && (
         <p className="mt-2 text-sm font-medium text-mesa-text-primary">
-          {pontoExibido.rotulo} — {formatarValor(pontoExibido.valor)}
+          {pontoExibido.rotulo} — <span className="font-mesa-mono">{formatarValor(pontoExibido.valor)}</span>
         </p>
       )}
     </div>

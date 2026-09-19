@@ -18,6 +18,7 @@ export interface InputProps
   error?: string
   type?: InputType
   size?: InputSize
+  icon?: ReactNode
   onClear?: () => void
 }
 
@@ -54,6 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     id,
     disabled,
     value,
+    icon,
     onClear,
     ...rest
   },
@@ -71,13 +73,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   let rightAffix: ReactNode = null
 
   if (type === 'currency') {
-    leftAffix = <span className="text-mesa-text-secondary">R$</span>
+    leftAffix = <span className="font-mesa-mono text-mesa-text-secondary">R$</span>
   } else if (type === 'search') {
     leftAffix = <Search className="size-4 text-mesa-text-secondary" aria-hidden />
+  } else if (icon) {
+    leftAffix = <span className="text-mesa-text-secondary [&>svg]:size-4">{icon}</span>
   }
 
   if (type === 'percentage') {
-    rightAffix = <span className="text-mesa-text-secondary">%</span>
+    rightAffix = <span className="font-mesa-mono text-mesa-text-secondary">%</span>
   } else if (type === 'password') {
     rightAffix = (
       <button
@@ -133,7 +137,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           value={value}
           aria-invalid={hasError || undefined}
           aria-describedby={helpText || error ? helpId : undefined}
-          className="h-full min-w-0 flex-1 bg-transparent text-sm text-mesa-text-primary placeholder:text-mesa-text-tertiary outline-none disabled:cursor-not-allowed"
+          className={clsx(
+            'h-full min-w-0 flex-1 bg-transparent text-sm text-mesa-text-primary placeholder:text-mesa-text-tertiary outline-none disabled:cursor-not-allowed',
+            (type === 'currency' || type === 'number' || type === 'percentage') && 'font-mesa-mono',
+          )}
           {...rest}
         />
         {rightAffix}

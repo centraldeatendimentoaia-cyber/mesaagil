@@ -3,14 +3,37 @@
 // Aparência.
 
 import { useEffect, useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, ChevronLeft, Moon, Plus, Sun, Trash, TriangleAlert } from 'lucide-react'
+import clsx from 'clsx'
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  CreditCard,
+  Image,
+  LogOut,
+  Moon,
+  Pencil,
+  Plus,
+  Palette,
+  ShieldCheck,
+  Store,
+  Sun,
+  Timer,
+  Trash,
+  TriangleAlert,
+  UtensilsCrossed,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
+import { apagarFotoItem, enviarFotoItem } from '../lib/fotoItem'
+import { apagarLogoBarraca, enviarLogoBarraca } from '../lib/logoBarraca'
 import { ativarFaceId, desativarFaceId, faceIdAtivado, faceIdSuportado } from '../lib/faceId'
 import { METODOS_DISPONIVEIS } from '../lib/metodoPagamento'
 import { BPS_MAX, bpsParaPercentual, percentualParaBps } from '../lib/taxas'
@@ -20,6 +43,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
 import { Input } from '../components/ui/Input'
+import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import type { Barraca, Categoria, Item } from '../types/database'
@@ -28,9 +52,10 @@ function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
 }
 
-function RotuloSecao({ children }: { children: ReactNode }) {
+function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children: ReactNode }) {
   return (
-    <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-text-secondary">
+    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+      {Icone && <Icone className="size-3.5 shrink-0" aria-hidden />}
       {children}
     </h2>
   )
@@ -129,6 +154,171 @@ function InputPreco({ item }: { item: Item }) {
   )
 }
 
+function MiniaturaItem({
+  fotoUrl,
+  onClick,
+  rotulo,
+  tamanho = 'md',
+}: {
+  fotoUrl: string | null
+  onClick: () => void
+  rotulo: string
+  tamanho?: 'md' | 'lg'
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={rotulo}
+      className={clsx(
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary outline-none focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700',
+        tamanho === 'lg' ? 'size-14' : 'size-11',
+      )}
+    >
+      {fotoUrl ? (
+        <img src={fotoUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <Image className={tamanho === 'lg' ? 'size-6' : 'size-4'} aria-hidden />
+      )}
+    </button>
+  )
+}
+
+function BottomSheetDetalhesItem({
+  item,
+  barracaId,
+  onClose,
+  onSalvo,
+}: {
+  item: Item | null
+  barracaId: string
+  onClose: () => void
+  onSalvo: (itemId: string, alteracoes: Partial<Item>) => void
+}) {
+  const [descricao, setDescricao] = useState(() => item?.descricao ?? '')
+  const [fotoUrl, setFotoUrl] = useState<string | null>(() => item?.foto_url ?? null)
+  const [enviandoFoto, setEnviandoFoto] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const inputArquivoRef = useRef<HTMLInputElement>(null)
+
+  if (!item) return null
+
+  async function aoEscolherArquivo(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!arquivo || !item) return
+
+    setEnviandoFoto(true)
+    setErro(null)
+
+    try {
+      const urlAntiga = fotoUrl
+      const novaUrl = await enviarFotoItem(barracaId, item.id, arquivo)
+      setFotoUrl(novaUrl)
+      if (urlAntiga) apagarFotoItem(urlAntiga)
+    } catch {
+      setErro('Não foi possível enviar a foto. Tente novamente.')
+    }
+
+    setEnviandoFoto(false)
+  }
+
+  function removerFoto() {
+    if (fotoUrl) apagarFotoItem(fotoUrl)
+    setFotoUrl(null)
+    setErro(null)
+  }
+
+  async function salvar() {
+    if (!item) return
+    setSalvando(true)
+    setErro(null)
+
+    const alteracoes = { foto_url: fotoUrl, descricao: descricao.trim() || null }
+    const { error } = await supabase.from('itens').update(alteracoes).eq('id', item.id)
+
+    setSalvando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    onSalvo(item.id, alteracoes)
+    onClose()
+  }
+
+  return (
+    <BottomSheet open={!!item} onClose={onClose} aria-label={`Detalhes de ${item.nome}`}>
+      <h2 className="text-lg font-semibold text-mesa-text-primary">{item.nome}</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Foto e descrição aparecem pro operador em Lançar Pedido.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <Image className="size-6" aria-hidden />
+            )}
+          </span>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Camera className="size-4" aria-hidden />}
+              loading={enviandoFoto}
+              onClick={() => inputArquivoRef.current?.click()}
+            >
+              {fotoUrl ? 'Trocar foto' : 'Adicionar foto'}
+            </Button>
+            {fotoUrl && (
+              <Button
+                variant="textDanger"
+                size="sm"
+                icon={<Trash className="size-4" aria-hidden />}
+                onClick={removerFoto}
+              >
+                Remover foto
+              </Button>
+            )}
+          </div>
+          <input
+            ref={inputArquivoRef}
+            type="file"
+            accept="image/*"
+            onChange={aoEscolherArquivo}
+            className="hidden"
+          />
+        </div>
+
+        <Textarea
+          label="Descrição"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          placeholder="Ingredientes, tamanho, o que vem no prato..."
+          rows={3}
+        />
+
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+
+        <Button
+          size="xl"
+          icon={<Check className="size-5" aria-hidden />}
+          loading={salvando}
+          onClick={salvar}
+          className="w-full"
+        >
+          Salvar
+        </Button>
+      </div>
+    </BottomSheet>
+  )
+}
+
 function SecaoCardapio({ barracaId }: { barracaId: string }) {
   const [itens, setItens] = useState<Item[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -141,6 +331,8 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
 
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nomeEdicao, setNomeEdicao] = useState('')
+
+  const [itemDetalhes, setItemDetalhes] = useState<Item | null>(null)
 
   const [itemParaExcluir, setItemParaExcluir] = useState<Item | null>(null)
   const [nomeExclusao, setNomeExclusao] = useState('')
@@ -432,7 +624,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <RotuloSecao>Cardápio</RotuloSecao>
+        <RotuloSecao icone={UtensilsCrossed}>Cardápio</RotuloSecao>
         <button
           type="button"
           onClick={() => setGerenciandoCategorias(true)}
@@ -461,75 +653,106 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                   key={item.id}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => aoSoltar(item.id)}
-                  className={`flex flex-col gap-1 py-2 ${item.ativo ? '' : 'opacity-50'}`}
+                  className={`flex flex-col gap-2 py-3 ${item.ativo ? '' : 'opacity-50'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    {editandoId === item.id ? (
-                      <Input
-                        autoFocus
-                        size="sm"
-                        value={nomeEdicao}
-                        onChange={(e) => setNomeEdicao(e.target.value)}
-                        onBlur={() => salvarEdicao(item)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.currentTarget.blur()
-                          if (e.key === 'Escape') setEditandoId(null)
-                        }}
-                        aria-label={`Nome do item ${item.nome}`}
-                        className="min-w-0 flex-1"
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => iniciarEdicao(item)}
-                        className="min-h-11 min-w-0 flex-1 truncate text-left text-base text-mesa-text-primary"
-                      >
-                        {item.nome}
-                      </button>
-                    )}
+                  <div className="flex gap-3">
+                    <MiniaturaItem
+                      fotoUrl={item.foto_url}
+                      onClick={() => setItemDetalhes(item)}
+                      rotulo={`Foto e descrição de ${item.nome}`}
+                      tamanho="lg"
+                    />
 
-                    <InputPreco item={item} />
-                    <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          {editandoId === item.id ? (
+                            <Input
+                              autoFocus
+                              size="sm"
+                              value={nomeEdicao}
+                              onChange={(e) => setNomeEdicao(e.target.value)}
+                              onBlur={() => salvarEdicao(item)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur()
+                                if (e.key === 'Escape') setEditandoId(null)
+                              }}
+                              aria-label={`Nome do item ${item.nome}`}
+                              className="min-w-0 flex-1"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => iniciarEdicao(item)}
+                              className="min-h-11 min-w-0 truncate text-left text-base font-semibold text-mesa-text-primary"
+                            >
+                              {item.nome}
+                            </button>
+                          )}
+                          <Chip
+                            variant="plain"
+                            onClick={() => setItemEscolhendoCategoria(item)}
+                            aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
+                          >
+                            {nomeCategoria(item.categoria_id)}
+                          </Chip>
+                        </div>
+
+                        <div className="flex shrink-0 flex-col">
+                          <button
+                            type="button"
+                            onClick={() => moverItem(item.id, -1)}
+                            disabled={indice === 0}
+                            aria-label={`Mover ${item.nome} para cima`}
+                            className="flex h-[22px] w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moverItem(item.id, 1)}
+                            disabled={indice === itens.length - 1}
+                            aria-label={`Mover ${item.nome} para baixo`}
+                            className="flex h-[22px] w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+
+                      {item.descricao && (
+                        <p className="mt-0.5 line-clamp-1 text-xs text-mesa-text-secondary">
+                          {item.descricao}
+                        </p>
+                      )}
+
+                      <div className="mt-1.5">
+                        <InputPreco item={item} />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-1 pl-1">
-                    <Chip
-                      variant="plain"
-                      onClick={() => setItemEscolhendoCategoria(item)}
-                      aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
-                    >
-                      {nomeCategoria(item.categoria_id)}
-                    </Chip>
-                    <span
-                      draggable
-                      onDragStart={() => {
-                        arrastandoIdRef.current = item.id
-                      }}
-                      aria-hidden
-                      className="hidden cursor-grab select-none px-1 text-base text-mesa-text-tertiary sm:inline"
-                    >
-                      ⠿
-                    </span>
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
-                      onClick={() => moverItem(item.id, -1)}
-                      disabled={indice === 0}
-                      aria-label={`Mover ${item.nome} para cima`}
-                      className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                      onClick={() => setItemDetalhes(item)}
+                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
                     >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moverItem(item.id, 1)}
-                      disabled={indice === itens.length - 1}
-                      aria-label={`Mover ${item.nome} para baixo`}
-                      className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
-                    >
-                      ▼
+                      <Pencil className="size-3.5 shrink-0" aria-hidden />
+                      Editar Foto & Info
                     </button>
 
-                    <span className="ml-auto flex items-center gap-2">
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span
+                        draggable
+                        onDragStart={() => {
+                          arrastandoIdRef.current = item.id
+                        }}
+                        aria-hidden
+                        className="hidden cursor-grab select-none px-1 text-base text-mesa-text-tertiary sm:inline"
+                      >
+                        ⠿
+                      </span>
                       <span className="text-xs text-mesa-text-secondary">
                         {item.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -538,6 +761,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                         onChange={() => alternarAtivo(item)}
                         aria-label={`${item.nome} ativo no cardápio`}
                       />
+                      <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
                     </span>
                   </div>
                 </li>
@@ -609,6 +833,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
           </>
         )}
       </Card>
+
+      <BottomSheetDetalhesItem
+        key={itemDetalhes?.id ?? 'fechado'}
+        item={itemDetalhes}
+        barracaId={barracaId}
+        onClose={() => setItemDetalhes(null)}
+        onSalvo={(itemId, alteracoes) =>
+          setItens((atual) => atual.map((i) => (i.id === itemId ? { ...i, ...alteracoes } : i)))
+        }
+      />
 
       <BottomSheet
         open={itemParaExcluir !== null}
@@ -791,6 +1025,113 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   )
 }
 
+/** Nome e logo da barraca — sempre existiu a coluna logo_url, mas nunca
+ * teve como fazer upload de verdade, só setando direto no banco. Mesmo
+ * padrão de foto+resize do cardápio (lib/fotoItem.ts), bucket próprio
+ * (lib/logoBarraca.ts) porque o dono do upload é a barraca, não um item. */
+function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
+  const [nome, setNome] = useState(barraca.nome)
+  const [logoUrl, setLogoUrl] = useState(barraca.logo_url)
+  const [enviandoLogo, setEnviandoLogo] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const inputArquivoRef = useRef<HTMLInputElement>(null)
+
+  async function aoEscolherArquivo(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!arquivo) return
+
+    setEnviandoLogo(true)
+    setErro(null)
+
+    try {
+      const urlAntiga = logoUrl
+      const novaUrl = await enviarLogoBarraca(barraca.id, arquivo)
+      setLogoUrl(novaUrl)
+      if (urlAntiga) apagarLogoBarraca(urlAntiga)
+    } catch {
+      setErro('Não foi possível enviar o logo. Tente novamente.')
+    }
+
+    setEnviandoLogo(false)
+  }
+
+  async function salvar() {
+    if (!nome.trim()) return
+    setSalvando(true)
+    setErro(null)
+
+    const { error } = await supabase
+      .from('barracas')
+      .update({ nome: nome.trim(), logo_url: logoUrl })
+      .eq('id', barraca.id)
+
+    setSalvando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    setSalvo(true)
+    window.setTimeout(() => setSalvo(false), 3000)
+  }
+
+  return (
+    <section>
+      <RotuloSecao icone={Store}>Identidade da barraca</RotuloSecao>
+      <Card>
+        <div className="flex items-center gap-3">
+          <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
+            {logoUrl ? (
+              <img src={logoUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <Image className="size-6" aria-hidden />
+            )}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Camera className="size-4" aria-hidden />}
+            loading={enviandoLogo}
+            onClick={() => inputArquivoRef.current?.click()}
+          >
+            {logoUrl ? 'Trocar logo' : 'Adicionar logo'}
+          </Button>
+          <input
+            ref={inputArquivoRef}
+            type="file"
+            accept="image/*"
+            onChange={aoEscolherArquivo}
+            className="hidden"
+          />
+        </div>
+
+        <Input
+          label="Nome da barraca"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="mt-4"
+        />
+
+        {erro && <p className="mt-2 text-sm font-medium text-mesa-error-500">{erro}</p>}
+
+        <Button
+          size="md"
+          loading={salvando}
+          disabled={!nome.trim()}
+          onClick={salvar}
+          className="mt-4 w-full"
+        >
+          {salvo ? 'Salvo!' : 'Salvar'}
+        </Button>
+      </Card>
+    </section>
+  )
+}
+
 function SecaoFaixas({ barraca }: { barraca: Barraca }) {
   const [verdeAte, setVerdeAte] = useState(String(barraca.verde_ate))
   const [amareloAte, setAmareloAte] = useState(String(barraca.amarelo_ate))
@@ -829,7 +1170,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao>Faixas de tempo</RotuloSecao>
+      <RotuloSecao icone={Timer}>Faixas de tempo</RotuloSecao>
       <Card>
         <ul className="divide-y divide-mesa-border-subtle">
           <li className="flex items-center justify-between gap-3 py-2">
@@ -878,7 +1219,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
               <span className="size-2.5 shrink-0 rounded-mesa-full bg-mesa-kanban-red" aria-hidden />
               Acima disso
             </span>
-            <span className="text-sm font-semibold text-mesa-kanban-red">vermelho</span>
+            <span className="text-sm font-semibold text-mesa-kanban-red">vermelho + alerta sonoro</span>
           </li>
         </ul>
 
@@ -1057,7 +1398,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao>Pagamento e taxas</RotuloSecao>
+      <RotuloSecao icone={CreditCard}>Pagamento e taxas</RotuloSecao>
       <Card>
         {aviso && <AvisoInline>{aviso}</AvisoInline>}
 
@@ -1134,7 +1475,7 @@ function SecaoAparencia() {
 
   return (
     <section>
-      <RotuloSecao>Aparência</RotuloSecao>
+      <RotuloSecao icone={Palette}>Aparência</RotuloSecao>
       <Card>
         <div className="flex items-center justify-between gap-3">
           <span className="text-base text-mesa-text-primary">Tema</span>
@@ -1142,7 +1483,7 @@ function SecaoAparencia() {
             type="button"
             onClick={alternarTema}
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-            className="flex size-11 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-primary outline-none transition-colors duration-[var(--mesa-duration-micro)] focus-visible:[box-shadow:var(--mesa-focus-ring-primary)] dark:bg-mesa-neutral-700"
+            className={classesBotaoIcone()}
           >
             {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
           </button>
@@ -1227,7 +1568,6 @@ function BottomSheetSenhaAdmin({
           autoComplete="off"
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          className="text-center"
         />
         <Input
           label="Confirmar PIN"
@@ -1240,7 +1580,13 @@ function BottomSheetSenhaAdmin({
           onChange={(e) => setPinConfirmacao(e.target.value.replace(/\D/g, '').slice(0, 4))}
         />
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
-        <Button type="submit" size="xl" loading={processando} className="w-full">
+        <Button
+          type="submit"
+          size="xl"
+          icon={<Check className="size-5" aria-hidden />}
+          loading={processando}
+          className="w-full"
+        >
           Salvar
         </Button>
       </form>
@@ -1304,6 +1650,8 @@ function Rodape({ barracaId }: { barracaId: string }) {
 
   return (
     <section className="flex flex-col gap-1">
+      <RotuloSecao icone={ShieldCheck}>Segurança e operador</RotuloSecao>
+
       {suportaFaceId && (
         <>
           <Button
@@ -1322,7 +1670,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       )}
 
       <Button variant="ghost" size="md" onClick={() => setMostrarModal(true)} className="w-full">
-        Trocar senha
+        Trocar senha de operador
       </Button>
 
       {sucesso && (
@@ -1340,7 +1688,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
         }}
         className="w-full"
       >
-        Alterar senha administrativa
+        Alterar senha administrativa / Mestre
       </Button>
 
       {sucessoSenhaAdmin && (
@@ -1350,12 +1698,13 @@ function Rodape({ barracaId }: { barracaId: string }) {
       )}
 
       <Button
-        variant="textDanger"
-        size="md"
+        variant="destructive"
+        size="lg"
+        icon={<LogOut className="size-4" aria-hidden />}
         onClick={() => setConfirmandoSaida(true)}
-        className="w-full"
+        className="mt-3 w-full"
       >
-        Sair
+        Sair da conta
       </Button>
 
       {mostrarModal && email && (
@@ -1386,6 +1735,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
           <Button
             variant="destructive"
             size="xl"
+            icon={<LogOut className="size-5" aria-hidden />}
             className="w-full"
             onClick={async () => {
               await sair()
@@ -1426,6 +1776,7 @@ export function Ajustes() {
         </div>
 
         <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
+          <SecaoIdentidade barraca={barraca} />
           <SecaoCardapio barracaId={barraca.id} />
           <SecaoFaixas barraca={barraca} />
           <SecaoPagamento barraca={barraca} />

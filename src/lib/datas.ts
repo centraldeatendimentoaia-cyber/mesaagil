@@ -25,3 +25,12 @@ export function formatarDataExtenso(data: Date): string {
   }).format(data)
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
+
+/** Cosmético — não é horário de funcionamento real, só rótulo do período
+ * do dia (Dashboard, Cozinha). */
+export function turnoAtual(): string {
+  const hora = new Date().getHours()
+  if (hora < 12) return 'Turno Manhã'
+  if (hora < 18) return 'Turno Tarde'
+  return 'Turno Noite'
+}

@@ -117,17 +117,24 @@ function LinhaItemDetalhe({
         </button>
       )}
 
-      <span
-        className={clsx(
-          'min-w-0 flex-1 truncate text-base',
-          item.removido
-            ? 'text-mesa-text-tertiary line-through'
-            : marcado
+      <span className="min-w-0 flex-1">
+        <span
+          className={clsx(
+            'block truncate text-base',
+            item.removido
               ? 'text-mesa-text-tertiary line-through'
-              : 'text-mesa-text-primary',
+              : marcado
+                ? 'text-mesa-text-tertiary line-through'
+                : 'text-mesa-text-primary',
+          )}
+        >
+          {item.nome_item}
+        </span>
+        {item.observacao && !item.removido && (
+          <span className="block truncate text-xs text-mesa-orange-700 dark:text-mesa-orange-400">
+            Obs: {item.observacao}
+          </span>
         )}
-      >
-        {item.nome_item}
       </span>
 
       <span className="shrink-0 rounded-mesa-full bg-mesa-neutral-100 px-2.5 py-1 text-xs font-semibold text-mesa-text-secondary dark:bg-mesa-neutral-700">
@@ -189,7 +196,7 @@ export function DetalheComanda({
       {pedido && (
         <>
           <div className="flex items-center gap-3">
-            <span className="text-3xl font-black leading-none text-mesa-text-tertiary">
+            <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
               {pedido.senha}
             </span>
             {(pedido.viagem || pedido.mesa) && (
@@ -200,7 +207,7 @@ export function DetalheComanda({
                 <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
               </>
             )}
-            <span className={clsx('ml-auto flex items-center gap-1.5 text-sm font-semibold', TEXTO_COR[cor])}>
+            <span className={clsx('ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold', TEXTO_COR[cor])}>
               <Clock className="size-4 shrink-0" aria-hidden />
               {formatarMinutos(minutos)} em preparo
             </span>
@@ -237,7 +244,7 @@ export function DetalheComanda({
                   style={{ width: `${progresso}%` }}
                 />
               </div>
-              <span className="shrink-0 text-sm font-medium text-mesa-text-secondary">
+              <span className="shrink-0 font-mesa-mono text-sm font-medium text-mesa-text-secondary">
                 {entreguesCount} de {totalAtivos}
               </span>
             </div>

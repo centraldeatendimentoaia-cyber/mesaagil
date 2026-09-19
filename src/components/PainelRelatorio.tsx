@@ -99,7 +99,9 @@ function textoEcorComparacao(
 function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <div className="mt-5 border-t border-mesa-border-subtle pt-4">
-      <h3 className="text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">{titulo}</h3>
+      <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">
+        {titulo}
+      </h3>
       {children}
     </div>
   )
@@ -172,10 +174,10 @@ export function PainelRelatorio({
         </h2>
 
         <div className="mt-3">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">
+          <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">
             O que passou pelo sistema
           </h3>
-          <p className="mt-1 text-4xl font-black text-mesa-text-primary">
+          <p className="mt-1 font-mesa-mono text-4xl font-black text-mesa-text-primary">
             {formatarPrecoBR(atual.totalIsolado)}
           </p>
           <p className="text-sm text-mesa-text-secondary">
@@ -254,10 +256,10 @@ export function PainelRelatorio({
       <h2 className="text-lg font-bold text-mesa-text-primary">{tituloRelatorio(filtro, intervalos)}</h2>
 
       <div className="mt-3">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">
+        <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wide text-mesa-text-secondary">
           O que passou pelo sistema
         </h3>
-        <p className="mt-1 text-4xl font-black text-mesa-text-primary">
+        <p className="mt-1 font-mesa-mono text-4xl font-black text-mesa-text-primary">
           {formatarPrecoBR(atual.totalBruto)}
         </p>
         <p className="text-sm text-mesa-text-secondary">
@@ -323,7 +325,7 @@ export function PainelRelatorio({
 
       {atual.estimativaLiquida && (
         <Secao titulo="Estimativa recebida">
-          <p className="mt-1 text-3xl font-black text-mesa-text-primary">
+          <p className="mt-1 font-mesa-mono text-3xl font-black text-mesa-text-primary">
             {formatarPrecoBR(atual.estimativaLiquida.totalLiquido)}
           </p>
           <p className="mt-1 text-sm text-mesa-text-secondary">

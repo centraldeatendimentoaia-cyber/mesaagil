@@ -15,6 +15,7 @@ export type ItemRecibo = {
   nome: string
   quantidade: number
   precoCentavosUnitario: number
+  observacao?: string | null
 }
 
 export type DadosRecibo = {
@@ -118,10 +119,14 @@ function montarHtmlRecibo(dados: DadosRecibo): string {
         item.quantidade > 1 && item.precoCentavosUnitario > 0
           ? `<div style="font-size:10px; color:#333;">${formatarPrecoBR(item.precoCentavosUnitario)} cada</div>`
           : ''
+      const linhaObsItem = item.observacao
+        ? `<div style="font-size:10px; font-style:italic; color:#333;">Obs: ${escaparHtml(item.observacao)}</div>`
+        : ''
       return `<div style="display:flex; justify-content:space-between; gap:8px; margin:4px 0;">
         <div>
           <span style="font-weight:bold;">${item.quantidade}x</span> ${nome}
           ${linhaUnitario}
+          ${linhaObsItem}
         </div>
         <span style="white-space:nowrap;">${totalItem}</span>
       </div>`
@@ -180,4 +185,38 @@ export function imprimirRecibo(dados: DadosRecibo): void {
   container.innerHTML = montarHtmlRecibo(dados)
 
   window.print()
+}
+
+const CHAVE_ULTIMO_RECIBO_PREFIXO = 'mesaagil:ultimo-recibo:'
+
+type DadosReciboSerializavel = Omit<DadosRecibo, 'horario'> & { horario: string }
+
+/** Guarda o cupom mais recente por barraca — usado pelo atalho "Reimprimir
+ * último cupom" no Hub. Best-effort: se localStorage falhar (modo privado,
+ * cota cheia), só perde a reimpressão, nunca o cupom original já disparado. */
+export function salvarUltimoRecibo(barracaId: string, dados: DadosRecibo): void {
+  try {
+    const serializavel: DadosReciboSerializavel = { ...dados, horario: dados.horario.toISOString() }
+    localStorage.setItem(CHAVE_ULTIMO_RECIBO_PREFIXO + barracaId, JSON.stringify(serializavel))
+  } catch {
+    // ignora — ver comentário acima
+  }
+}
+
+export function obterUltimoRecibo(barracaId: string): DadosRecibo | null {
+  try {
+    const bruto = localStorage.getItem(CHAVE_ULTIMO_RECIBO_PREFIXO + barracaId)
+    if (!bruto) return null
+    const serializavel = JSON.parse(bruto) as DadosReciboSerializavel
+    return { ...serializavel, horario: new Date(serializavel.horario) }
+  } catch {
+    return null
+  }
+}
+
+export function reimprimirUltimoRecibo(barracaId: string): boolean {
+  const dados = obterUltimoRecibo(barracaId)
+  if (!dados) return false
+  imprimirRecibo(dados)
+  return true
 }
