@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, ListChecks, ShoppingBag } from 'lucide-react'
+import { Check, Clock, ListChecks, ShoppingBag, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
@@ -200,9 +200,15 @@ function CardPedido({
       )}
 
       {pedido.observacao && (
-        <p className="mt-3 rounded-mesa-md bg-mesa-neutral-100 p-3 text-sm text-mesa-text-primary dark:bg-mesa-neutral-700">
-          {pedido.observacao}
-        </p>
+        <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 dark:bg-mesa-orange-500/15">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-mesa-orange-700 dark:text-mesa-orange-400" aria-hidden />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-orange-700 dark:text-mesa-orange-400">
+              Atenção
+            </p>
+            <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>
+          </div>
+        </div>
       )}
 
       <div className="mt-4 flex gap-3">
