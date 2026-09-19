@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -278,6 +279,41 @@ export function LancarPedido() {
   const { pendentes, online } = useSincronizacaoAtual()
   const { tema, alternarTema } = useTheme()
   const escuro = tema === 'escuro'
+
+  // Arrastar com o mouse em cima dos chips pra rolar a fileira, não só
+  // pela scrollbar — touch já rola assim nativamente (por isso ignora
+  // pointerType 'touch'). Suprime o click do chip quando o movimento
+  // passou do limiar, senão um arrasto vira clique sem querer.
+  const chipsRef = useRef<HTMLDivElement>(null)
+  const arrastoChipsRef = useRef({ arrastando: false, comecouEmX: 0, scrollInicial: 0, moveu: false })
+
+  function aoPressionarChips(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'touch') return
+    const el = chipsRef.current
+    if (!el) return
+    el.setPointerCapture(e.pointerId)
+    arrastoChipsRef.current = { arrastando: true, comecouEmX: e.clientX, scrollInicial: el.scrollLeft, moveu: false }
+  }
+
+  function aoMoverChips(e: ReactPointerEvent<HTMLDivElement>) {
+    const el = chipsRef.current
+    const estado = arrastoChipsRef.current
+    if (!el || !estado.arrastando) return
+    const delta = e.clientX - estado.comecouEmX
+    if (Math.abs(delta) > 4) estado.moveu = true
+    el.scrollLeft = estado.scrollInicial - delta
+  }
+
+  function aoSoltarChips() {
+    arrastoChipsRef.current.arrastando = false
+  }
+
+  function aoClicarChipsCapturando(e: ReactMouseEvent<HTMLDivElement>) {
+    if (arrastoChipsRef.current.moveu) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
 
   // Estado recebido ao voltar de ConfirmarPedido ("Voltar e editar") ou
   // logo depois de um envio confirmado por lá — ver src/lib/carrinho.ts
@@ -703,7 +739,15 @@ export function LancarPedido() {
             itens.length > 0 &&
             !buscaItem.trim() &&
             (itensMaisPedidos.length > 0 || chipsCategoria.length > 0) && (
-            <div className="rolagem-minimalista mb-4 flex gap-2 overflow-x-auto pb-1">
+            <div
+              ref={chipsRef}
+              onPointerDown={aoPressionarChips}
+              onPointerMove={aoMoverChips}
+              onPointerUp={aoSoltarChips}
+              onPointerLeave={aoSoltarChips}
+              onClickCapture={aoClicarChipsCapturando}
+              className="rolagem-minimalista mb-4 flex cursor-grab gap-2 overflow-x-auto pb-1 active:cursor-grabbing"
+            >
               <Chip
                 variant={filtroEfetivo === 'todos' ? 'teal' : 'plain'}
                 checked={filtroEfetivo === 'todos'}
