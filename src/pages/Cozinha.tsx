@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, ChefHat, CircleCheck, Clock, ListChecks, Moon, ShoppingBag, Sun, TriangleAlert } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
+import { turnoAtual } from '../lib/datas'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
 import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
@@ -281,6 +282,46 @@ function BadgeStatus({ status }: { status: StatusConexao }) {
   )
 }
 
+/** Últimos pedidos entregues hoje — dado real (usePedidosAtual já carrega o
+ * dia inteiro, todos os status), só pra dar um retrospecto rápido de quem
+ * já saiu enquanto o operador olha o que ainda falta. */
+function SecaoDespachados({ pedidos }: { pedidos: PedidoComItens[] }) {
+  if (pedidos.length === 0) return null
+
+  return (
+    <div className="mt-6">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wider text-mesa-text-tertiary">
+          Despachados recentemente
+        </h3>
+        <span className="font-mesa-mono text-xs text-mesa-text-tertiary">{turnoAtual()}</span>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {pedidos.map((pedido) => {
+          const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
+          const resumoItens = itensAtivos
+            .map((i) => `${i.nome_item}${i.quantidade > 1 ? ` (${i.quantidade}x)` : ''}`)
+            .join(', ')
+          return (
+            <li key={pedido.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 flex-1 truncate text-mesa-text-secondary">
+                <span className="font-mesa-mono font-bold text-mesa-teal-600 dark:text-mesa-teal-400">
+                  #{pedido.senha}
+                </span>{' '}
+                {pedido.viagem ? 'Viagem' : pedido.mesa ? `Mesa ${pedido.mesa}` : 'Balcão'}
+                {resumoItens && ` · ${resumoItens}`}
+              </span>
+              <span className="shrink-0 font-mesa-mono text-xs text-mesa-text-tertiary">
+                {formatarHora(pedido.entregue_em!)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 export function Cozinha() {
   const barraca = useBarracaAtual()
   const {
@@ -524,6 +565,18 @@ export function Cozinha() {
   const pedidosAFazer = pedidos.filter((p) => p.status === 'a_fazer')
   const pedidosProntos = pedidos.filter((p) => p.status === 'pronto')
 
+  // usePedidosAtual já carrega o dia inteiro (todos os status), não só os
+  // ativos — "despachados recentemente" é só filtrar por entregue, sem
+  // fetch novo nenhum.
+  const pedidosDespachados = useMemo(
+    () =>
+      pedidos
+        .filter((p) => p.status === 'entregue' && p.entregue_em)
+        .sort((a, b) => new Date(b.entregue_em!).getTime() - new Date(a.entregue_em!).getTime())
+        .slice(0, 5),
+    [pedidos],
+  )
+
   function renderLista(lista: PedidoComItens[], coluna: Coluna) {
     if (lista.length === 0) {
       return <p className="py-8 text-center text-sm text-mesa-text-secondary">Nenhum pedido.</p>
@@ -600,10 +653,13 @@ export function Cozinha() {
       <div className="px-4 md:hidden">
         {renderLista(aba === 'a_fazer' ? pedidosAFazer : pedidosProntos, aba)}
         {aba === 'pronto' && (
-          <p className="mt-6 text-center text-sm text-mesa-text-secondary">
-            O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
-            cliente
-          </p>
+          <>
+            <p className="mt-6 text-center text-sm text-mesa-text-secondary">
+              O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
+              cliente
+            </p>
+            <SecaoDespachados pedidos={pedidosDespachados} />
+          </>
         )}
       </div>
 
@@ -623,6 +679,7 @@ export function Cozinha() {
             O cronômetro congela ao entrar em Pronto — a cor não muda mais, o pedido só espera o
             cliente
           </p>
+          <SecaoDespachados pedidos={pedidosDespachados} />
         </div>
       </div>
 

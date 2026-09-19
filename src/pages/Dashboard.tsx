@@ -20,7 +20,7 @@ import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { useTheme } from '../hooks/useTheme'
-import { formatarDataExtenso } from '../lib/datas'
+import { formatarDataExtenso, turnoAtual } from '../lib/datas'
 import { formatarPrecoBR } from '../lib/preco'
 import { calcularTotalBruto } from '../lib/relatorio'
 import { obterUltimoRecibo, reimprimirUltimoRecibo } from '../lib/impressao'
@@ -31,16 +31,6 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 
 function formatarSenha(senha: number): string {
   return String(senha).padStart(3, '0')
-}
-
-/** Só rótulo de turno do dia (manhã/tarde/noite) pra dar contexto no Hub —
- * derivado da hora do aparelho, não é rastreamento de turno de verdade
- * (sem check-in/checkout, sem histórico por operador). */
-function turnoAtual(): string {
-  const hora = new Date().getHours()
-  if (hora < 12) return 'Turno Manhã'
-  if (hora < 18) return 'Turno Tarde'
-  return 'Turno Noite'
 }
 
 function calcularEsperaMediaMinutos(emFila: { criado_em: string }[]): number | null {
