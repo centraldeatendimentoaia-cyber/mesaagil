@@ -18,7 +18,6 @@ import {
   Plus,
   Palette,
   ShieldCheck,
-  Star,
   Store,
   Sun,
   Timer,
@@ -27,7 +26,6 @@ import {
   UtensilsCrossed,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { buscarIdsMaisPedidos } from '../lib/popularidade'
 import { supabase } from '../lib/supabase'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
@@ -334,7 +332,6 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   const [excluindo, setExcluindo] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
-  const [idsMaisPedidos, setIdsMaisPedidos] = useState<string[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [novaCategoriaId, setNovaCategoriaId] = useState<string | null>(null)
   const [gerenciandoCategorias, setGerenciandoCategorias] = useState(false)
@@ -381,16 +378,6 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
         if (!error) setCategorias((data ?? []) as Categoria[])
       })
 
-    return () => {
-      cancelado = true
-    }
-  }, [barracaId])
-
-  useEffect(() => {
-    let cancelado = false
-    buscarIdsMaisPedidos(barracaId).then((ids) => {
-      if (!cancelado) setIdsMaisPedidos(ids)
-    })
     return () => {
       cancelado = true
     }
@@ -659,89 +646,96 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                   key={item.id}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => aoSoltar(item.id)}
-                  className={`flex gap-3 py-3 ${item.ativo ? '' : 'opacity-50'}`}
+                  className={`flex flex-col gap-2 py-3 ${item.ativo ? '' : 'opacity-50'}`}
                 >
-                  <MiniaturaItem
-                    fotoUrl={item.foto_url}
-                    onClick={() => setItemDetalhes(item)}
-                    rotulo={`Foto e descrição de ${item.nome}`}
-                    tamanho="lg"
-                  />
+                  <div className="flex gap-3">
+                    <MiniaturaItem
+                      fotoUrl={item.foto_url}
+                      onClick={() => setItemDetalhes(item)}
+                      rotulo={`Foto e descrição de ${item.nome}`}
+                      tamanho="lg"
+                    />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {editandoId === item.id ? (
-                        <Input
-                          autoFocus
-                          size="sm"
-                          value={nomeEdicao}
-                          onChange={(e) => setNomeEdicao(e.target.value)}
-                          onBlur={() => salvarEdicao(item)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.currentTarget.blur()
-                            if (e.key === 'Escape') setEditandoId(null)
-                          }}
-                          aria-label={`Nome do item ${item.nome}`}
-                          className="min-w-0 flex-1"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => iniciarEdicao(item)}
-                          className="min-h-11 min-w-0 truncate text-left text-base font-semibold text-mesa-text-primary"
-                        >
-                          {item.nome}
-                        </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          {editandoId === item.id ? (
+                            <Input
+                              autoFocus
+                              size="sm"
+                              value={nomeEdicao}
+                              onChange={(e) => setNomeEdicao(e.target.value)}
+                              onBlur={() => salvarEdicao(item)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur()
+                                if (e.key === 'Escape') setEditandoId(null)
+                              }}
+                              aria-label={`Nome do item ${item.nome}`}
+                              className="min-w-0 flex-1"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => iniciarEdicao(item)}
+                              className="min-h-11 min-w-0 truncate text-left text-base font-semibold text-mesa-text-primary"
+                            >
+                              {item.nome}
+                            </button>
+                          )}
+                          <Chip
+                            variant="plain"
+                            onClick={() => setItemEscolhendoCategoria(item)}
+                            aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
+                          >
+                            {nomeCategoria(item.categoria_id)}
+                          </Chip>
+                        </div>
+
+                        <div className="flex shrink-0 flex-col">
+                          <button
+                            type="button"
+                            onClick={() => moverItem(item.id, -1)}
+                            disabled={indice === 0}
+                            aria-label={`Mover ${item.nome} para cima`}
+                            className="flex h-[22px] w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moverItem(item.id, 1)}
+                            disabled={indice === itens.length - 1}
+                            aria-label={`Mover ${item.nome} para baixo`}
+                            className="flex h-[22px] w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+
+                      {item.descricao && (
+                        <p className="mt-0.5 line-clamp-1 text-xs text-mesa-text-secondary">
+                          {item.descricao}
+                        </p>
                       )}
-                      <Chip
-                        variant="plain"
-                        onClick={() => setItemEscolhendoCategoria(item)}
-                        aria-label={`Categoria de ${item.nome}: ${nomeCategoria(item.categoria_id)}`}
-                      >
-                        {nomeCategoria(item.categoria_id)}
-                      </Chip>
-                      {idsMaisPedidos.includes(item.id) && (
-                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-mesa-full bg-mesa-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
-                          <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
-                          Popular
-                        </span>
-                      )}
+
+                      <div className="mt-1.5">
+                        <InputPreco item={item} />
+                      </div>
                     </div>
+                  </div>
 
-                    {item.descricao && (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-mesa-text-secondary">
-                        {item.descricao}
-                      </p>
-                    )}
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setItemDetalhes(item)}
+                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                    >
+                      <Pencil className="size-3.5 shrink-0" aria-hidden />
+                      Editar Foto & Info
+                    </button>
 
-                    <div className="mt-1.5">
-                      <InputPreco item={item} />
-                    </div>
-
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setItemDetalhes(item)}
-                        className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
-                      >
-                        <Pencil className="size-3.5 shrink-0" aria-hidden />
-                        Editar Foto & Info
-                      </button>
-
-                      <span className="flex shrink-0 items-center gap-2">
-                        <span className="text-xs text-mesa-text-secondary">
-                          {item.ativo ? 'Ativo' : 'Inativo'}
-                        </span>
-                        <Toggle
-                          checked={item.ativo}
-                          onChange={() => alternarAtivo(item)}
-                          aria-label={`${item.nome} ativo no cardápio`}
-                        />
-                        <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
-                      </span>
-                    </div>
-
-                    <div className="mt-1 flex items-center gap-1">
+                    <span className="flex shrink-0 items-center gap-2">
                       <span
                         draggable
                         onDragStart={() => {
@@ -752,25 +746,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                       >
                         ⠿
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => moverItem(item.id, -1)}
-                        disabled={indice === 0}
-                        aria-label={`Mover ${item.nome} para cima`}
-                        className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moverItem(item.id, 1)}
-                        disabled={indice === itens.length - 1}
-                        aria-label={`Mover ${item.nome} para baixo`}
-                        className="flex h-11 w-8 items-center justify-center text-sm text-mesa-text-tertiary disabled:opacity-30"
-                      >
-                        ▼
-                      </button>
-                    </div>
+                      <span className="text-xs text-mesa-text-secondary">
+                        {item.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                      <Toggle
+                        checked={item.ativo}
+                        onChange={() => alternarAtivo(item)}
+                        aria-label={`${item.nome} ativo no cardápio`}
+                      />
+                      <BotaoApagar onClick={() => pedirExclusao(item)} rotulo={`Apagar ${item.nome}`} />
+                    </span>
                   </div>
                 </li>
               ))}
