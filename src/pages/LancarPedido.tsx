@@ -65,7 +65,6 @@ function CardItemCardapio({
   item,
   quantidade,
   observacao,
-  categoriaNome,
   onIncrementar,
   onDecrementar,
   onAbrirObservacao,
@@ -73,7 +72,6 @@ function CardItemCardapio({
   item: Item
   quantidade: number
   observacao: string
-  categoriaNome: string | null
   onIncrementar: () => void
   onDecrementar: () => void
   onAbrirObservacao: () => void
@@ -88,11 +86,6 @@ function CardItemCardapio({
           alt=""
           className="-mx-4 -mt-4 mb-3 aspect-[4/3] w-[calc(100%+2rem)] rounded-t-mesa-lg object-cover"
         />
-      )}
-      {categoriaNome && (
-        <span className="mb-1 inline-flex w-fit items-center rounded-mesa-full bg-mesa-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-mesa-text-secondary dark:bg-mesa-neutral-700">
-          {categoriaNome}
-        </span>
       )}
       <p className="text-base font-semibold text-mesa-text-primary">{item.nome}</p>
       {item.descricao && (
@@ -295,11 +288,6 @@ export function LancarPedido() {
 
     return grupos
   }, [categorias, itensFiltrados])
-
-  function nomeCategoria(categoriaId: string | null): string | null {
-    if (!categoriaId) return null
-    return categorias.find((c) => c.id === categoriaId)?.nome ?? null
-  }
 
   useEffect(() => {
     if (!senha?.provisoria || !senha.idFila) return
@@ -541,7 +529,6 @@ export function LancarPedido() {
                   item={item}
                   quantidade={carrinho[item.id] ?? 0}
                   observacao={observacaoPorItem[item.id] ?? ''}
-                  categoriaNome={nomeCategoria(item.categoria_id)}
                   onIncrementar={() => incrementar(item.id)}
                   onDecrementar={() => decrementar(item.id)}
                   onAbrirObservacao={() => setItemObservacaoAberta(item)}
@@ -565,7 +552,6 @@ export function LancarPedido() {
                       item={item}
                       quantidade={carrinho[item.id] ?? 0}
                       observacao={observacaoPorItem[item.id] ?? ''}
-                      categoriaNome={nomeCategoria(item.categoria_id)}
                       onIncrementar={() => incrementar(item.id)}
                       onDecrementar={() => decrementar(item.id)}
                       onAbrirObservacao={() => setItemObservacaoAberta(item)}
