@@ -42,11 +42,16 @@ export function Login() {
 
       <div className="relative w-full max-w-[400px]">
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-mesa-lg border border-mesa-border-subtle bg-white p-3 shadow-mesa-1">
+          <div className="flex size-16 items-center justify-center rounded-mesa-lg border border-mesa-border-subtle bg-mesa-surface p-3 shadow-mesa-1">
             <img
               src="/brand/mesaagil-icone-cor.png"
               alt=""
-              className="max-h-full max-w-full object-contain"
+              className="max-h-full max-w-full object-contain dark:hidden"
+            />
+            <img
+              src="/brand/mesaagil-icone-branco.png"
+              alt=""
+              className="hidden max-h-full max-w-full object-contain dark:block"
             />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-wide text-mesa-text-primary">
@@ -95,7 +100,7 @@ export function Login() {
                   </div>
                   <Link
                     to="/esqueci-senha"
-                    className="text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                    className="font-mesa-mono text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
                   >
                     Esqueci minha senha
                   </Link>
