@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IdCard, LogIn, Lock, Mail } from 'lucide-react'
+import { LogIn, Lock, Mail } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -49,13 +49,6 @@ export function Login() {
         </div>
 
         <div className="mt-8 rounded-mesa-2xl border border-mesa-border-subtle bg-mesa-surface p-6 shadow-mesa-1">
-          <div className="mb-6 flex justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-mesa-full bg-mesa-neutral-100 px-3 py-1.5 text-xs font-semibold text-mesa-text-secondary dark:bg-mesa-neutral-700">
-              <IdCard className="size-3.5" aria-hidden />
-              Credenciais
-            </span>
-          </div>
-
           <form onSubmit={aoSubmeter} className="flex flex-col gap-4">
             <Input
               label="E-mail"
