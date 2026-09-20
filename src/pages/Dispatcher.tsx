@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { Button } from '../components/ui/Button'

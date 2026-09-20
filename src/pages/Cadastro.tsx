@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import { Mail } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'

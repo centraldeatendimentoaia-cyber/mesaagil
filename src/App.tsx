@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router'
 import { useTheme } from './hooks/useTheme'
 import { useAuth } from './hooks/useAuth'
 import { desbloquearAudio } from './lib/sons'

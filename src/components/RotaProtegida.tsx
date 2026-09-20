@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { Button } from './ui/Button'

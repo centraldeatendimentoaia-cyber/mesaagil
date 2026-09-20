@@ -1,5 +1,5 @@
 import { Home } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../../layouts/contextoBarraca'
 

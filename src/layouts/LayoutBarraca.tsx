@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet, useLocation, useParams } from 'react-router-dom'
+import { Outlet, useLocation, useParams } from 'react-router'
 import clsx from 'clsx'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
