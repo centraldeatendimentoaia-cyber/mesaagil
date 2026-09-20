@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
@@ -23,6 +25,10 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "@cloudflare/workers-types": "^5.20260812.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
@@ -41,6 +47,8 @@
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
-    "workerd@1.20260811.1": true
+    "workerd@1.20260811.1": true,
+    "sharp@0.35.2": true,
+    "sharp@0.32.6": true
   }
 }
