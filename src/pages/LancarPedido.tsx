@@ -208,7 +208,7 @@ function CardItemCardapioGrade({
   return (
     <Card
       className={clsx(
-        'flex flex-col border-2',
+        'flex flex-col overflow-hidden border-2',
         selecionado ? 'border-mesa-teal-500' : 'border-transparent',
       )}
     >

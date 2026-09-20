@@ -144,6 +144,7 @@ export function ConfirmarPedido() {
   )
   const [enviando, setEnviando] = useState(false)
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
+  const [confirmandoEntregaDireta, setConfirmandoEntregaDireta] = useState(false)
   const enviandoRef = useRef(false)
   const clientUuidRef = useRef(crypto.randomUUID())
 
@@ -365,7 +366,7 @@ export function ConfirmarPedido() {
 
         <div className="mt-8 flex flex-col gap-3">
           <Button
-            variant="primary"
+            variant="confirm"
             size="xl"
             icon={<Rocket className="size-5" aria-hidden />}
             disabled={!podeEnviar}
@@ -376,12 +377,12 @@ export function ConfirmarPedido() {
             Confirmar e enviar
           </Button>
           <Button
-            variant="outline"
+            variant="outlineAmber"
             size="xl"
             icon={<Truck className="size-5" aria-hidden />}
             disabled={!podeEnviar}
             loading={enviando}
-            onClick={() => enviarPedido(true)}
+            onClick={() => setConfirmandoEntregaDireta(true)}
             className="w-full"
           >
             Entregar
@@ -412,6 +413,39 @@ export function ConfirmarPedido() {
             variant="ghost"
             size="md"
             onClick={() => setConfirmandoDescarte(false)}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={confirmandoEntregaDireta}
+        onClose={() => setConfirmandoEntregaDireta(false)}
+        aria-label="Confirmar entrega direta"
+      >
+        <h2 className="text-lg font-semibold text-mesa-text-primary">
+          Você está mesmo entregando o pedido direto e não precisa passar pela cozinha?
+        </h2>
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            variant="outlineAmber"
+            size="xl"
+            icon={<Truck className="size-5" aria-hidden />}
+            loading={enviando}
+            onClick={() => {
+              setConfirmandoEntregaDireta(false)
+              enviarPedido(true)
+            }}
+            className="w-full"
+          >
+            Entregar direto
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={() => setConfirmandoEntregaDireta(false)}
             className="w-full"
           >
             Cancelar
