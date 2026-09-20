@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronLeft, Download, Moon, Sun, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronUp, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -234,7 +234,7 @@ function CardHistorico({
 
 export function Historico() {
   const barraca = useBarracaAtual()
-  const filtrosEscondidos = useOcultarAoRolar()
+  const [filtrosEscondidos, esconderFiltros, exibirFiltros] = useOcultarAoRolar()
   const { tema, alternarTema } = useTheme()
   const escuro = tema === 'escuro'
 
@@ -455,6 +455,14 @@ export function Historico() {
             >
               {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
             </button>
+            <button
+              type="button"
+              onClick={esconderFiltros}
+              aria-label="Ocultar barra de filtros"
+              className={classesBotaoIcone()}
+            >
+              <ChevronUp className="size-5" aria-hidden />
+            </button>
             <Button
               variant="outline"
               size="sm"
@@ -576,6 +584,20 @@ export function Historico() {
           </button>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={exibirFiltros}
+        aria-label="Exibir barra de filtros"
+        className={`fixed left-1/2 z-[var(--mesa-z-sticky)] flex items-center gap-1.5 rounded-mesa-full bg-mesa-surface px-4 py-2 text-sm font-semibold text-mesa-text-primary shadow-mesa-2 outline-none transition-all duration-300 ${
+          filtrosEscondidos
+            ? 'top-[calc(env(safe-area-inset-top)+12px)] -translate-x-1/2 opacity-100'
+            : 'pointer-events-none -top-16 -translate-x-1/2 opacity-0'
+        }`}
+      >
+        <ChevronDown className="size-4 shrink-0" aria-hidden />
+        Filtros
+      </button>
 
       <div className="px-6 pt-4">
         <div className="mb-4">
