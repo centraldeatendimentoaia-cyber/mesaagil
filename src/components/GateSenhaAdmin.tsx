@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { ChevronLeft, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/Button'

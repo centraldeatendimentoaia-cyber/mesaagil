@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router'
 import {
   ArrowRight,
   Check,
@@ -208,7 +208,7 @@ function CardItemCardapioGrade({
   return (
     <Card
       className={clsx(
-        'flex flex-col border-2',
+        'flex flex-col overflow-hidden border-2',
         selecionado ? 'border-mesa-teal-500' : 'border-transparent',
       )}
     >

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router'
 import { ShoppingBag, ChefHat, Volume2, History, Settings, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'

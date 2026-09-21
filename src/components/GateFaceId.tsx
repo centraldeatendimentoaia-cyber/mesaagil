@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { ScanFace } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { desbloquearComFaceId, emailFaceId, faceIdAtivado } from '../lib/faceId'

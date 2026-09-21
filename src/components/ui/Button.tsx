@@ -2,7 +2,14 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import clsx from 'clsx'
 
-export type ButtonVariant = 'primary' | 'confirm' | 'destructive' | 'outline' | 'ghost' | 'textDanger'
+export type ButtonVariant =
+  | 'primary'
+  | 'confirm'
+  | 'destructive'
+  | 'outline'
+  | 'outlineAmber'
+  | 'ghost'
+  | 'textDanger'
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -38,6 +45,10 @@ const variantClasses: Record<ButtonVariant, string> = {
     'rounded-mesa-lg border-[1.5px] border-mesa-teal-500 bg-transparent text-mesa-teal-500 ' +
     'hover:bg-[var(--mesa-state-hover-bg)] active:bg-[var(--mesa-state-active-bg)] ' +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
+  outlineAmber:
+    'rounded-mesa-lg border-[1.5px] border-mesa-orange-500 bg-transparent text-mesa-orange-500 ' +
+    'hover:bg-[var(--mesa-state-hover-bg)] active:bg-[var(--mesa-state-active-bg)] ' +
+    'focus-visible:[box-shadow:var(--mesa-focus-ring-primary)]',
   ghost:
     'rounded-mesa-md bg-transparent text-mesa-text-primary hover:bg-[var(--mesa-state-hover-bg)] ' +
     'active:bg-[var(--mesa-state-active-bg)] focus-visible:[box-shadow:var(--mesa-focus-ring-primary)]',
