@@ -13,6 +13,7 @@ import { Cozinha } from './pages/Cozinha'
 import { Historico } from './pages/Historico'
 import { TelaChamada } from './pages/TelaChamada'
 import { Ajustes } from './pages/Ajustes'
+import { CardapioPublico } from './pages/CardapioPublico'
 import { NaoEncontrado } from './pages/NaoEncontrado'
 import { Login } from './pages/Login'
 import { Cadastro } from './pages/Cadastro'
@@ -58,6 +59,10 @@ function App() {
               </RotaProtegida>
             }
           />
+
+          {/* Pública, sem login — cardápio digital Fase 1 (só visualização).
+              Precisa vir antes do /:slug protegido pra ganhar a rota. */}
+          <Route path="/:slug/cardapio" element={<CardapioPublico />} />
 
           <Route
             path="/:slug"

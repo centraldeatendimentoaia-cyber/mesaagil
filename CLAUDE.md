@@ -103,13 +103,20 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
   diferente do pagamento de pedido cliente-final→barraca citado
   acima — não misturar os dois ao planejar.
 - Cardápio Digital: tela pública (fora do app, sem login, um link
-  por barraca) onde o cliente final navega o cardápio da mesa — usa
-  os mesmos itens.foto_url/descricao já cadastrados em Ajustes.
+  por barraca — `/:slug/cardapio`) onde o cliente final navega o
+  cardápio da mesa — usa os mesmos itens.foto_url/descricao já
+  cadastrados em Ajustes. Botão "Compartilhar cardápio" em Ajustes
+  (dentro de Identidade da barraca) copia/compartilha esse link.
+  Dados vêm da função `cardapio_publico(slug)` (SECURITY DEFINER,
+  liberada pra `anon`) em vez de abrir RLS pública em `barracas` —
+  essa tabela carrega taxa_debito_bps/taxa_credito_bps, dado privado
+  do dono, que não pode vazar pra quem só está vendo o cardápio.
   Em construção em fases, por decisão do dono do produto em
   2026-09-18:
-  - Fase 1 (atual): só navegação/visualização do cardápio. O botão
-    de adicionar item NÃO tem função ainda — de propósito, não é bug
-    esquecido.
+  - Fase 1 (implementada em 2026-09-21): só navegação/visualização
+    do cardápio. O botão de adicionar item mostra um aviso "Em
+    breve" e não tem função de verdade ainda — de propósito, não é
+    bug esquecido.
   - Fase 2 (futura): cliente monta pedido e ele cai direto na
     Cozinha, mas o pagamento continua fora do app (maquininha/Pix na
     mesa, como já funciona hoje) — só tira a fila de atendimento,

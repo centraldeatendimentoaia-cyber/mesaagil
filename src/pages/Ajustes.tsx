@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   Palette,
+  Share2,
   ShieldCheck,
   Store,
   Sun,
@@ -1036,6 +1037,7 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [linkCopiado, setLinkCopiado] = useState(false)
   const inputArquivoRef = useRef<HTMLInputElement>(null)
 
   async function aoEscolherArquivo(e: ChangeEvent<HTMLInputElement>) {
@@ -1077,6 +1079,27 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
 
     setSalvo(true)
     window.setTimeout(() => setSalvo(false), 3000)
+  }
+
+  const linkCardapio = `${window.location.origin}/${barraca.slug}/cardapio`
+
+  async function compartilharCardapio() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Cardápio ${barraca.nome}`, url: linkCardapio })
+      } catch {
+        // usuário cancelou o share nativo — não é erro
+      }
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(linkCardapio)
+      setLinkCopiado(true)
+      window.setTimeout(() => setLinkCopiado(false), 2500)
+    } catch {
+      // clipboard indisponível — sem fallback melhor por ora
+    }
   }
 
   return (
@@ -1126,6 +1149,24 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
           className="mt-4 w-full"
         >
           {salvo ? 'Salvo!' : 'Salvar'}
+        </Button>
+      </Card>
+
+      <Card className="mt-3">
+        <p className="text-sm font-semibold text-mesa-text-primary">Cardápio digital</p>
+        <p className="mt-0.5 text-xs text-mesa-text-secondary">
+          Um link público, sem login, pro seu cliente ver o cardápio com foto e preço direto do
+          celular.
+        </p>
+        <p className="mt-2 truncate font-mesa-mono text-xs text-mesa-text-tertiary">{linkCardapio}</p>
+        <Button
+          variant="outline"
+          size="md"
+          icon={<Share2 className="size-4" aria-hidden />}
+          onClick={compartilharCardapio}
+          className="mt-3 w-full"
+        >
+          {linkCopiado ? 'Link copiado!' : 'Compartilhar cardápio'}
         </Button>
       </Card>
     </section>
