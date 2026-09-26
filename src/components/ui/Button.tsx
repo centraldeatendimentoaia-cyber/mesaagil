@@ -45,9 +45,14 @@ const variantClasses: Record<ButtonVariant, string> = {
   // "Chamar senha" na IDV Sai aê: sólido em tinta (preto), não mais
   // teal/esmeralda — a marca só tem duas cores (mostarda + tinta), o
   // resto é apoio. Nome do variant mantido pra não precisar tocar em
-  // cada tela que já usa variant="confirm".
+  // cada tela que já usa variant="confirm". No dark mode inverte pro
+  // mesmo padrão já usado em Checkbox/Radio/Toggle (tinta vira quase
+  // branco) em vez de continuar preto sobre o fundo escuro — preto
+  // sobre `neutral-800/900` perde contraste e não é mais mostarda pra
+  // não colidir com o variant primary.
   confirm:
     `rounded-mesa-lg bg-mesa-neutral-900 text-white ${realceTatil} hover:bg-mesa-neutral-800 ` +
+    'dark:bg-mesa-neutral-50 dark:text-mesa-neutral-900 dark:hover:bg-mesa-neutral-200 ' +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
   destructive:
     `rounded-mesa-lg bg-mesa-error-500 text-white ${realceTatil} hover:bg-mesa-error-700 active:bg-mesa-error-700 ` +

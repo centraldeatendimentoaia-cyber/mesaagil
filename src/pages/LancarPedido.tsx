@@ -71,7 +71,7 @@ function BotaoStepper({
       aria-label={rotulo}
       className="flex size-11 shrink-0 items-center justify-center outline-none"
     >
-      <span className="flex size-10 items-center justify-center rounded-mesa-full bg-mesa-neutral-900 text-white transition-transform active:scale-90">
+      <span className="flex size-10 items-center justify-center rounded-mesa-full bg-mesa-neutral-900 text-white transition-transform active:scale-90 dark:bg-mesa-neutral-50 dark:text-mesa-neutral-900">
         <Icone nome={icone} size={16} />
       </span>
     </button>
