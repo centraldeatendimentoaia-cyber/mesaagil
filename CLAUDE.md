@@ -9,24 +9,35 @@ Substituto do papel espetado no espeto de ferro. Operador lança o
 pedido, a cozinha vê em kanban, o cliente é chamado pela senha.
 
 ## O que o sistema NÃO é (hoje)
-Não é PDV. Não controla estoque. Não processa pagamento do pedido em
-comanda — a maquininha do cliente já faz isso melhor nesse fluxo
-(operador lança, cozinha prepara, cliente é chamado). Nunca sugira
-PDV ou controle de estoque — isso continua fora de escopo. O
-pagamento tem uma ressalva: ver "Roadmap de produto" abaixo, já
-existe uma direção decidida que muda essa regra mais pra frente.
+Não processa pagamento do pedido em comanda — a maquininha do
+cliente já faz isso melhor nesse fluxo (operador lança, cozinha
+prepara, cliente é chamado). O pagamento tem uma ressalva: ver
+"Roadmap de produto" abaixo, já existe uma direção decidida que muda
+essa regra mais pra frente.
 
-Impressão de comprovante/nota está fora de escopo de novo — decisão
-revertida em 2026-09-19 (a decisão de 2026-09-17 de implementar já
-tinha sido revertida): a primeira versão (src/lib/impressao.ts, cupom
-via window.print) foi removida por completo, junto do botão
-"Reimprimir último cupom" no Hub e do disparo automático em Confirmar
-e enviar/Entregar. Motivo: impressoras térmicas variam de tamanho
-(58mm/80mm) e o cupom precisa de uma aba de configuração de
-impressora pra escolher isso — só volta a ser implementado quando
-essa configuração existir. Continua não sendo Nota Fiscal Eletrônica
-quando voltar (isso segue fora de escopo, exigiria certificado
-digital e integração com a SEFAZ).
+PDV, controle de estoque e caixa (abertura/fechamento) **deixaram de
+ser proibidos** em 2026-09-26 — reversão explícita da regra antiga
+("nunca sugira PDV ou controle de estoque"), decisão do dono do
+produto depois de ver um concorrente (MesaAgil-para-restaurante)
+implementar essas três áreas. Direção nova: separar em duas
+superfícies — uma versão **desktop web** completa (estoque, caixa,
+faturamento, fiscal, configurações) pro dono da barraca gerenciar, e
+a versão **mobile enxuta atual** (lançar/cozinha/chamada) focada só
+no operacional de balcão + maquininha. Detalhes de escopo de cada
+peça (estoque completo vs. só "esgotado"; caixa com ou sem
+sangria/suprimento) ainda **a definir** — ver "Roadmap de produto".
+
+Impressão de comprovante/nota continua fora de escopo standalone —
+decisão revertida em 2026-09-19 (a decisão de 2026-09-17 de
+implementar já tinha sido revertida): a primeira versão
+(src/lib/impressao.ts, cupom via window.print) foi removida por
+completo, junto do botão "Reimprimir último cupom" no Hub e do
+disparo automático em Confirmar e enviar/Entregar. Motivo:
+impressoras térmicas variam de tamanho (58mm/80mm) e o cupom precisa
+de uma aba de configuração de impressora pra escolher isso. Ela
+passa a fazer sentido junto do módulo Fiscal (ver Roadmap) em vez de
+standalone, já que a NFC-e emitida ali normalmente precisa ser
+impressa.
 
 ## Regras de produto
 - Senha sequencial por pedido, reinicia todo dia
@@ -88,17 +99,45 @@ digital e integração com a SEFAZ).
   substitui a referência antiga de "fonte do sistema" — ver Estilo
   abaixo
 - Redesign fonte: pasta `redesign_ux_ui_app/` na raiz do projeto tem
-  os mockups (.svg) e specs de design (DESIGN.md) que guiam o v3 —
-  ela também tem elementos que NÃO entram no MesaAgil por decisão do
-  dono do produto em 2026-09-18: controle de estoque, atalho de
-  Suprimento/Sangria de caixa e leitor de código de barras (todos
-  PDV-adjacentes, fora de escopo — ver "O que o sistema NÃO é"
-  acima). Não implementar esses três a partir dos mockups mesmo que
-  apareçam lá
+  os mockups (.svg) e specs de design (DESIGN.md) que guiam o v3.
+  Controle de estoque e atalho de Suprimento/Sangria de caixa
+  deixaram de estar banidos em 2026-09-26 (ver "O que o sistema NÃO é
+  (hoje)" e "Roadmap de produto") — podem ser usados como referência
+  visual quando essas áreas forem implementadas. Leitor de código de
+  barras continua sem decisão tomada, não implementar a partir dos
+  mockups até isso ser discutido explicitamente
 
 ## Roadmap de produto (decidido, mas não é pra agora)
 Direção combinada com o dono do produto em 2026-09-17 — não iniciar
 nenhum item daqui sozinho, só quando for pedido explicitamente.
+- Split desktop/mobile (decidido em 2026-09-26, inspirado num
+  concorrente que já lançou "MesaAgil pra restaurante" com essas
+  áreas): mobile continua enxuto — só lançar pedido, cozinha, chamada
+  de senha e ajustes básicos, "mais ou menos o que temos hoje".
+  Faturamento/Relatório sai do Histórico mobile e vira exclusivo de
+  uma versão **desktop web** nova, que também reúne Estoque, Caixa e
+  Fiscal. Recomendação técnica (ainda não confirmada): estender o
+  mesmo app React/Supabase com rotas e layout desktop, não criar um
+  segundo app — mesmo padrão que Cozinha.tsx já usa hoje (mobile por
+  abas, desktop em grid, mesmo componente).
+  - Caixa (abrir/fechar o dia): fundação simples, necessária pra
+    Faturamento e Fiscal baterem. Escopo exato (com ou sem
+    sangria/suprimento) ainda a definir.
+  - Fiscal / NFC-e: em vez de integração direta com a SEFAZ (que foi
+    o motivo original de tirar isso de escopo), usar um provedor
+    fiscal-as-a-service (ex.: FocusNFe, como o concorrente fez) — o
+    dono da barraca cria a própria conta no provedor, sobe o
+    certificado digital lá (custódia fica com o provedor, nunca com o
+    MesaAgil) e cola token/CSC nas configurações da barraca. UF/regime
+    tributário alvo ainda a definir.
+  - Estoque: item mais delicado por reverter a regra mais antiga do
+    projeto. Nível de profundidade ainda a definir — controle
+    completo com baixa automática por venda, ou algo mais simples
+    (ex.: toggle "esgotado" por item, já citado no
+    redesign_ux_ui_app/saiae/DESIGN.md).
+  - WhatsApp pra leads (o concorrente tem, manda mensagem automática
+    pro cliente): fora de escopo por enquanto, avaliar depois que o
+    resto acima estiver de pé.
 - Cadastro self-service e múltiplas barracas por conta: já
   implementado (v2) — qualquer usuário autenticado pode criar sua
   própria barraca e trocar entre as que tem acesso.
