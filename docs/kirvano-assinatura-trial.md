@@ -1,4 +1,4 @@
-# Contexto: assinatura Kirvano + teste grátis de 3 dias (Sai aê)
+# Contexto: assinatura Kirvano + teste grátis de 7 dias (Sai aê)
 
 > Cole este arquivo como contexto na IA/dev que vai implementar. Ele descreve **o que** o sistema precisa fazer. A stack do app (banco, auth, onde roda o backend) deve ser adaptada ao que o Sai aê já usa hoje.
 
@@ -6,14 +6,14 @@
 
 - **Produto:** Sai aê, uma comanda digital (caixa, cozinha e chamada de senha). O app roda em `https://saiae.com.br` e tem versão Android.
 - **Cobrança:** Kirvano, com um produto de assinatura e 4 ofertas.
-- **Teste grátis:** 3 dias, controlado **pelo app** (sem cartão e sem nada na Kirvano).
+- **Teste grátis:** 7 dias, controlado **pelo app** (sem cartão e sem nada na Kirvano).
 - **Fonte da verdade do acesso:** o banco do app. A Kirvano só avisa por **webhook**, e o app atualiza o status da conta.
 
 ```
-LP ──► Cadastro no app ──► TRIAL (3 dias, acesso total ao plano Pro)
+LP ──► Cadastro no app ──► TRIAL (7 dias, acesso total ao plano Pro)
                                │
                                ├─ assina no checkout Kirvano ─► webhook SALE_APPROVED ─► ATIVA
-                               └─ 3 dias passam sem pagar ───────────────────────────► EXPIRADA (paywall)
+                               └─ 7 dias passam sem pagar ───────────────────────────► EXPIRADA (paywall)
 ```
 
 ## 2. Planos e ofertas
@@ -78,7 +78,7 @@ webhook_events           (log + idempotência)
 
 ## 4. Regras do teste grátis
 
-1. No **cadastro**: `status = trialing`, `plan = pro`, `trial_ends_at = agora + 72h`.
+1. No **cadastro**: `status = trialing`, `plan = pro`, `trial_ends_at = agora + 7 dias`.
 2. **Um trial por pessoa**: bloqueie um novo trial se o e-mail **ou** o telefone já tiver tido conta. Se tiver, a conta nasce `expired` e cai direto no paywall.
 3. **Durante o trial**: banner fixo "Faltam X dias do seu teste grátis · Assinar agora". No último dia, destacar em laranja.
 4. **Quando `trial_ends_at` passar sem pagamento**: `status = expired`.
@@ -170,7 +170,7 @@ O jeito mais seguro é o cliente **sempre ter conta antes do checkout**.
 
 ## 11. Casos de teste mínimos
 
-- Cadastro novo → `trialing`, com 3 dias, recursos Pro
+- Cadastro novo → `trialing`, com 7 dias, recursos Pro
 - Mesmo e-mail ou telefone tenta um 2º trial → nasce `expired`
 - Trial vence → paywall, sem lançar pedido, dados preservados
 - Compra no trial → `active` na hora e o trial acaba

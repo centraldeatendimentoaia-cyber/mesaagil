@@ -1,4 +1,4 @@
--- Assinatura via Kirvano + teste grátis de 3 dias (ver
+-- Assinatura via Kirvano + teste grátis de 7 dias (ver
 -- docs/kirvano-assinatura-trial.md). Fonte da verdade do acesso é o
 -- banco, nunca o relógio do celular nem o redirecionamento pós-checkout
 -- — só o webhook (ou o cron de segurança) muda status.
@@ -138,7 +138,7 @@ begin
     on conflict (usuario_id) do nothing;
   else
     insert into public.assinaturas (usuario_id, status, plan, trial_ends_at)
-    values (new.id, 'trialing', 'pro', now() + interval '72 hours')
+    values (new.id, 'trialing', 'pro', now() + interval '7 days')
     on conflict (usuario_id) do nothing;
 
     insert into public.contas_trial_usadas (email_lower)

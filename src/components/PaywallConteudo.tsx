@@ -123,7 +123,7 @@ export function PaywallConteudo({ assinatura }: { assinatura: AssinaturaBarraca 
       </div>
 
       <p className="text-center text-xs text-mesa-text-tertiary">
-        3 dias grátis para testar. Sem fidelidade no mensal. Cancele quando quiser.
+        7 dias grátis para testar. Sem fidelidade no mensal. Cancele quando quiser.
       </p>
     </div>
   )
