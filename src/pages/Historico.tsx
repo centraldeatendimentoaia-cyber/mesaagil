@@ -137,6 +137,55 @@ function ordenarPorEntregueEmDesc(lista: PedidoComItens[]): PedidoComItens[] {
   })
 }
 
+function BotaoEmitirNota({ pedido }: { pedido: PedidoComItens }) {
+  const [status, setStatus] = useState(pedido.nfce_status)
+  const [mensagem, setMensagem] = useState(pedido.nfce_mensagem)
+  const [chave, setChave] = useState(pedido.nfce_chave)
+  const [emitindo, setEmitindo] = useState(false)
+
+  async function emitir() {
+    setEmitindo(true)
+    setMensagem(null)
+
+    const { data, error } = await supabase.functions.invoke('emitir-nfce', {
+      body: { pedido_id: pedido.id },
+    })
+
+    setEmitindo(false)
+
+    if (error) {
+      const corpo = await error.context?.json?.().catch(() => null)
+      setStatus('erro')
+      setMensagem(corpo?.erro ?? 'Não foi possível emitir. Tente novamente.')
+      return
+    }
+
+    setStatus(data?.status ?? 'erro')
+    setMensagem(data?.mensagem ?? data?.erro ?? null)
+    setChave(data?.chave ?? null)
+  }
+
+  if (status === 'autorizado') {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-mesa-success-700 dark:text-mesa-success-500">
+        <Icone nome="task_alt" size={14} />
+        Nota fiscal emitida{chave ? ` — final ${chave.slice(-8)}` : ''}
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-3">
+      <Button variant="outline" size="sm" loading={emitindo} onClick={emitir}>
+        {status === 'erro' ? 'Tentar emitir nota de novo' : 'Emitir nota fiscal'}
+      </Button>
+      {status === 'erro' && mensagem && (
+        <p className="mt-1.5 text-xs text-mesa-error-500">{mensagem}</p>
+      )}
+    </div>
+  )
+}
+
 function CardHistorico({
   pedido,
   onRestaurar,
@@ -218,6 +267,8 @@ function CardHistorico({
           ))}
         </div>
       )}
+
+      {!cancelado && <BotaoEmitirNota pedido={pedido} />}
 
       {!cancelado && (
         <Button

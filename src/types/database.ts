@@ -16,6 +16,7 @@ export type Barraca = {
   fiscal_habilitado: boolean
   fiscal_regime_tributario: RegimeTributario | null
   fiscal_ambiente: AmbienteFiscal
+  cnpj: string | null
 }
 
 export type Item = {
@@ -97,6 +98,11 @@ export type Pedido = {
   motivo_cancelamento: string | null
   cancelado_em: string | null
   metodo_pagamento: string | null
+  nfce_status: string | null
+  nfce_chave: string | null
+  nfce_numero: string | null
+  nfce_mensagem: string | null
+  nfce_emitida_em: string | null
 }
 
 export type ItemDoPedido = {
