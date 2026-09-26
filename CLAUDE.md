@@ -144,10 +144,22 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
     sem policy de select, só via função SECURITY DEFINER — mesmo
     padrão de `barracas_senha_admin`/PIN admin), regime, ambiente
     (Homologação/Produção, default Homologação) e campos NCM/CFOP/
-    unidade por item do cardápio. **Emissão de verdade (Edge Function
-    chamando a FocusNFe, botão "Emitir nota") ainda não implementada**
-    — é o próximo passo, só depois que os dados fiscais dos itens
-    estiverem revisados.
+    unidade por item do cardápio. **Emissão de verdade implementada e
+    no ar** (2026-09-26): Edge Function `emitir-nfce` (deployada via
+    `supabase functions deploy`, usa a service role key, nunca a
+    anon) valida fiscal habilitado → CNPJ → token → itens com NCM/
+    CFOP/unidade → forma de pagamento suportada, monta o payload
+    (idempotente por `pedido_id` como `ref`) e chama a FocusNFe,
+    respeitando sempre `barraca.fiscal_ambiente` (nunca força
+    produção). Tabela de forma de pagamento confirmada na doc real
+    da FocusNFe, incluindo Pix = código 17 (Nota Técnica 2020.006).
+    Grava resultado em `pedidos.nfce_*` (nova coluna `barracas.cnpj`
+    também, gap descoberto na implementação — campo obrigatório no
+    payload que não existia em lugar nenhum do schema). Botão "Emitir
+    nota fiscal" em `CardHistorico` (Histórico). Testado com uma
+    chamada de smoke test (pedido inexistente, retornou erro
+    esperado) — **nenhuma nota foi emitida de verdade ainda**, uso
+    real por uma barraca ainda não validado ponta a ponta.
   - Estoque: item mais delicado por reverter a regra mais antiga do
     projeto. **Implementado** o mais simples definido em 2026-09-26 —
     toggle "esgotado" por item (`itens.esgotado`, editável em Ajustes,
