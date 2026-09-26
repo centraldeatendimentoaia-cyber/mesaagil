@@ -4,8 +4,11 @@ import clsx from 'clsx'
 import { useBarraca } from '../hooks/useBarraca'
 import { useSincronizacao } from '../hooks/useSincronizacao'
 import { useRealtimePedidos } from '../hooks/useRealtimePedidos'
+import { useAssinaturaBarraca } from '../hooks/useAssinaturaBarraca'
 import { NaoEncontrado } from '../pages/NaoEncontrado'
+import { Planos } from '../pages/Planos'
 import { BarraNavegacao } from '../components/BarraNavegacao'
+import { BannerTrial } from '../components/BannerTrial'
 import { BarracaContext, SincronizacaoContext } from './contextoBarraca'
 import { PedidosContext } from './contextoPedidos'
 
@@ -15,11 +18,13 @@ export function LayoutBarraca() {
   const sincronizacao = useSincronizacao()
   const { pedidos, status, pedidosCarregados, aplicarPatchPedido, aplicarPatchItem } =
     useRealtimePedidos(barraca?.id ?? '')
+  const { assinatura } = useAssinaturaBarraca(slug ?? '')
   const location = useLocation()
   const emTelaDeChamada = location.pathname.endsWith('/chamada')
   const emCozinha = location.pathname.endsWith('/cozinha')
   const emConfirmarPedido = location.pathname.endsWith('/confirmar')
   const emDashboard = location.pathname === `/${slug}` || location.pathname === `/${slug}/`
+  const emPlanos = location.pathname.endsWith('/planos')
   // Regra inviolável do design system (seção 2.2): o glow atmosférico nunca
   // aparece na Cozinha (atrapalha a leitura do semáforo) nem na Chamada
   // (que já tem fundo escuro absoluto próprio, com layout fora daqui).
@@ -70,19 +75,28 @@ export function LayoutBarraca() {
     aplicarPatchItem,
   }
 
+  // Fail-open enquanto a assinatura ainda não voltou (nunca bloqueia a
+  // tela esperando rede — regra técnica inviolável do app): só barra
+  // quando já sabemos de verdade que o acesso caiu. A escrita continua
+  // protegida no servidor (RLS) mesmo nesse intervalo.
+  const acessoBloqueado = assinatura !== null && !assinatura.tem_acesso && !emPlanos
+  const mostraBannerTrial =
+    !emPlanos && !emCozinha && !emTelaDeChamada && assinatura?.eh_dono && assinatura.status === 'trialing'
+
   return (
     <BarracaContext.Provider value={barraca}>
       <SincronizacaoContext.Provider value={sincronizacao}>
         <PedidosContext.Provider value={estadoPedidos}>
+          {mostraBannerTrial && <BannerTrial assinatura={assinatura} />}
           <div
             className={clsx(
               'min-h-dvh',
               semGradiente ? 'bg-mesa-bg-kanban' : '[background:var(--mesa-gradient-atmosphere)]',
             )}
           >
-            <Outlet />
+            {acessoBloqueado ? <Planos /> : <Outlet />}
           </div>
-          {!semBottomNav && <BarraNavegacao />}
+          {!semBottomNav && !acessoBloqueado && <BarraNavegacao />}
         </PedidosContext.Provider>
       </SincronizacaoContext.Provider>
     </BarracaContext.Provider>

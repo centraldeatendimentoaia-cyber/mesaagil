@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { AtSign, KeyRound, LogIn, Lock, Mail } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input'
 
 export function Login() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { entrar } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -27,6 +28,16 @@ export function Login() {
     if (resultado.erro) {
       setErro(resultado.erro)
       setEntrando(false)
+      return
+    }
+
+    // /assinar redireciona pro login preservando plano/ciclo — depois de
+    // logar, volta exatamente pra lá em vez de cair na tela padrão.
+    const voltar = params.get('voltar')
+    if (voltar) {
+      const resto = new URLSearchParams(params)
+      resto.delete('voltar')
+      navigate(`${voltar}?${resto.toString()}`)
       return
     }
 
@@ -133,7 +144,10 @@ export function Login() {
 
         <p className="mt-6 text-center text-sm text-mesa-text-secondary">
           Não tem conta?{' '}
-          <Link to="/cadastro" className="font-medium text-mesa-teal-700 dark:text-mesa-teal-300">
+          <Link
+            to={`/cadastro?${params.toString()}`}
+            className="font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+          >
             Criar conta
           </Link>
         </p>

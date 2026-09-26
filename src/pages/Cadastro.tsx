@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Mail } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'
@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input'
 
 export function Cadastro() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { cadastrar } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -43,6 +44,17 @@ export function Cadastro() {
       return
     }
 
+    // /assinar redireciona pro cadastro preservando plano/ciclo — depois
+    // de criar a conta, volta exatamente pra lá em vez de cair na tela
+    // padrão (só quando não precisa confirmar e-mail antes).
+    const voltar = params.get('voltar')
+    if (voltar) {
+      const resto = new URLSearchParams(params)
+      resto.delete('voltar')
+      navigate(`${voltar}?${resto.toString()}`)
+      return
+    }
+
     navigate('/')
   }
 
@@ -60,7 +72,7 @@ export function Cadastro() {
             Mandamos um link de confirmação pra <strong>{email}</strong>. Toca nele e volta aqui
             pra entrar.
           </p>
-          <Button size="xl" className="mt-8 w-full" onClick={() => navigate('/login')}>
+          <Button size="xl" className="mt-8 w-full" onClick={() => navigate(`/login?${params.toString()}`)}>
             Ir para o login
           </Button>
         </div>

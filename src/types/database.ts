@@ -76,3 +76,44 @@ export type ItemDoPedido = {
 }
 
 export type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
+
+export type StatusAssinatura = 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired'
+export type PlanoAssinatura = 'essencial' | 'pro'
+export type CicloAssinatura = 'mensal' | 'anual'
+
+/** Linha crua de assinaturas — retorno de minha_assinatura() (RPC), pra
+ * tela "Minha assinatura". Plan/cycle podem ser null no expired "de
+ * nascença" (quem já tinha usado o trial com esse e-mail antes). */
+export type Assinatura = {
+  usuario_id: string
+  status: StatusAssinatura
+  plan: PlanoAssinatura | null
+  cycle: CicloAssinatura | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  grace_until: string | null
+  kirvano_customer_email: string | null
+  kirvano_sale_id: string | null
+  kirvano_offer_id: string | null
+  canceled_at: string | null
+  updated_at: string
+}
+
+/** Retorno de assinatura_da_barraca(slug) — status da assinatura do DONO
+ * da barraca, não do usuário logado (que pode ser um funcionário). */
+export type AssinaturaBarraca = {
+  status: StatusAssinatura | null
+  plano: PlanoAssinatura | null
+  ciclo: CicloAssinatura | null
+  tem_acesso: boolean
+  dias_restantes_trial: number | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  eh_dono: boolean
+}
+
+export type OfertaPublica = {
+  plano: PlanoAssinatura
+  ciclo: CicloAssinatura
+  checkout_url: string
+}

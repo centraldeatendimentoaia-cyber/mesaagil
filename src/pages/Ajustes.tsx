@@ -10,6 +10,7 @@ import {
   Camera,
   Check,
   ChevronLeft,
+  ChevronRight,
   CreditCard,
   Image,
   LogOut,
@@ -19,6 +20,7 @@ import {
   Palette,
   Share2,
   ShieldCheck,
+  Sparkles,
   Store,
   Sun,
   Timer,
@@ -32,6 +34,7 @@ import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
+import { useAssinaturaBarraca } from '../hooks/useAssinaturaBarraca'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { apagarFotoItem, enviarFotoItem } from '../lib/fotoItem'
 import { apagarLogoBarraca, enviarLogoBarraca } from '../lib/logoBarraca'
@@ -1799,6 +1802,45 @@ function Rodape({ barracaId }: { barracaId: string }) {
   )
 }
 
+// Só aparece pro dono — funcionário não assina nada, é liberado/bloqueado
+// pelo status do dono da barraca (ver assinatura_da_barraca no banco).
+function SecaoAssinatura({ slug }: { slug: string }) {
+  const navigate = useNavigate()
+  const { assinatura } = useAssinaturaBarraca(slug)
+
+  if (!assinatura?.eh_dono) return null
+
+  const rotuloStatus =
+    assinatura.status === 'trialing'
+      ? 'Teste grátis'
+      : assinatura.status === 'active'
+        ? 'Ativa'
+        : assinatura.status === 'past_due'
+          ? 'Pagamento pendente'
+          : assinatura.status === 'canceled'
+            ? 'Cancelada'
+            : 'Assinar agora'
+
+  return (
+    <section className="flex flex-col gap-1">
+      <RotuloSecao icone={Sparkles}>Assinatura</RotuloSecao>
+      <button
+        type="button"
+        onClick={() => navigate(`/${slug}/assinatura`)}
+        className="flex w-full items-center justify-between rounded-mesa-lg border border-mesa-border-default bg-mesa-surface px-4 py-3.5 text-left hover:bg-[var(--mesa-state-hover-bg)]"
+      >
+        <span>
+          <span className="block text-sm font-medium text-mesa-text-primary">
+            {assinatura.plano === 'pro' ? 'Plano Pro' : assinatura.plano === 'essencial' ? 'Plano Essencial' : 'MesaAgil'}
+          </span>
+          <span className="block text-xs text-mesa-text-secondary">{rotuloStatus}</span>
+        </span>
+        <ChevronRight className="size-5 shrink-0 text-mesa-text-tertiary" aria-hidden />
+      </button>
+    </section>
+  )
+}
+
 export function Ajustes() {
   const barraca = useBarracaAtual()
 
@@ -1817,6 +1859,7 @@ export function Ajustes() {
         </div>
 
         <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
+          <SecaoAssinatura slug={barraca.slug} />
           <SecaoIdentidade barraca={barraca} />
           <SecaoCardapio barracaId={barraca.id} />
           <SecaoFaixas barraca={barraca} />
