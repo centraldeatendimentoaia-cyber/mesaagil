@@ -33,7 +33,10 @@ const realceTatil = '[box-shadow:inset_0_1px_0_rgba(255,255,255,0.3)]'
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    `rounded-mesa-lg bg-mesa-orange-500 text-white ${realceTatil} hover:bg-mesa-orange-600 active:bg-mesa-orange-700 ` +
+    // Mostarda é clara demais pra sustentar texto branco (regra da
+    // IDV "Sai aê": texto sobre mostarda é sempre tinta) — daí o
+    // neutral-900 fixo em vez de text-white aqui.
+    `rounded-mesa-lg bg-mesa-orange-500 text-mesa-neutral-900 ${realceTatil} hover:bg-mesa-orange-600 active:bg-mesa-orange-700 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-primary)]',
   confirm:
     `rounded-mesa-lg bg-mesa-teal-500 text-white ${realceTatil} hover:bg-mesa-teal-600 active:bg-mesa-teal-700 ` +

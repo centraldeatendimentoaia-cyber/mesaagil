@@ -1,11 +1,13 @@
 /* =============================================================
-   MesaAgil — Design Tokens (Tailwind v4)
+   Sai aê (ex-MesaAgil) — Design Tokens (Tailwind v4)
 
-   Fonte da verdade: redesign_ux_ui_app/ (specs DESIGN.md + mockups
-   .svg do redesign "Speed Bento POS", 2026-09-18). O design system
-   anterior (docs/design-system/) foi descontinuado e removido —
-   cor de marca, tipografia e arredondamento documentados ali não
-   valem mais, ver CLAUDE.md "Regras de tema" pro resumo atual.
+   Fonte da verdade: redesign_ux_ui_app/saiae/DESIGN.md (rebrand "Sai
+   aê", 2026-09-26). Redesign anterior "Speed Bento POS"
+   (pasta redesign_ux_ui_app/speed_bento_pos_.../DESIGN.md,
+   2026-09-18) e o design system antes dele (docs/design-system/) foram
+   descontinuados — cor de marca, tipografia e arredondamento
+   documentados ali não valem mais, ver CLAUDE.md "Regras de tema"
+   pro resumo atual.
 
    Todo token usa o prefixo "mesa" para não colidir com a paleta
    nativa do Tailwind. Os tokens que o Tailwind v4 sabe transformar
@@ -20,20 +22,22 @@
    ============================================================= */
 
 @theme {
-  /* ---------- Âmbar (marca — comando) ----------
-     Redesign "Speed Bento POS" (redesign_ux_ui_app/): substitui o
-     laranja pelo âmbar do design system novo (#F59E0B/#D97706),
-     mesmo papel semântico de antes (ação primária / comando). */
-  --color-mesa-orange-50:  #FFFBEB;
-  --color-mesa-orange-100: #FEF3C7;
-  --color-mesa-orange-200: #FDE68A;
-  --color-mesa-orange-300: #FCD34D;
-  --color-mesa-orange-400: #FBBF24;
-  --color-mesa-orange-500: #F59E0B;
-  --color-mesa-orange-600: #D97706;
-  --color-mesa-orange-700: #B45309;
-  --color-mesa-orange-800: #92400E;
-  --color-mesa-orange-900: #78350F;
+  /* ---------- Mostarda (marca — comando) ----------
+     Rebrand "Sai aê" (redesign_ux_ui_app/saiae/DESIGN.md, 2026-09-26):
+     substitui o âmbar do "Speed Bento POS" pela escala Mostarda da
+     nova IDV (#FFC21A), mesmo papel semântico de antes (ação primária
+     / comando) — nome do token (mesa-orange-*) mantido de propósito
+     pra não precisar tocar em cada componente que o referencia. */
+  --color-mesa-orange-50:  #FFF8E1;
+  --color-mesa-orange-100: #FFEDB3;
+  --color-mesa-orange-200: #FFE080;
+  --color-mesa-orange-300: #FFD34D;
+  --color-mesa-orange-400: #FFCA33;
+  --color-mesa-orange-500: #FFC21A;
+  --color-mesa-orange-600: #E6A800;
+  --color-mesa-orange-700: #B38300;
+  --color-mesa-orange-800: #805E00;
+  --color-mesa-orange-900: #4D3800;
 
   /* ---------- Esmeralda (marca — confirmação) ----------
      Substitui o teal pelo verde-esmeralda do redesign (#10B981/
@@ -62,31 +66,35 @@
   --color-mesa-neutral-800: #1E293B;
   --color-mesa-neutral-900: #0F172A;
 
-  /* ---------- Semânticas ---------- */
-  --color-mesa-success-50:  #ECFDF5;
-  --color-mesa-success-500: #10B981;
-  --color-mesa-success-700: #047857;
+  /* ---------- Semânticas ----------
+     Rebrand "Sai aê" (2026-09-26): valores bg/texto/principal vêm
+     direto das cores operacionais da nova IDV (No prazo/Atenção/
+     Atrasado/Info) — mesmo papel semântico de sempre, só o hex mudou. */
+  --color-mesa-success-50:  #E3F7EC;
+  --color-mesa-success-500: #1FBF6A;
+  --color-mesa-success-700: #0E7A40;
 
-  --color-mesa-warning-50:  #FFFBEB;
-  --color-mesa-warning-500: #F59E0B;
-  --color-mesa-warning-700: #B45309;
+  --color-mesa-warning-50:  #FFF0E0;
+  --color-mesa-warning-500: #FF8A1C;
+  --color-mesa-warning-700: #A34E00;
 
-  --color-mesa-error-50:  #FEF2F2;
-  --color-mesa-error-500: #EF4444;
-  --color-mesa-error-700: #B91C1C;
+  --color-mesa-error-50:  #FDE7E4;
+  --color-mesa-error-500: #F0412F;
+  --color-mesa-error-700: #B22514;
 
-  --color-mesa-info-50:  #E5F2FA;
-  --color-mesa-info-500: #3498DB;
-  --color-mesa-info-700: #1F6FAA;
+  --color-mesa-info-50:  #E6F0FE;
+  --color-mesa-info-500: #2F7BF5;
+  --color-mesa-info-700: #1A4FA8;
 
   /* ---------- Semáforo operacional (inviolável) ----------
      Cores exclusivas da Cozinha, nunca reutilizadas em outro
      contexto. NÃO variam entre light/dark — por isso não são
      redeclaradas no bloco .dark mais abaixo. Realinhadas ao mesmo
-     verde/âmbar/vermelho do redesign, mesmos 3 estados de sempre. */
-  --color-mesa-kanban-green:  #10B981;
-  --color-mesa-kanban-yellow: #F59E0B;
-  --color-mesa-kanban-red:    #EF4444;
+     verde/âmbar/vermelho da IDV "Sai aê" (2026-09-26), mesmos 3
+     estados de sempre, mesmo hex das semânticas acima. */
+  --color-mesa-kanban-green:  #1FBF6A;
+  --color-mesa-kanban-yellow: #FF8A1C;
+  --color-mesa-kanban-red:    #F0412F;
 
   /* ---------- Métodos de pagamento ---------- */
   --color-mesa-payment-cash-bg:    #E9F9F5;
@@ -128,7 +136,9 @@
   --color-mesa-text-tertiary:   var(--color-mesa-neutral-300);
   --color-mesa-text-disabled:   var(--color-mesa-neutral-300);
   --color-mesa-text-inverse:    #FFFFFF;
-  --color-mesa-text-on-brand:   #FFFFFF;
+  /* Mostarda é clara demais pra sustentar texto branco (regra da IDV
+     "Sai aê": texto sobre mostarda é sempre tinta). */
+  --color-mesa-text-on-brand:   var(--color-mesa-neutral-900);
   --color-mesa-text-on-confirm: #FFFFFF;
   --color-mesa-text-link:       var(--color-mesa-teal-700);
 
@@ -153,7 +163,7 @@
   --shadow-mesa-1:       0 1px 3px rgba(15, 23, 42, 0.04);
   --shadow-mesa-2:       0 4px 12px -2px rgba(15, 23, 42, 0.08);
   --shadow-mesa-3:       0 12px 28px -4px rgba(15, 23, 42, 0.12);
-  --shadow-mesa-glow:    0 0 40px rgba(245, 158, 11, 0.25);
+  --shadow-mesa-glow:    0 0 40px rgba(255, 194, 26, 0.25);
   --shadow-mesa-nav-top: 0 -1px 0 rgba(15, 23, 42, 0.05);
 
   /* ---------- Motion — easing (utilitário ease-mesa-*) ---------- */
@@ -177,12 +187,13 @@
   --spacing-mesa-20: 80px;
   --spacing-mesa-24: 96px;
 
-  /* ---------- Tipografia — família (redesign "Speed Bento POS") ----------
-     Hanken Grotesk pro corpo/UI, Space Grotesk pra títulos/números
-     grandes, JetBrains Mono pra valores monetários/rótulos técnicos.
-     Carregadas via Google Fonts em index.html. */
-  --font-mesa-sans:    'Hanken Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mesa-display: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ---------- Tipografia — família (rebrand "Sai aê", 2026-09-26) ----------
+     Figtree pro corpo/UI, Outfit pra títulos/números grandes —
+     substitui Hanken Grotesk/Space Grotesk do redesign "Speed Bento
+     POS" anterior. JetBrains Mono mantido pra valores monetários/
+     rótulos técnicos. Carregadas via Google Fonts em index.html. */
+  --font-mesa-sans:    'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mesa-display: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mesa-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -262,7 +273,7 @@
   --mesa-state-selected-bg: var(--color-mesa-teal-50);
 
   /* Focus ring (usar como box-shadow) */
-  --mesa-focus-ring-primary: 0 0 0 3px rgba(245, 158, 11, 0.30);
+  --mesa-focus-ring-primary: 0 0 0 3px rgba(255, 194, 26, 0.30);
   --mesa-focus-ring-confirm: 0 0 0 3px rgba(16, 185, 129, 0.30);
   --mesa-focus-ring-danger:  0 0 0 3px rgba(239, 68, 68, 0.30);
 

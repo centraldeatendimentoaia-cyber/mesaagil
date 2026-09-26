@@ -14,7 +14,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   warning: 'bg-mesa-orange-50 text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400',
   danger: 'bg-mesa-error-50 text-mesa-error-700 dark:bg-mesa-error-500/15 dark:text-mesa-error-400',
   info: 'bg-mesa-info-50 text-mesa-info-700 dark:bg-mesa-info-500/15 dark:text-mesa-info-400',
-  highlight: 'bg-mesa-orange-500 text-white',
+  highlight: 'bg-mesa-orange-500 text-mesa-neutral-900',
   successOutline: 'border border-mesa-teal-500 bg-transparent text-mesa-teal-700 dark:text-mesa-teal-300',
 }
 

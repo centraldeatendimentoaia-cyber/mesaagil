@@ -69,7 +69,7 @@ function CardDashboard({
       {!!badge && (
         <span
           aria-hidden
-          className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-mesa-full bg-mesa-orange-500 px-1.5 text-xs font-bold leading-none text-white"
+          className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-mesa-full bg-mesa-orange-500 px-1.5 text-xs font-bold leading-none text-mesa-neutral-900"
         >
           {badge > 9 ? '9+' : badge}
         </span>

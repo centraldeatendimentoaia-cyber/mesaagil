@@ -126,7 +126,7 @@ function CardItemCardapio({
           </span>
         )}
         {posicaoPopular !== null && (
-          <span className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-mesa-1">
+          <span className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-mesa-neutral-900 shadow-mesa-1">
             <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
             {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
           </span>
@@ -225,7 +225,7 @@ function CardItemCardapioGrade({
           </span>
         )}
         {posicaoPopular !== null && (
-          <span className="absolute left-2 top-2 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-mesa-1">
+          <span className="absolute left-2 top-2 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-mesa-neutral-900 shadow-mesa-1">
             <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
             {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
           </span>

@@ -62,7 +62,7 @@ function minutosEntre(inicioIso: string, fimIso: string): number {
   return Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
 }
 
-const COR_CABECALHO = 'FFF59E0B' // mesa-orange-500
+const COR_CABECALHO = 'FFFFC21A' // mesa-orange-500 (Sai aê / mostarda)
 const COR_FUNDO_CANCELADO = 'FFFEF2F2' // mesa-error-50
 const COR_TEXTO_CANCELADO = 'FFB91C1C' // mesa-error-700
 
@@ -85,7 +85,9 @@ async function gerarPlanilha(pedidos: PedidoComItens[]): Promise<ArrayBuffer> {
   ]
 
   const linhaCabecalho = planilha.getRow(1)
-  linhaCabecalho.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  // Mostarda é clara demais pra sustentar texto branco (regra da IDV
+  // "Sai aê": texto sobre mostarda é sempre tinta).
+  linhaCabecalho.font = { bold: true, color: { argb: 'FF18171C' } }
   linhaCabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_CABECALHO } }
   linhaCabecalho.alignment = { vertical: 'middle' }
   linhaCabecalho.height = 20
