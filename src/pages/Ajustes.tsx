@@ -28,7 +28,7 @@ import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
 import { BottomSheet } from '../components/ui/BottomSheet'
-import type { Barraca, Categoria, Item } from '../types/database'
+import type { AmbienteFiscal, Barraca, Categoria, Item, RegimeTributario } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
@@ -179,6 +179,9 @@ function BottomSheetDetalhesItem({
 }) {
   const [descricao, setDescricao] = useState(() => item?.descricao ?? '')
   const [fotoUrl, setFotoUrl] = useState<string | null>(() => item?.foto_url ?? null)
+  const [ncm, setNcm] = useState(() => item?.ncm ?? '')
+  const [cfop, setCfop] = useState(() => item?.cfop ?? '')
+  const [unidadeComercial, setUnidadeComercial] = useState(() => item?.unidade_comercial ?? '')
   const [enviandoFoto, setEnviandoFoto] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -217,7 +220,13 @@ function BottomSheetDetalhesItem({
     setSalvando(true)
     setErro(null)
 
-    const alteracoes = { foto_url: fotoUrl, descricao: descricao.trim() || null }
+    const alteracoes = {
+      foto_url: fotoUrl,
+      descricao: descricao.trim() || null,
+      ncm: ncm.trim() || null,
+      cfop: cfop.trim() || null,
+      unidade_comercial: unidadeComercial.trim() || null,
+    }
     const { error } = await supabase.from('itens').update(alteracoes).eq('id', item.id)
 
     setSalvando(false)
@@ -284,6 +293,38 @@ function BottomSheetDetalhesItem({
           placeholder="Ingredientes, tamanho, o que vem no prato..."
           rows={3}
         />
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mesa-text-secondary">
+            Dados fiscais (opcional, pra emissão de nota)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              label="NCM"
+              size="sm"
+              value={ncm}
+              onChange={(e) => setNcm(e.target.value)}
+              placeholder="Ex.: 21069090"
+              className="w-32"
+            />
+            <Input
+              label="CFOP"
+              size="sm"
+              value={cfop}
+              onChange={(e) => setCfop(e.target.value)}
+              placeholder="Ex.: 5101"
+              className="w-28"
+            />
+            <Input
+              label="Unidade"
+              size="sm"
+              value={unidadeComercial}
+              onChange={(e) => setUnidadeComercial(e.target.value)}
+              placeholder="Ex.: un"
+              className="w-24"
+            />
+          </div>
+        </div>
 
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
 
@@ -568,6 +609,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
     }
   }
 
+  async function alternarEsgotado(item: Item) {
+    const novoEsgotado = !item.esgotado
+    setItens((atual) => atual.map((i) => (i.id === item.id ? { ...i, esgotado: novoEsgotado } : i)))
+    const { error } = await supabase.from('itens').update({ esgotado: novoEsgotado }).eq('id', item.id)
+
+    if (error) {
+      setItens((atual) => atual.map((i) => (i.id === item.id ? { ...i, esgotado: item.esgotado } : i)))
+    }
+  }
+
   function pedirExclusao(item: Item) {
     setItemParaExcluir(item)
     setNomeExclusao(item.nome)
@@ -735,6 +786,12 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                       >
                         ⠿
                       </span>
+                      <span className="text-xs text-mesa-text-secondary">Esgotado</span>
+                      <Toggle
+                        checked={item.esgotado}
+                        onChange={() => alternarEsgotado(item)}
+                        aria-label={`${item.nome} esgotado`}
+                      />
                       <span className="text-xs text-mesa-text-secondary">
                         {item.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -1515,6 +1572,203 @@ function SecaoAparencia() {
   )
 }
 
+const REGIMES_TRIBUTARIOS: { valor: RegimeTributario; rotulo: string }[] = [
+  { valor: 'simples_nacional', rotulo: 'Simples Nacional' },
+  { valor: 'mei', rotulo: 'MEI' },
+]
+
+const AMBIENTES_FISCAIS: { valor: AmbienteFiscal; rotulo: string }[] = [
+  { valor: 'homologacao', rotulo: 'Homologação (teste)' },
+  { valor: 'producao', rotulo: 'Produção' },
+]
+
+function BottomSheetTokenFiscal({
+  barracaId,
+  open,
+  onClose,
+  onSucesso,
+}: {
+  barracaId: string
+  open: boolean
+  onClose: () => void
+  onSucesso: () => void
+}) {
+  const [token, setToken] = useState('')
+  const [processando, setProcessando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+
+  function fechar() {
+    setToken('')
+    setErro(null)
+    onClose()
+  }
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    if (processando) return
+
+    if (!token.trim()) {
+      setErro('Cole o token gerado no painel da FocusNFe')
+      return
+    }
+
+    setProcessando(true)
+    setErro(null)
+
+    const { error } = await supabase.rpc('definir_token_fiscal', {
+      p_barraca_id: barracaId,
+      p_token: token.trim(),
+    })
+
+    setProcessando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    fechar()
+    onSucesso()
+  }
+
+  return (
+    <BottomSheet open={open} onClose={fechar} aria-label="Token da FocusNFe">
+      <h2 className="text-lg font-semibold text-mesa-text-primary">Token da FocusNFe</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Gerado no painel da FocusNFe depois de cadastrar sua empresa lá. Fica guardado só pra uso do
+        sistema — não é mostrado de novo depois de salvo.
+      </p>
+
+      <form onSubmit={salvar} className="mt-4 flex flex-col gap-4">
+        <Input
+          label="Token"
+          type="password"
+          autoComplete="off"
+          autoFocus
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+        <Button
+          type="submit"
+          size="xl"
+          icon={<Icone nome="check" size={20} />}
+          loading={processando}
+          className="w-full"
+        >
+          Salvar
+        </Button>
+      </form>
+    </BottomSheet>
+  )
+}
+
+/** Configuração fiscal (CLAUDE.md, roadmap 2026-09-26): FocusNFe como
+ * provedor fiscal-as-a-service. Certificado digital e CSC são
+ * cadastrados pelo dono direto no site da FocusNFe — o MesaAgil nunca
+ * guarda o certificado, só o token da empresa. Emissão de verdade é
+ * rodada futura; aqui só a configuração. */
+function SecaoFiscal({ barraca }: { barraca: Barraca }) {
+  const [habilitado, setHabilitado] = useState(barraca.fiscal_habilitado)
+  const [regime, setRegime] = useState(barraca.fiscal_regime_tributario)
+  const [ambiente, setAmbiente] = useState(barraca.fiscal_ambiente)
+  const [tokenConfigurado, setTokenConfigurado] = useState(false)
+  const [sheetTokenAberto, setSheetTokenAberto] = useState(false)
+
+  useEffect(() => {
+    let cancelado = false
+
+    supabase
+      .rpc('token_fiscal_configurado', { p_barraca_id: barraca.id })
+      .then(({ data, error }) => {
+        if (cancelado || error) return
+        setTokenConfigurado(Boolean(data))
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
+  async function alternarHabilitado(valor: boolean) {
+    setHabilitado(valor)
+    await supabase.from('barracas').update({ fiscal_habilitado: valor }).eq('id', barraca.id)
+  }
+
+  async function escolherRegime(valor: RegimeTributario) {
+    setRegime(valor)
+    await supabase.from('barracas').update({ fiscal_regime_tributario: valor }).eq('id', barraca.id)
+  }
+
+  async function escolherAmbiente(valor: AmbienteFiscal) {
+    setAmbiente(valor)
+    await supabase.from('barracas').update({ fiscal_ambiente: valor }).eq('id', barraca.id)
+  }
+
+  return (
+    <section>
+      <RotuloSecao icone="receipt_long">Fiscal</RotuloSecao>
+      <Card>
+        <p className="text-sm text-mesa-text-secondary">
+          Crie sua conta e suba o certificado digital direto no site da FocusNFe — o MesaAgil nunca
+          guarda o certificado, só o token gerado lá.
+        </p>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-base text-mesa-text-primary">Fiscal habilitado</span>
+          <Toggle checked={habilitado} onChange={alternarHabilitado} aria-label="Fiscal habilitado" />
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-mesa-text-primary">Regime tributário</p>
+          <div className="flex flex-wrap gap-1.5">
+            {REGIMES_TRIBUTARIOS.map((r) => (
+              <Chip key={r.valor} checked={regime === r.valor} onClick={() => escolherRegime(r.valor)}>
+                {r.rotulo}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-mesa-text-primary">Ambiente</p>
+          <div className="flex flex-wrap gap-1.5">
+            {AMBIENTES_FISCAIS.map((a) => (
+              <Chip key={a.valor} checked={ambiente === a.valor} onClick={() => escolherAmbiente(a.valor)}>
+                {a.rotulo}
+              </Chip>
+            ))}
+          </div>
+          {ambiente === 'producao' && (
+            <div className="mt-3">
+              <AvisoInline>Notas emitidas em produção têm validade fiscal real.</AvisoInline>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-base text-mesa-text-primary">Token da FocusNFe</p>
+            <p className="text-sm text-mesa-text-secondary">
+              {tokenConfigurado ? 'Token configurado' : 'Nenhum token configurado'}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setSheetTokenAberto(true)}>
+            {tokenConfigurado ? 'Trocar' : 'Definir'}
+          </Button>
+        </div>
+      </Card>
+
+      <BottomSheetTokenFiscal
+        barracaId={barraca.id}
+        open={sheetTokenAberto}
+        onClose={() => setSheetTokenAberto(false)}
+        onSucesso={() => setTokenConfigurado(true)}
+      />
+    </section>
+  )
+}
+
 const PIN_INVALIDO = 'O PIN precisa ter exatamente 4 números'
 
 function BottomSheetSenhaAdmin({
@@ -1842,6 +2096,7 @@ export function Ajustes() {
           <SecaoCardapio barracaId={barraca.id} />
           <SecaoFaixas barraca={barraca} />
           <SecaoPagamento barraca={barraca} />
+          <SecaoFiscal barraca={barraca} />
           <SecaoAparencia />
           <Rodape barracaId={barraca.id} />
         </div>

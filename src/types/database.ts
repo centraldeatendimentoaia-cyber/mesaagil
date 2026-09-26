@@ -1,3 +1,6 @@
+export type RegimeTributario = 'simples_nacional' | 'mei'
+export type AmbienteFiscal = 'homologacao' | 'producao'
+
 export type Barraca = {
   id: string
   nome: string
@@ -10,6 +13,9 @@ export type Barraca = {
   metodos_pagamento_ativos: string[]
   taxa_debito_bps: number | null
   taxa_credito_bps: number | null
+  fiscal_habilitado: boolean
+  fiscal_regime_tributario: RegimeTributario | null
+  fiscal_ambiente: AmbienteFiscal
 }
 
 export type Item = {
@@ -22,6 +28,10 @@ export type Item = {
   categoria_id: string | null
   foto_url: string | null
   descricao: string | null
+  ncm: string | null
+  cfop: string | null
+  unidade_comercial: string | null
+  esgotado: boolean
 }
 
 export type Categoria = {

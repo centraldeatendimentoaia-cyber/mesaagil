@@ -124,7 +124,9 @@ function CardItemCardapio({
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-base font-semibold text-mesa-text-primary">{item.nome}</p>
           <div className="shrink-0">
-            {selecionado ? (
+            {item.esgotado ? (
+              <span className="text-xs font-medium text-mesa-text-tertiary">Esgotado</span>
+            ) : selecionado ? (
               <div className="flex items-center gap-1 rounded-mesa-full bg-mesa-neutral-100 py-1 pr-1 dark:bg-mesa-neutral-800">
                 <BotaoStepper icone="remove" onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
                 <span className="min-w-[1.5ch] text-center font-mesa-display text-base font-bold text-mesa-text-primary">
@@ -228,7 +230,11 @@ function CardItemCardapioGrade({
       </p>
 
       <div className="mt-3">
-        {selecionado ? (
+        {item.esgotado ? (
+          <div className="flex h-11 items-center justify-center">
+            <span className="text-xs font-medium text-mesa-text-tertiary">Esgotado</span>
+          </div>
+        ) : selecionado ? (
           <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-neutral-100 py-1.5 dark:bg-mesa-neutral-800">
             <BotaoStepper icone="remove" onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
             <span className="min-w-[1.5ch] text-center font-mesa-display text-base font-bold text-mesa-text-primary">
