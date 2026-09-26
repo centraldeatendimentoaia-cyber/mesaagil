@@ -1,10 +1,10 @@
-# Contexto: assinatura Kirvano + teste grátis de 3 dias (MesaAgil)
+# Contexto: assinatura Kirvano + teste grátis de 3 dias (Sai aê)
 
-> Cole este arquivo como contexto na IA/dev que vai implementar. Ele descreve **o que** o sistema precisa fazer. A stack do app (banco, auth, onde roda o backend) deve ser adaptada ao que o MesaAgil já usa hoje.
+> Cole este arquivo como contexto na IA/dev que vai implementar. Ele descreve **o que** o sistema precisa fazer. A stack do app (banco, auth, onde roda o backend) deve ser adaptada ao que o Sai aê já usa hoje.
 
 ## 1. Visão geral
 
-- **Produto:** MesaAgil, uma comanda digital (caixa, cozinha e chamada de senha). O app roda em `https://mesaagil.pages.dev` e tem versão Android.
+- **Produto:** Sai aê, uma comanda digital (caixa, cozinha e chamada de senha). O app roda em `https://saiae.com.br` e tem versão Android.
 - **Cobrança:** Kirvano, com um produto de assinatura e 4 ofertas.
 - **Teste grátis:** 3 dias, controlado **pelo app** (sem cartão e sem nada na Kirvano).
 - **Fonte da verdade do acesso:** o banco do app. A Kirvano só avisa por **webhook**, e o app atualiza o status da conta.
@@ -105,14 +105,14 @@ Faça a checagem **no servidor** (API/regras do banco), não só na interface.
 
 O jeito mais seguro é o cliente **sempre ter conta antes do checkout**.
 
-1. Os botões de plano na LP levam para `https://mesaagil.pages.dev/assinar?plano=pro&ciclo=anual` (o `signupUrl` da LP já monta esses parâmetros).
+1. Os botões de plano na LP levam para `https://saiae.com.br/assinar?plano=pro&ciclo=anual` (o `signupUrl` da LP já monta esses parâmetros).
 2. A rota `/assinar` funciona assim:
    - sem login → cadastro/login e depois volta para `/assinar` com os mesmos parâmetros;
    - com login → redireciona para o `checkout_url` da oferta com:
      - `?src=<account_id>` (a Kirvano devolve `utm.src` no webhook, e é assim que o app acha a conta);
      - o e-mail preenchido, se a Kirvano aceitar parâmetro de e-mail no checkout (**confirmar no painel**).
-3. O botão "Teste grátis" da LP (`trialUrl`) leva para `https://mesaagil.pages.dev/cadastro`.
-4. Depois do pagamento, a página de obrigado da Kirvano leva para `https://mesaagil.pages.dev/assinatura?status=processando`. Essa tela consulta o servidor a cada poucos segundos até o webhook chegar. O acesso **nunca** é liberado só pelo redirecionamento.
+3. O botão "Teste grátis" da LP (`trialUrl`) leva para `https://saiae.com.br/cadastro`.
+4. Depois do pagamento, a página de obrigado da Kirvano leva para `https://saiae.com.br/assinatura?status=processando`. Essa tela consulta o servidor a cada poucos segundos até o webhook chegar. O acesso **nunca** é liberado só pelo redirecionamento.
 
 **Como achar a conta no webhook, em ordem:** `utm.src` (account_id) → `customer.email` igual a `owner_email` ou `kirvano_customer_email`. Se não achar, grave o evento com `error = 'conta_nao_encontrada'` e alerte o admin. Não crie uma conta automaticamente.
 
@@ -185,7 +185,7 @@ O jeito mais seguro é o cliente **sempre ter conta antes do checkout**.
 ## 12. Mudanças na landing page (`MA_ASSETS`)
 
 ```js
-trialUrl:  'https://mesaagil.pages.dev/cadastro',
-signupUrl: 'https://mesaagil.pages.dev/assinar',   // a LP já adiciona ?plano=&ciclo=
+trialUrl:  'https://saiae.com.br/cadastro',
+signupUrl: 'https://saiae.com.br/assinar',   // a LP já adiciona ?plano=&ciclo=
 emBreve:   false                                    // só quando o fluxo estiver no ar
 ```

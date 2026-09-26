@@ -22,7 +22,7 @@ const PERIODOS: { valor: TipoFiltroRelatorio; rotulo: string }[] = [
 ]
 
 /**
- * Hub desktop-only do MesaAgil (ver "Roadmap de produto" no CLAUDE.md,
+ * Hub desktop-only do Sai aê (ver "Roadmap de produto" no CLAUDE.md,
  * decisão de 2026-09-26): reúne Faturamento/Relatório hoje, e vai
  * ganhar Caixa/Estoque/Fiscal como novas seções aqui mesmo mais
  * adiante. Mesmo app/rota pra todo tamanho de tela — em telas
@@ -71,7 +71,7 @@ export function Desktop() {
         <Icone nome="desktop_windows" size={40} className="text-mesa-text-tertiary" />
         <p className="text-base font-semibold text-mesa-text-primary">Esta área é feita para desktop</p>
         <p className="text-sm text-mesa-text-secondary">
-          Abra o MesaAgil num computador para ver Faturamento e Relatório.
+          Abra o Sai aê num computador para ver Faturamento e Relatório.
         </p>
         <BotaoHome className="mt-2" />
       </div>

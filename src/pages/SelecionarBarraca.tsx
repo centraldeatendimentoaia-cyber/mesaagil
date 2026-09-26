@@ -167,7 +167,7 @@ function BottomSheetNovaBarraca({
           required
           value={slug}
           onChange={(e) => aoMudarSlug(e.target.value)}
-          helpText={slug ? `mesaagil.pages.dev/${slug}` : 'só letras minúsculas, números e hífen'}
+          helpText={slug ? `saiae.com.br/${slug}` : 'só letras minúsculas, números e hífen'}
         />
 
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}

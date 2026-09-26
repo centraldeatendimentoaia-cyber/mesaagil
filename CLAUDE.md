@@ -1,4 +1,4 @@
-# MesaAgil
+# Sai aê (ex-MesaAgil)
 
 Sistema de comanda digital para barracas de feira e food service.
 Primeiro cliente: Sabor Kawashima (comida japonesa). Segundo cliente
@@ -134,10 +134,10 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
     fiscal-as-a-service (ex.: FocusNFe, como o concorrente fez) — o
     dono da barraca cria a própria conta no provedor, sobe o
     certificado digital lá (custódia fica com o provedor, nunca com o
-    MesaAgil). Pesquisa na documentação real da FocusNFe (2026-09-26)
+    Sai aê). Pesquisa na documentação real da FocusNFe (2026-09-26)
     confirmou que o CSC não entra nas chamadas de emissão — só o
     **token** da empresa precisa ser colado nas configurações do
-    MesaAgil. Regimes tributários alvo: Simples Nacional (regime do
+    Sai aê. Regimes tributários alvo: Simples Nacional (regime do
     primeiro cliente, Sabor Kawashima) **e MEI**, comum entre donos de
     barraca de feira. **Configuração implementada** em Ajustes
     (`SecaoFiscal`): token guardado em `barracas_fiscal_token` (RLS
@@ -174,9 +174,9 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
 - Impressão de comprovante/nota: removida de novo, aguardando a aba
   de configuração de impressora térmica (varia por tamanho) — ver "O
   que o sistema NÃO é (hoje)" no topo deste arquivo.
-- Cobrança de assinatura do MesaAgil (o dono da barraca paga pelo
+- Cobrança de assinatura do Sai aê (o dono da barraca paga pelo
   uso do app): só depois que o produto estiver 100% pronto/estável.
-  Isso é billing SaaS MesaAgil→cliente, problema completamente
+  Isso é billing SaaS Sai aê→cliente, problema completamente
   diferente do pagamento de pedido cliente-final→barraca citado
   acima — não misturar os dois ao planejar.
 - Cardápio Digital: tela pública (fora do app, sem login, um link
