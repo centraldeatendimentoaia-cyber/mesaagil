@@ -8,8 +8,33 @@
    contador) usam font-mesa-display (Outfit) por componente — não é
    global porque nem todo <h1-3> é numérico e nem todo número está
    dentro de um heading. */
+html {
+  /* Impede o WebKit mobile (Safari/Chrome iOS) de reajustar o tamanho do
+     texto sozinho em trocas de orientação/layout — é a causa mais comum
+     de tela que "dá zoom" sem o usuário pedir. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html, body {
+  overflow-x: hidden;
+  background-color: var(--color-mesa-bg-base);
+}
+
 body {
   font-family: var(--font-mesa-sans);
+}
+
+/* iOS aplica zoom automático ao focar um <input>/<select> com font-size
+   menor que 16px. Os campos usam text-sm (14px) de propósito visual em
+   telas maiores, então a fonte real só sobe pra 16px em telas estreitas
+   (onde o zoom acontece) — desktop mantém o texto original. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 h1, h2, h3 {
