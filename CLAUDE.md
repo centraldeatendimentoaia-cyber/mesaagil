@@ -73,7 +73,15 @@ digital e integração com a SEFAZ).
 - As cores do kanban (verde/amarelo/vermelho) NUNCA são
   personalizáveis — são sinal operacional. Realinhadas no redesign
   pras mesmas cores de emerald/amber/red usadas no resto do app
-- A cor da marca nunca aparece dentro da tela da Cozinha
+- Regra revista no redesign do card de pedido da Cozinha (IDV "Sai
+  aê", 2026-09-26): mostarda agora aparece de propósito ali — botão
+  de ação principal do card (Pronto/Entregue) e número de quantidade
+  de cada item. Antes a regra era "cor de marca nunca aparece na
+  Cozinha"; virou "um só acento de marca por card, no botão
+  principal", mesmo espírito de "um primário por tela" do Button. As
+  cores operacionais do cronômetro (verde/laranja/vermelho do
+  cabeçalho do card) continuam não-personalizáveis, sinal
+  operacional, nunca mostarda
 - Tipografia (redesign 2026-09-18): Hanken Grotesk no corpo, Space
   Grotesk em h1/h2/h3, carregadas via Google Fonts (index.html) com
   runtimeCaching no service worker pra funcionar offline. Isso

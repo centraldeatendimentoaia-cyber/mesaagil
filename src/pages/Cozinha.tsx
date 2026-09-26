@@ -6,35 +6,40 @@ import { useTheme } from '../hooks/useTheme'
 import { turnoAtual } from '../lib/datas'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { enfileirar } from '../lib/fila'
-import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { tocarSomPedidoCritico, tocarSomPedidoNaCozinha } from '../lib/sons'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import { Icone } from '../components/ui/Icone'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
 import { DetalheComanda } from '../components/DetalheComanda'
 import type { MotivoCancelamento } from '../lib/cancelamento'
-import type { Barraca, Categoria, Item, ItemDoPedido, PedidoComItens } from '../types/database'
+import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
 import type { StatusConexao } from '../hooks/useRealtimePedidos'
 
 type Coluna = 'a_fazer' | 'pronto'
 type CorSinal = 'verde' | 'amarelo' | 'vermelho'
 
 const DURACAO_FAIXA_FINALIZADO_MS = 5000
-const INTERVALO_RELOGIO_MS = 10000
+// 1s (não mais 10s): o card novo mostra um cronômetro mm:ss ao vivo no
+// cabeçalho (ver CardPedido) — precisa de tick por segundo pra não
+// parecer travado.
+const INTERVALO_RELOGIO_MS = 1000
 
-function minutosDecorridos(pedido: PedidoComItens): number {
+function segundosDecorridos(pedido: PedidoComItens): number {
   const inicio = new Date(pedido.criado_em).getTime()
   const fim = pedido.status === 'pronto' && pedido.pronto_em
     ? new Date(pedido.pronto_em).getTime()
     : Date.now()
-  return Math.max(0, Math.floor((fim - inicio) / 60000))
+  return Math.max(0, Math.floor((fim - inicio) / 1000))
+}
+
+function minutosDecorridos(pedido: PedidoComItens): number {
+  return Math.floor(segundosDecorridos(pedido) / 60)
 }
 
 function corPorTempo(minutos: number, barraca: Barraca): CorSinal {
@@ -48,16 +53,24 @@ function formatarHora(iso: string): string {
   return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`
 }
 
-const CORES_BORDA: Record<CorSinal, string> = {
-  verde: 'border-l-mesa-kanban-green',
-  amarelo: 'border-l-mesa-kanban-yellow',
-  vermelho: 'border-l-mesa-kanban-red',
+function formatarDuracao(segundosTotais: number): string {
+  const minutos = Math.floor(segundosTotais / 60)
+  const segundos = segundosTotais % 60
+  return `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`
 }
 
-const CORES_TEXTO: Record<CorSinal, string> = {
-  verde: 'text-mesa-kanban-green',
-  amarelo: 'text-mesa-kanban-yellow',
-  vermelho: 'text-mesa-kanban-red',
+// Card novo (redesign IDV "Sai aê"): cabeçalho cheio na cor do sinal,
+// não mais borda esquerda — a mesma paleta kanban de sempre.
+const CORES_CABECALHO: Record<CorSinal, string> = {
+  verde: 'bg-mesa-kanban-green',
+  amarelo: 'bg-mesa-kanban-yellow',
+  vermelho: 'bg-mesa-kanban-red',
+}
+
+const TEXTO_SEMAFORO: Record<CorSinal, string> = {
+  verde: 'No prazo',
+  amarelo: 'Atenção',
+  vermelho: 'Atrasado',
 }
 
 /**
@@ -94,16 +107,18 @@ function BotaoChecklist({
 
 /**
  * Item com entrega_direta=true nasceu entregue direto no balcão (Fase 4) —
- * nunca passou pela cozinha, então não usa o Chip normal (que alterna
+ * nunca passou pela cozinha, então não usa a linha normal (que alterna
  * entregue/pendente via onClick). Visual não-interativo, cinza + riscado,
  * pra deixar claro que esse item já saiu e não precisa de ação aqui.
  */
-function ChipEntregaDireta({ item }: { item: ItemDoPedido }) {
+function LinhaItemEntregaDireta({ item }: { item: ItemDoPedido }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-mesa-full bg-mesa-neutral-100 px-3 py-2 text-sm font-medium text-mesa-text-tertiary line-through dark:bg-mesa-neutral-700">
-      <Icone nome="shopping_bag" size={14} />
-      {item.quantidade}× {item.nome_item}
-    </span>
+    <div className="flex items-center gap-2 text-mesa-neutral-500 line-through">
+      <Icone nome="shopping_bag" size={14} className="shrink-0" />
+      <span className="text-sm font-medium">
+        {item.quantidade} {item.nome_item}
+      </span>
+    </div>
   )
 }
 
@@ -111,7 +126,6 @@ function CardPedido({
   pedido,
   barraca,
   coluna,
-  nomeCategoriaDoItem,
   onAbrirDetalhe,
   onMoverParaPronto,
   onVoltar,
@@ -122,7 +136,6 @@ function CardPedido({
   pedido: PedidoComItens
   barraca: Barraca
   coluna: Coluna
-  nomeCategoriaDoItem: (itemId: string | null) => string | null
   onAbrirDetalhe: (pedido: PedidoComItens) => void
   onMoverParaPronto: (pedido: PedidoComItens) => void
   onVoltar: (pedido: PedidoComItens) => void
@@ -130,191 +143,177 @@ function CardPedido({
   onCancelar: (pedido: PedidoComItens) => void
   onAtalhoEntregar: (pedido: PedidoComItens) => void
 }) {
-  const minutos = minutosDecorridos(pedido)
-  const cor = corPorTempo(minutos, barraca)
+  const cor = corPorTempo(minutosDecorridos(pedido), barraca)
 
   const itensAtivos = pedido.itens_do_pedido.filter((i) => !i.removido)
   // Itens entrega_direta nasceram entregues direto no balcão — nunca
   // entraram no fluxo de preparo, então não contam pro checklist/banner de
-  // progresso da cozinha (só aparecem como chip informativo abaixo).
+  // progresso da cozinha (só aparecem como linha informativa abaixo).
   const itensParaCozinha = itensAtivos.filter((i) => !i.entrega_direta)
   const entreguesCount = itensParaCozinha.filter((i) => i.entregue).length
   const tudoEntregue =
     pedido.status !== 'entregue' &&
     itensParaCozinha.length > 0 &&
     itensParaCozinha.every((i) => i.entregue)
-  const mostrarIdentificacao = pedido.viagem || pedido.mesa
   const itensComObservacao = itensAtivos.filter((i) => i.observacao)
 
+  const iconeTipo = pedido.viagem ? 'takeout_dining' : 'storefront'
+  const rotuloTipo = pedido.viagem ? 'Viagem' : pedido.mesa ? `Mesa ${pedido.mesa}` : 'Balcão'
+
   return (
-    <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
-      <div className="flex items-center gap-2">
-        <span className="font-mesa-display text-2xl font-black leading-none text-mesa-text-tertiary">
-          {pedido.senha}
+    // Card novo (IDV "Sai aê", redesign_ux_ui_app/saiae/DESIGN.md): "Card
+    // de pedido (Cozinha, tema escuro)" — sempre escuro, independente do
+    // tema claro/escuro do resto do app. A classe "dark" força esse
+    // subtree a usar as variáveis/utilitários dark: já existentes (ver
+    // @custom-variant dark em index.css), sem precisar duplicar paleta.
+    <div className="dark overflow-hidden rounded-mesa-lg shadow-mesa-1">
+      <div className={clsx('flex items-center justify-between gap-2 px-4 py-2.5', CORES_CABECALHO[cor])}>
+        <span className="flex items-center gap-1.5 font-mesa-display text-sm font-bold text-white">
+          <Icone nome="timer" size={16} className="text-white" />
+          {formatarDuracao(segundosDecorridos(pedido))}
         </span>
-        {mostrarIdentificacao && (
-          <>
-            <span className="text-mesa-border-default" aria-hidden>
-              |
-            </span>
-            <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
-          </>
-        )}
-        <span
-          className={clsx(
-            'ml-auto flex items-center gap-1 font-mesa-display text-sm font-semibold',
-            coluna === 'a_fazer' ? CORES_TEXTO[cor] : 'text-mesa-text-secondary',
-          )}
-        >
-          <Icone nome="schedule" size={14} />
-          {coluna === 'a_fazer'
-            ? formatarHora(pedido.criado_em)
-            : `Pronto às ${pedido.pronto_em ? formatarHora(pedido.pronto_em) : '--:--'}`}
-        </span>
-        {coluna === 'a_fazer' && (
-          <BotaoChecklist
-            onClick={() => onAbrirDetalhe(pedido)}
-            contador={entreguesCount}
-            total={itensParaCozinha.length}
-          />
-        )}
+        <span className="text-sm font-bold text-white">{TEXTO_SEMAFORO[cor]}</span>
       </div>
 
-      {tudoEntregue && (
-        <div className="mt-3 flex h-9 items-center justify-center gap-2 rounded-mesa-md bg-mesa-success-50 dark:bg-mesa-success-500/15">
-          <Icone nome="check" size={16} peso={700} className="text-mesa-success-700 dark:text-mesa-success-500" />
-          <span className="text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
-            Tudo entregue — finalizar?
+      <div className="bg-mesa-neutral-900 p-4">
+        <div className="flex items-center gap-2">
+          <span className="font-mesa-display text-2xl font-black leading-none text-white">
+            #{pedido.senha}
           </span>
+          {coluna === 'a_fazer' && (
+            <div className="ml-auto">
+              <BotaoChecklist
+                onClick={() => onAbrirDetalhe(pedido)}
+                contador={entreguesCount}
+                total={itensParaCozinha.length}
+              />
+            </div>
+          )}
         </div>
-      )}
 
-      {itensAtivos.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {itensAtivos.map((item) => {
-            if (item.entrega_direta) return <ChipEntregaDireta key={item.id} item={item} />
+        <div className="mt-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-mesa-neutral-400">
+          <Icone nome={iconeTipo} size={14} />
+          {rotuloTipo}
+        </div>
 
-            const categoria = nomeCategoriaDoItem(item.item_id)
+        {tudoEntregue && (
+          <div className="mt-3 flex h-9 items-center justify-center gap-2 rounded-mesa-md bg-mesa-success-500/15">
+            <Icone nome="check" size={16} peso={700} className="text-mesa-success-500" />
+            <span className="text-sm font-medium text-mesa-success-500">Tudo entregue — finalizar?</span>
+          </div>
+        )}
 
-            return (
-              <div
-                key={item.id}
-                className={clsx(
-                  'flex shrink-0 items-center gap-2 rounded-mesa-md border px-3 py-2',
-                  item.entregue
-                    ? 'border-mesa-success-500/30 bg-mesa-success-50 dark:border-mesa-success-500/30 dark:bg-mesa-success-500/15'
-                    : 'border-mesa-border-subtle bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
-                )}
-              >
-                <span
-                  className={clsx(
-                    'shrink-0 font-mesa-display text-sm font-bold',
-                    item.entregue
-                      ? 'text-mesa-success-700 dark:text-mesa-success-500'
-                      : coluna === 'a_fazer'
-                        ? CORES_TEXTO[cor]
-                        : 'text-mesa-text-secondary',
-                  )}
-                >
-                  {item.quantidade}×
-                </span>
-                <span
-                  className={clsx(
-                    'text-sm font-medium',
-                    item.entregue
-                      ? 'text-mesa-success-700 line-through dark:text-mesa-success-500'
-                      : 'text-mesa-text-primary',
-                  )}
-                >
-                  {item.nome_item}
-                </span>
-                {categoria && (
-                  <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
-                    {categoria}
+        {itensAtivos.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {itensAtivos.map((item) =>
+              item.entrega_direta ? (
+                <LinhaItemEntregaDireta key={item.id} item={item} />
+              ) : (
+                <div key={item.id} className="flex items-center gap-2">
+                  <span
+                    className={clsx(
+                      'w-4 shrink-0 font-mesa-display text-base font-extrabold',
+                      item.entregue ? 'text-mesa-success-500' : 'text-mesa-orange-500',
+                    )}
+                  >
+                    {item.quantidade}
                   </span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                  <span
+                    className={clsx(
+                      'text-sm font-medium',
+                      item.entregue ? 'text-mesa-success-500 line-through' : 'text-white',
+                    )}
+                  >
+                    {item.nome_item}
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+        )}
 
-      {(pedido.observacao || itensComObservacao.length > 0) && (
-        // mesa-warning, não mesa-orange: cor de marca nunca aparece na
-        // Cozinha (CLAUDE.md) — esse alerta usa a cor operacional de
-        // atenção da IDV, que por coincidência não é mais mostarda.
-        <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-warning-500 bg-mesa-warning-50 p-3 dark:bg-mesa-warning-500/15">
-          <Icone nome="warning" size={16} className="mt-0.5 text-mesa-warning-700" />
-          <div className="flex flex-col gap-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-warning-700">
-              Atenção
-            </p>
-            {pedido.observacao && <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>}
+        {(pedido.observacao || itensComObservacao.length > 0) && (
+          // Mostarda aqui é intencional (não mais "cor de marca nunca
+          // aparece na Cozinha" — regra revista no redesign do card, ver
+          // CLAUDE.md "Regras de tema"): observação vira etiqueta de
+          // destaque, mesmo peso visual do botão de ação principal.
+          <div className="mt-3 flex flex-col gap-1.5">
+            {pedido.observacao && (
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-mesa-sm bg-mesa-orange-500 px-2.5 py-1.5 text-xs font-bold text-mesa-neutral-900">
+                <Icone nome="sticky_note_2" size={14} peso={700} />
+                {pedido.observacao}
+              </span>
+            )}
             {itensComObservacao.map((item) => (
-              <p key={item.id} className="text-sm text-mesa-text-primary">
-                <span className="font-semibold">{item.nome_item}:</span> {item.observacao}
-              </p>
+              <span
+                key={item.id}
+                className="inline-flex w-fit items-center gap-1.5 rounded-mesa-sm bg-mesa-orange-500 px-2.5 py-1.5 text-xs font-bold text-mesa-neutral-900"
+              >
+                <Icone nome="sticky_note_2" size={14} peso={700} />
+                {item.observacao}
+              </span>
             ))}
           </div>
-        </div>
-      )}
-
-      <div className="mt-4 flex gap-3">
-        {coluna === 'a_fazer' ? (
-          <>
-            <Button
-              variant="outline"
-              size="md"
-              icon={<Icone nome="check" size={16} />}
-              className="flex-1"
-              onClick={() => onMoverParaPronto(pedido)}
-            >
-              Pronto
-            </Button>
-            <Button
-              variant="confirm"
-              size="md"
-              icon={<Icone nome="done_all" size={16} />}
-              className="flex-1"
-              onClick={() => onAtalhoEntregar(pedido)}
-            >
-              Entregar direto
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="outline"
-              size="md"
-              icon={<Icone nome="undo" size={16} />}
-              className="flex-1"
-              onClick={() => onVoltar(pedido)}
-            >
-              Voltar
-            </Button>
-            <Button
-              variant="confirm"
-              size="md"
-              icon={<Icone nome="done_all" size={16} />}
-              className="flex-1"
-              onClick={() => onEntregar(pedido)}
-            >
-              Entregue
-            </Button>
-          </>
         )}
-      </div>
 
-      <div className="mt-2 flex justify-center">
-        <button
-          type="button"
-          onClick={() => onCancelar(pedido)}
-          className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
-        >
-          {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
-        </button>
+        <div className="mt-4 flex gap-3">
+          {coluna === 'a_fazer' ? (
+            <>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<Icone nome="check" size={16} />}
+                className="flex-1"
+                onClick={() => onMoverParaPronto(pedido)}
+              >
+                Pronto
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                icon={<Icone nome="done_all" size={16} />}
+                className="flex-1"
+                onClick={() => onAtalhoEntregar(pedido)}
+              >
+                Entregar direto
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="md"
+                icon={<Icone nome="undo" size={16} />}
+                className="flex-1"
+                onClick={() => onVoltar(pedido)}
+              >
+                Voltar
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<Icone nome="done_all" size={16} />}
+                className="flex-1"
+                onClick={() => onEntregar(pedido)}
+              >
+                Entregue
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="mt-2 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onCancelar(pedido)}
+            className="flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-mesa-error-500"
+          >
+            <Icone nome="close" size={14} />
+            {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
+          </button>
+        </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -399,36 +398,6 @@ export function Cozinha() {
   const { tema, alternarTema } = useTheme()
   const escuro = tema === 'escuro'
   const [aba, setAba] = useState<Coluna>('a_fazer')
-
-  // Nome real da categoria de cada item — badge por item no card do pedido,
-  // pra ajudar o chef a separar/rotear o preparo. Busca uma vez por
-  // barraca, não por pedido (mesmo padrão de Histórico.tsx).
-  const [itensCardapio, setItensCardapio] = useState<Item[]>([])
-  const [categoriasCardapio, setCategoriasCardapio] = useState<Categoria[]>([])
-
-  useEffect(() => {
-    let cancelado = false
-
-    Promise.all([
-      supabase.from('itens').select('id, categoria_id').eq('barraca_id', barraca.id),
-      supabase.from('categorias').select('id, nome').eq('barraca_id', barraca.id),
-    ]).then(([itensResultado, categoriasResultado]) => {
-      if (cancelado) return
-      if (!itensResultado.error) setItensCardapio((itensResultado.data ?? []) as Item[])
-      if (!categoriasResultado.error) setCategoriasCardapio((categoriasResultado.data ?? []) as Categoria[])
-    })
-
-    return () => {
-      cancelado = true
-    }
-  }, [barraca.id])
-
-  function nomeCategoriaDoItem(itemId: string | null): string | null {
-    if (!itemId) return null
-    const item = itensCardapio.find((i) => i.id === itemId)
-    if (!item?.categoria_id) return null
-    return categoriasCardapio.find((c) => c.id === item.categoria_id)?.nome ?? null
-  }
 
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null)
 
@@ -683,7 +652,6 @@ export function Cozinha() {
             pedido={pedido}
             barraca={barraca}
             coluna={coluna}
-            nomeCategoriaDoItem={nomeCategoriaDoItem}
             onAbrirDetalhe={abrirDetalhe}
             onMoverParaPronto={moverParaPronto}
             onVoltar={voltarParaFazer}
@@ -853,7 +821,6 @@ export function Cozinha() {
       {pedidoParaCancelar && (
         <ModalCancelamento
           pedido={pedidoParaCancelar}
-          barraca={barraca}
           cancelando={cancelando}
           onFechar={() => setPedidoParaCancelar(null)}
           onConfirmar={cancelarPedido}
