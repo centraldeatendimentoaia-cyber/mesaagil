@@ -126,28 +126,33 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
   com o painel de Faturamento/Relatório (`PainelRelatorio`) movido de
   dentro do Histórico pra lá; a lista de comandas continua em
   `/:slug/historico` no mobile. Item "Faturamento" na
-  `BarraNavegacao` some em telas estreitas (`apenasDesktop`). Caixa,
-  Estoque e Fiscal entram como novas seções nesse mesmo hub, ainda não
-  implementadas.
-  - Caixa (abrir/fechar o dia): decidido em 2026-09-26 — inclui
-    sangria/suprimento desde já, além da abertura/fechamento com
-    conferência de troco. Fundação necessária pra Faturamento e
-    Fiscal baterem.
+  `BarraNavegacao` some em telas estreitas (`apenasDesktop`). Caixa já
+  implementado nesse hub também (abrir/fechar com conferência
+  automática e sangria/suprimento, `src/components/SecaoCaixa.tsx`).
   - Fiscal / NFC-e: em vez de integração direta com a SEFAZ (que foi
     o motivo original de tirar isso de escopo), usar um provedor
     fiscal-as-a-service (ex.: FocusNFe, como o concorrente fez) — o
     dono da barraca cria a própria conta no provedor, sobe o
     certificado digital lá (custódia fica com o provedor, nunca com o
-    MesaAgil) e cola token/CSC nas configurações da barraca. Regimes
-    tributários alvo definidos em 2026-09-26: Simples Nacional (regime
-    do primeiro cliente, Sabor Kawashima — primeira UF/certificado a
-    validar é a dele) **e MEI**, comum entre donos de barraca de
-    feira.
+    MesaAgil). Pesquisa na documentação real da FocusNFe (2026-09-26)
+    confirmou que o CSC não entra nas chamadas de emissão — só o
+    **token** da empresa precisa ser colado nas configurações do
+    MesaAgil. Regimes tributários alvo: Simples Nacional (regime do
+    primeiro cliente, Sabor Kawashima) **e MEI**, comum entre donos de
+    barraca de feira. **Configuração implementada** em Ajustes
+    (`SecaoFiscal`): token guardado em `barracas_fiscal_token` (RLS
+    sem policy de select, só via função SECURITY DEFINER — mesmo
+    padrão de `barracas_senha_admin`/PIN admin), regime, ambiente
+    (Homologação/Produção, default Homologação) e campos NCM/CFOP/
+    unidade por item do cardápio. **Emissão de verdade (Edge Function
+    chamando a FocusNFe, botão "Emitir nota") ainda não implementada**
+    — é o próximo passo, só depois que os dados fiscais dos itens
+    estiverem revisados.
   - Estoque: item mais delicado por reverter a regra mais antiga do
-    projeto. Profundidade definida em 2026-09-26: começar pelo mais
-    simples — toggle "esgotado" por item, já citado no
-    redesign_ux_ui_app/saiae/DESIGN.md — em vez de controle completo
-    com baixa automática por venda.
+    projeto. **Implementado** o mais simples definido em 2026-09-26 —
+    toggle "esgotado" por item (`itens.esgotado`, editável em Ajustes,
+    Lançar Pedido bloqueia adicionar item esgotado) — em vez de
+    controle completo com baixa automática por venda.
   - WhatsApp pra leads (o concorrente tem, manda mensagem automática
     pro cliente): fora de escopo por enquanto, avaliar depois que o
     resto acima estiver de pé.
