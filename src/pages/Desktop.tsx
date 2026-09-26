@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -76,12 +77,19 @@ export function Desktop() {
         <BotaoHome className="mt-2" />
       </div>
 
-      <div className="hidden min-h-dvh px-8 pb-16 pt-[calc(env(safe-area-inset-top)+24px)] md:block">
+      <div className="hidden min-h-dvh px-8 pb-24 pt-[calc(env(safe-area-inset-top)+24px)] md:block">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <BotaoHome className="-ml-2" />
-              <h1 className="text-2xl font-bold leading-tight text-mesa-text-primary">Faturamento</h1>
+              <Link
+                to={`/${barraca.slug}`}
+                aria-label="Voltar para o início"
+                className="inline-flex items-center gap-2 text-mesa-text-primary"
+              >
+                <Icone nome="chevron_left" size={28} />
+                <h1 className="text-2xl font-bold leading-tight">Faturamento</h1>
+              </Link>
             </div>
             <button
               type="button"
@@ -93,15 +101,17 @@ export function Desktop() {
             </button>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5">
             <SegmentedControl
               aria-label="Período do relatório"
               items={PERIODOS.map((p) => ({ label: p.rotulo }))}
               activeIndex={PERIODOS.findIndex((p) => p.valor === periodo)}
               onChange={(indice) => setPeriodo(PERIODOS[indice].valor)}
-              className="max-w-md"
+              className="max-w-xl"
             />
+          </div>
 
+          <div className="mt-3">
             <select
               value={itemFiltradoId ?? ''}
               onChange={(e) => setItemFiltradoId(e.target.value || null)}
