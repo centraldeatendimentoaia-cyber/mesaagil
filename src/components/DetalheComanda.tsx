@@ -1,17 +1,20 @@
 import { useRef } from 'react'
 import type { MouseEvent, PointerEvent } from 'react'
-import { Check, Clock, ShoppingBag, Trash } from 'lucide-react'
 import clsx from 'clsx'
 import { BottomSheet } from './ui/BottomSheet'
 import { Button } from './ui/Button'
-import { Badge } from './ui/Badge'
+import { Icone } from './ui/Icone'
 import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
 
 const DURACAO_LONGO_TOQUE_MS = 1000
 
-function minutosDecorridos(pedido: PedidoComItens): number {
+// Mesmo cabeçalho colorido do card em Cozinha.tsx (redesign IDV "Sai aê") —
+// cronômetro mm:ss + sinal de status, sempre em tema escuro. Duplica os
+// pequenos helpers de tempo em vez de importar de Cozinha.tsx, mesmo
+// padrão já usado por ModalCancelamento.tsx neste componente.
+function segundosDecorridos(pedido: PedidoComItens): number {
   const inicio = new Date(pedido.criado_em).getTime()
-  return Math.max(0, Math.floor((Date.now() - inicio) / 60000))
+  return Math.max(0, Math.floor((Date.now() - inicio) / 1000))
 }
 
 function corSemaforo(minutos: number, barraca: Barraca): 'verde' | 'amarelo' | 'vermelho' {
@@ -20,16 +23,22 @@ function corSemaforo(minutos: number, barraca: Barraca): 'verde' | 'amarelo' | '
   return 'vermelho'
 }
 
-const TEXTO_COR: Record<'verde' | 'amarelo' | 'vermelho', string> = {
-  verde: 'text-mesa-kanban-green',
-  amarelo: 'text-mesa-kanban-yellow',
-  vermelho: 'text-mesa-kanban-red',
+const CORES_CABECALHO: Record<'verde' | 'amarelo' | 'vermelho', string> = {
+  verde: 'bg-mesa-kanban-green',
+  amarelo: 'bg-mesa-kanban-yellow',
+  vermelho: 'bg-mesa-kanban-red',
 }
 
-function formatarMinutos(minutos: number): string {
-  const h = Math.floor(minutos / 60)
-  const m = minutos % 60
-  return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`
+const TEXTO_SEMAFORO: Record<'verde' | 'amarelo' | 'vermelho', string> = {
+  verde: 'No prazo',
+  amarelo: 'Atenção',
+  vermelho: 'Atrasado',
+}
+
+function formatarDuracao(segundosTotais: number): string {
+  const minutos = Math.floor(segundosTotais / 60)
+  const segundos = segundosTotais % 60
+  return `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`
 }
 
 function LinhaItemDetalhe({
@@ -91,7 +100,7 @@ function LinhaItemDetalhe({
           className="flex size-11 shrink-0 items-center justify-center text-mesa-text-tertiary"
           aria-label={`${item.nome_item} entregue direto, sem passar na cozinha`}
         >
-          <ShoppingBag className="size-4" aria-hidden />
+          <Icone nome="shopping_bag" size={16} />
         </span>
       ) : (
         <button
@@ -108,11 +117,13 @@ function LinhaItemDetalhe({
             className={clsx(
               'flex size-7 items-center justify-center rounded-mesa-full border-2 transition-colors',
               marcado
-                ? 'border-mesa-teal-500 bg-mesa-teal-500'
+                ? 'border-mesa-neutral-900 bg-mesa-neutral-900 dark:border-mesa-neutral-50 dark:bg-mesa-neutral-50'
                 : 'border-mesa-neutral-300 bg-transparent dark:border-mesa-neutral-600',
             )}
           >
-            {marcado && <Check className="size-4 text-white" strokeWidth={3} aria-hidden />}
+            {marcado && (
+              <Icone nome="check" size={16} peso={700} className="text-white dark:text-mesa-neutral-900" />
+            )}
           </span>
         </button>
       )}
@@ -131,8 +142,12 @@ function LinhaItemDetalhe({
           {item.nome_item}
         </span>
         {item.observacao && !item.removido && (
-          <span className="block truncate text-xs text-mesa-orange-700 dark:text-mesa-orange-400">
-            Obs: {item.observacao}
+          // Mostarda intencional aqui (regra revista no redesign do card
+          // de Cozinha, ver CLAUDE.md "Regras de tema") — mesma etiqueta
+          // de destaque usada no card, agora por item.
+          <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-mesa-sm bg-mesa-orange-500 px-2 py-1 text-xs font-bold text-mesa-neutral-900">
+            <Icone nome="sticky_note_2" size={12} peso={700} />
+            {item.observacao}
           </span>
         )}
       </span>
@@ -153,7 +168,7 @@ function LinhaItemDetalhe({
           className="group flex size-11 shrink-0 items-center justify-center outline-none"
         >
           <span className="flex size-[30px] items-center justify-center rounded-mesa-sm text-mesa-text-secondary transition-colors group-hover:bg-mesa-error-50 group-hover:text-mesa-error-700 dark:group-hover:bg-mesa-error-500/15 dark:group-hover:text-mesa-error-500">
-            <Trash className="size-4" aria-hidden />
+            <Icone nome="delete" size={16} />
           </span>
         </button>
       )}
@@ -188,32 +203,50 @@ export function DetalheComanda({
   const entreguesCount = itensParaCozinha.filter((i) => i.entregue).length
   const progresso = totalAtivos > 0 ? (entreguesCount / totalAtivos) * 100 : 0
 
-  const minutos = pedido ? minutosDecorridos(pedido) : 0
-  const cor = pedido ? corSemaforo(minutos, barraca) : 'verde'
+  const segundos = pedido ? segundosDecorridos(pedido) : 0
+  const cor = pedido ? corSemaforo(Math.floor(segundos / 60), barraca) : 'verde'
 
   return (
-    <BottomSheet open={pedido !== null} onClose={onFechar} aria-label="Detalhes da comanda">
+    // Mesmo tratamento sempre-escuro do card em Cozinha.tsx (ver comentário
+    // lá) — bg forçado com "!" porque o BottomSheet já define bg-mesa-surface
+    // na própria classe base, mesma especificidade de utilitário Tailwind.
+    <BottomSheet
+      open={pedido !== null}
+      onClose={onFechar}
+      aria-label="Detalhes da comanda"
+      className="dark !bg-mesa-neutral-900"
+    >
       {pedido && (
         <>
-          <div className="flex items-center gap-3">
-            <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
-              {pedido.senha}
+          <div className={clsx('-mx-6 -mt-3 flex items-center justify-between gap-2 rounded-t-mesa-2xl px-4 py-2.5', CORES_CABECALHO[cor])}>
+            <span className="flex items-center gap-1.5 font-mesa-display text-sm font-bold text-white">
+              <Icone nome="timer" size={16} className="text-white" />
+              {formatarDuracao(segundos)}
             </span>
-            {(pedido.viagem || pedido.mesa) && (
-              <>
-                <span className="text-mesa-border-default" aria-hidden>
-                  |
-                </span>
-                <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
-              </>
-            )}
-            <span className={clsx('ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold', TEXTO_COR[cor])}>
-              <Clock className="size-4 shrink-0" aria-hidden />
-              {formatarMinutos(minutos)} em preparo
-            </span>
+            <span className="text-sm font-bold text-white">{TEXTO_SEMAFORO[cor]}</span>
           </div>
 
-          <p className="mt-4 text-sm text-mesa-text-secondary">Marque os itens conforme forem saindo</p>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="font-mesa-display text-2xl font-black leading-none text-white">
+              #{pedido.senha}
+            </span>
+            <button
+              type="button"
+              onClick={onFechar}
+              aria-label="Fechar"
+              className="ml-auto flex size-11 shrink-0 items-center justify-center outline-none"
+            >
+              <span className="flex size-[34px] items-center justify-center rounded-mesa-sm bg-mesa-neutral-700 text-mesa-neutral-50">
+                <Icone nome="close" size={18} />
+              </span>
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-mesa-neutral-400">
+            <Icone nome={pedido.viagem ? 'takeout_dining' : 'storefront'} size={14} />
+            {pedido.viagem ? 'Viagem' : pedido.mesa ? `Mesa ${pedido.mesa}` : 'Balcão'}
+          </div>
+
+          <p className="mt-4 text-sm text-mesa-neutral-400">Marque os itens conforme forem saindo</p>
 
           <ul className="mt-2">
             {itensAtivos.map((item) => (
@@ -240,11 +273,11 @@ export function DetalheComanda({
             <div className="mt-2 flex items-center gap-3">
               <div className="h-2 flex-1 overflow-hidden rounded-mesa-full bg-mesa-neutral-100 dark:bg-mesa-neutral-700">
                 <div
-                  className="h-full rounded-mesa-full bg-mesa-teal-500 transition-[width] duration-[var(--mesa-duration-short)]"
+                  className="h-full rounded-mesa-full bg-mesa-success-500 transition-[width] duration-[var(--mesa-duration-short)]"
                   style={{ width: `${progresso}%` }}
                 />
               </div>
-              <span className="shrink-0 font-mesa-mono text-sm font-medium text-mesa-text-secondary">
+              <span className="shrink-0 font-mesa-display text-sm font-semibold text-mesa-text-secondary">
                 {entreguesCount} de {totalAtivos}
               </span>
             </div>
@@ -252,7 +285,7 @@ export function DetalheComanda({
 
           <div className="mt-6 flex flex-col gap-2">
             <Button
-              variant="confirm"
+              variant="primary"
               size="xl"
               className="w-full"
               onClick={() => onMoverParaPronto(pedido)}

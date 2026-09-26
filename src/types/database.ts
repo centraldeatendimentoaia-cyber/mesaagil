@@ -1,3 +1,6 @@
+export type RegimeTributario = 'simples_nacional' | 'mei'
+export type AmbienteFiscal = 'homologacao' | 'producao'
+
 export type Barraca = {
   id: string
   nome: string
@@ -10,6 +13,10 @@ export type Barraca = {
   metodos_pagamento_ativos: string[]
   taxa_debito_bps: number | null
   taxa_credito_bps: number | null
+  fiscal_habilitado: boolean
+  fiscal_regime_tributario: RegimeTributario | null
+  fiscal_ambiente: AmbienteFiscal
+  cnpj: string | null
 }
 
 export type Item = {
@@ -22,6 +29,10 @@ export type Item = {
   categoria_id: string | null
   foto_url: string | null
   descricao: string | null
+  ncm: string | null
+  cfop: string | null
+  unidade_comercial: string | null
+  esgotado: boolean
 }
 
 export type Categoria = {
@@ -37,6 +48,36 @@ export type CustoDiario = {
   barraca_id: string
   data: string
   valor_centavos: number
+}
+
+export type StatusCaixa = 'aberto' | 'fechado'
+
+export type Caixa = {
+  id: string
+  barraca_id: string
+  data: string
+  status: StatusCaixa
+  valor_abertura_centavos: number
+  observacao_abertura: string | null
+  aberto_em: string
+  valor_fechamento_centavos: number | null
+  valor_esperado_centavos: number | null
+  diferenca_centavos: number | null
+  observacao_fechamento: string | null
+  fechado_em: string | null
+  criado_em: string
+}
+
+export type TipoMovimentoCaixa = 'sangria' | 'suprimento'
+
+export type MovimentoCaixa = {
+  id: string
+  barraca_id: string
+  caixa_id: string
+  tipo: TipoMovimentoCaixa
+  valor_centavos: number
+  motivo: string | null
+  criado_em: string
 }
 
 export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'
@@ -57,6 +98,11 @@ export type Pedido = {
   motivo_cancelamento: string | null
   cancelado_em: string | null
   metodo_pagamento: string | null
+  nfce_status: string | null
+  nfce_chave: string | null
+  nfce_numero: string | null
+  nfce_mensagem: string | null
+  nfce_emitida_em: string | null
 }
 
 export type ItemDoPedido = {
@@ -76,3 +122,44 @@ export type ItemDoPedido = {
 }
 
 export type PedidoComItens = Pedido & { itens_do_pedido: ItemDoPedido[] }
+
+export type StatusAssinatura = 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired'
+export type PlanoAssinatura = 'essencial' | 'pro'
+export type CicloAssinatura = 'mensal' | 'anual'
+
+/** Linha crua de assinaturas — retorno de minha_assinatura() (RPC), pra
+ * tela "Minha assinatura". Plan/cycle podem ser null no expired "de
+ * nascença" (quem já tinha usado o trial com esse e-mail antes). */
+export type Assinatura = {
+  usuario_id: string
+  status: StatusAssinatura
+  plan: PlanoAssinatura | null
+  cycle: CicloAssinatura | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  grace_until: string | null
+  kirvano_customer_email: string | null
+  kirvano_sale_id: string | null
+  kirvano_offer_id: string | null
+  canceled_at: string | null
+  updated_at: string
+}
+
+/** Retorno de assinatura_da_barraca(slug) — status da assinatura do DONO
+ * da barraca, não do usuário logado (que pode ser um funcionário). */
+export type AssinaturaBarraca = {
+  status: StatusAssinatura | null
+  plano: PlanoAssinatura | null
+  ciclo: CicloAssinatura | null
+  tem_acesso: boolean
+  dias_restantes_trial: number | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  eh_dono: boolean
+}
+
+export type OfertaPublica = {
+  plano: PlanoAssinatura
+  ciclo: CicloAssinatura
+  checkout_url: string
+}

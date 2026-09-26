@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { Mail } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'
 import { Button } from '../components/ui/Button'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 
 export function Cadastro() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { cadastrar } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -43,6 +44,17 @@ export function Cadastro() {
       return
     }
 
+    // /assinar redireciona pro cadastro preservando plano/ciclo — depois
+    // de criar a conta, volta exatamente pra lá em vez de cair na tela
+    // padrão (só quando não precisa confirmar e-mail antes).
+    const voltar = params.get('voltar')
+    if (voltar) {
+      const resto = new URLSearchParams(params)
+      resto.delete('voltar')
+      navigate(`${voltar}?${resto.toString()}`)
+      return
+    }
+
     navigate('/')
   }
 
@@ -51,7 +63,7 @@ export function Cadastro() {
       <div className="flex min-h-dvh flex-col items-center justify-center p-6 text-center [background:var(--mesa-gradient-atmosphere)]">
         <div className="w-full max-w-[380px]">
           <div className="mx-auto flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <Mail className="size-6 text-mesa-orange-500" aria-hidden />
+            <Icone nome="mail" size={24} className="text-mesa-orange-500" />
           </div>
           <h1 className="mt-4 text-2xl font-bold leading-[32px] text-mesa-text-primary">
             Confirme seu e-mail
@@ -60,7 +72,7 @@ export function Cadastro() {
             Mandamos um link de confirmação pra <strong>{email}</strong>. Toca nele e volta aqui
             pra entrar.
           </p>
-          <Button size="xl" className="mt-8 w-full" onClick={() => navigate('/login')}>
+          <Button size="xl" className="mt-8 w-full" onClick={() => navigate(`/login?${params.toString()}`)}>
             Ir para o login
           </Button>
         </div>
@@ -73,13 +85,13 @@ export function Cadastro() {
       <div className="w-full max-w-[420px]">
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <img src="/brand/mesaagil-icone-cor.png" alt="" className="size-8" />
+            <img src="/brand/saiae-icone-cor.svg" alt="" className="size-8" />
           </div>
           <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
             Criar conta
           </h1>
           <p className="mt-1 text-sm text-mesa-text-secondary">
-            Comece a usar o MesaAgil na sua barraca
+            Comece a usar o Sai aê na sua barraca
           </p>
         </div>
 
@@ -110,7 +122,7 @@ export function Cadastro() {
                   <li
                     key={requisito.chave}
                     className={`flex items-center gap-1.5 text-xs ${
-                      atendido ? 'text-mesa-teal-600' : 'text-mesa-text-tertiary'
+                      atendido ? 'text-mesa-success-700 dark:text-mesa-success-500' : 'text-mesa-text-tertiary'
                     }`}
                   >
                     <span aria-hidden>{atendido ? '✓' : '✗'}</span>
@@ -146,7 +158,7 @@ export function Cadastro() {
 
         <p className="mt-6 text-center text-sm text-mesa-text-secondary">
           Já tem conta?{' '}
-          <Link to="/login" className="font-medium text-mesa-teal-700 dark:text-mesa-teal-300">
+          <Link to="/login" className="font-medium text-mesa-text-primary">
             Entrar
           </Link>
         </p>

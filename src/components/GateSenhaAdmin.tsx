@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChevronLeft, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 import { Input } from './ui/Input'
 
 type Estado = 'verificando' | 'criar' | 'digitar' | 'liberado' | 'erro_inicial'
@@ -140,15 +140,15 @@ export function GateSenhaAdmin({
       <Link
         to={`/${slug}`}
         aria-label="Voltar para o início"
-        className="absolute left-4 top-[calc(env(safe-area-inset-top)+16px)] inline-flex size-11 items-center justify-center text-mesa-teal-700 dark:text-mesa-teal-300"
+        className="absolute left-4 top-[calc(env(safe-area-inset-top)+16px)] inline-flex size-11 items-center justify-center text-mesa-text-primary"
       >
-        <ChevronLeft className="size-7" aria-hidden />
+        <Icone nome="chevron_left" size={28} />
       </Link>
 
       <div className="w-full max-w-[360px]">
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <Lock className="size-6 text-mesa-orange-500" aria-hidden />
+            <Icone nome="lock" size={24} className="text-mesa-orange-500" />
           </div>
           <h1 className="mt-4 text-2xl font-bold leading-[32px] text-mesa-text-primary">
             {estado === 'criar' ? 'Criar senha administrativa' : 'Senha administrativa'}

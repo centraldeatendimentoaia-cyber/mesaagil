@@ -1,4 +1,4 @@
-package com.mesaagil.app;
+package com.aia.mesaagil;
 
 import com.getcapacitor.BridgeActivity;
 

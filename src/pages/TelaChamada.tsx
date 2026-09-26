@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Check, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { tocarSomPedidoNaChamada } from '../lib/sons'
+import { Icone } from '../components/ui/Icone'
 
 const OPACIDADES_ANTERIORES = [0.7, 0.5, 0.3]
 
@@ -73,82 +73,76 @@ export function TelaChamada() {
   }, [pedidosProntos, pedidosCarregados])
 
   return (
-    <div className="relative flex min-h-dvh flex-col bg-mesa-neutral-900 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
+    <div className="relative flex min-h-dvh flex-col gap-8 bg-mesa-neutral-900 px-6 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+24px)] sm:flex-row sm:items-center sm:px-12">
       <button
         type="button"
         onClick={() => navigate(`/${barraca.slug}`)}
         aria-label="Sair da tela de chamada"
         className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center text-mesa-neutral-400 opacity-40 outline-none transition-opacity duration-[var(--mesa-duration-micro)] hover:opacity-70 focus-visible:opacity-70"
       >
-        <X className="size-5" aria-hidden />
+        <Icone nome="close" size={20} />
       </button>
 
-      <div className="flex justify-center pt-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-orange-500">
-          {barraca.nome}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+      <div className="flex flex-1 flex-col justify-center gap-4">
         {hero ? (
           <>
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-neutral-500">
-              Senha
+            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-mesa-neutral-500">
+              <Icone nome="campaign" size={16} />
+              Senha chamada
             </span>
-            <span
-              aria-live="polite"
+            <div
               className={clsx(
-                'font-mesa-mono text-[96px] font-bold leading-[104px] tracking-tight text-white',
+                'flex w-fit items-center justify-center rounded-mesa-lg bg-mesa-orange-500 px-8 py-3',
                 'transition-opacity duration-[250ms]',
                 visivel ? 'opacity-100' : 'opacity-0',
               )}
             >
-              {formatarSenha(hero.senha)}
-            </span>
+              <span
+                aria-live="polite"
+                className="font-mesa-display text-[96px] font-extrabold leading-[104px] tracking-tight text-mesa-neutral-900"
+              >
+                {formatarSenha(hero.senha)}
+              </span>
+            </div>
             {hero.viagem && (
               <span className="text-xs font-bold tracking-widest text-mesa-neutral-400">
                 VIAGEM
               </span>
             )}
-            <span className="mt-2 inline-flex items-center gap-2 rounded-mesa-full bg-mesa-orange-500/15 px-4 py-2 text-sm font-semibold text-mesa-orange-500">
-              <Check className="size-4 shrink-0" aria-hidden />
-              Pedido pronto — retire no balcão
-            </span>
+            <span className="text-2xl font-bold text-white">Pode retirar!</span>
           </>
         ) : (
           <p className="text-3xl font-medium text-mesa-neutral-600">Aguardando pedidos...</p>
         )}
+
+        {barraca.logo_url && (
+          <img
+            src={barraca.logo_url}
+            alt=""
+            className="mt-4 size-9 rounded-mesa-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+        )}
       </div>
 
       {anteriores.length > 0 && (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col gap-4 sm:h-full sm:justify-center sm:border-l sm:border-mesa-neutral-800 sm:pl-10">
           <span className="text-xs font-semibold uppercase tracking-[0.08em] text-mesa-neutral-500">
-            Chamadas anteriores
+            Últimas
           </span>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-row gap-6 sm:flex-col">
             {anteriores.map((pedido, indice) => (
               <span
                 key={pedido.id}
-                className="font-mesa-mono text-2xl font-bold text-white"
+                className="font-mesa-display text-2xl font-bold text-white"
                 style={{ opacity: OPACIDADES_ANTERIORES[indice] }}
               >
                 {formatarSenha(pedido.senha)}
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {barraca.logo_url && (
-        <div className="flex justify-center pt-6">
-          <img
-            src={barraca.logo_url}
-            alt=""
-            className="size-8 rounded-mesa-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
         </div>
       )}
     </div>

@@ -8,10 +8,10 @@ type Barraca = {
   logo_url: string | null
 }
 
-const NOME_PADRAO = 'MesaAgil'
-// Cor de marca fixa do MesaAgil v2 (âmbar 500, redesign Speed Bento POS)
-// — não é mais por barraca.
-const COR_MARCA = '#F59E0B'
+const NOME_PADRAO = 'Sai aê'
+// Cor de marca fixa do Sai aê (mostarda, IDV "Sai aê") — não é mais por
+// barraca.
+const COR_MARCA = '#FFC21A'
 // Fundo da splash screen (exibido antes do app carregar) — branco puro,
 // não a cor de marca, para consistência com o manifest estático de fallback.
 const COR_FUNDO_SPLASH = '#FFFFFF'

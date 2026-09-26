@@ -34,13 +34,13 @@ export function Radio({ checked, onChange, label, disabled, id, value, className
             'inline-flex size-5 items-center justify-center rounded-mesa-full border-[1.5px] p-[3px]',
             'transition-colors duration-[var(--mesa-duration-micro)]',
             'peer-focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
-            checked ? 'border-mesa-teal-500' : 'border-mesa-neutral-300 dark:border-mesa-neutral-600',
+            checked ? 'border-mesa-neutral-900 dark:border-mesa-neutral-50' : 'border-mesa-neutral-300 dark:border-mesa-neutral-600',
           )}
         >
           <span
             className={clsx(
               'size-full rounded-mesa-full transition-transform duration-[var(--mesa-duration-micro)]',
-              checked ? 'scale-100 bg-mesa-teal-500' : 'scale-0 bg-transparent',
+              checked ? 'scale-100 bg-mesa-neutral-900 dark:bg-mesa-neutral-50' : 'scale-0 bg-transparent',
             )}
           />
         </span>

@@ -6,8 +6,11 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // o PWA já tem: só as chamadas ao Supabase (auth/dados) dependem de rede,
 // nunca o carregamento do app em si.
 const config: CapacitorConfig = {
-  appId: 'com.mesaagil.app',
-  appName: 'MesaAgil',
+  // appId não muda no rebrand: já foi enviado ao Google Play vinculado a
+  // este pacote — trocar aqui criaria um app novo na loja, não uma
+  // atualização do existente.
+  appId: 'com.aia.mesaagil',
+  appName: 'Sai aê',
   webDir: 'dist',
 }
 

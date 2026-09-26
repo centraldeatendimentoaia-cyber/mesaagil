@@ -1,6 +1,6 @@
-import { CheckCheck } from 'lucide-react'
 import { BottomSheet } from './ui/BottomSheet'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 
 export function ModalEntregaDireta({
   senha,
@@ -16,7 +16,7 @@ export function ModalEntregaDireta({
   return (
     <BottomSheet open onClose={onFechar} aria-label="Marcar comanda como entregue">
       <h2 className="text-lg font-semibold text-mesa-text-primary">
-        Marcar comanda <span className="font-mesa-mono">#{senha}</span> como entregue?
+        Marcar comanda #{senha} como entregue?
       </h2>
       <p className="mt-1 text-sm text-mesa-text-secondary">
         Isso pula direto para Entregue, sem passar por Pronto. Use quando o pedido já está pronto
@@ -27,7 +27,7 @@ export function ModalEntregaDireta({
         <Button
           variant="confirm"
           size="xl"
-          icon={<CheckCheck className="size-5" aria-hidden />}
+          icon={<Icone nome="done_all" size={20} />}
           loading={confirmando}
           onClick={onConfirmar}
           className="w-full"

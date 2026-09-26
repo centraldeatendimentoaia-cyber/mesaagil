@@ -6,32 +6,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import clsx from 'clsx'
-import {
-  Camera,
-  Check,
-  ChevronLeft,
-  CreditCard,
-  Image,
-  LogOut,
-  Moon,
-  Pencil,
-  Plus,
-  Palette,
-  Share2,
-  ShieldCheck,
-  Store,
-  Sun,
-  Timer,
-  Trash,
-  TriangleAlert,
-  UtensilsCrossed,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../hooks/useTheme'
+import { useAssinaturaBarraca } from '../hooks/useAssinaturaBarraca'
 import { centavosParaReais, reaisParaCentavos } from '../lib/preco'
 import { apagarFotoItem, enviarFotoItem } from '../lib/fotoItem'
 import { apagarLogoBarraca, enviarLogoBarraca } from '../lib/logoBarraca'
@@ -43,20 +23,21 @@ import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
 import { BottomSheet } from '../components/ui/BottomSheet'
-import type { Barraca, Categoria, Item } from '../types/database'
+import type { AmbienteFiscal, Barraca, Categoria, Item, RegimeTributario } from '../types/database'
 
 function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
 }
 
-function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children: ReactNode }) {
+function RotuloSecao({ icone, children }: { icone?: string; children: ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
-      {Icone && <Icone className="size-3.5 shrink-0" aria-hidden />}
+    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-sans text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+      {icone && <Icone nome={icone} size={14} />}
       {children}
     </h2>
   )
@@ -64,8 +45,8 @@ function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children:
 
 function AvisoInline({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 text-sm font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
-      <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+    <p className="mb-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-warning-500 bg-mesa-warning-50 p-3 text-sm font-medium text-mesa-warning-700 dark:bg-mesa-warning-500/15">
+      <Icone nome="warning" size={16} className="mt-0.5" />
       {children}
     </p>
   )
@@ -84,7 +65,7 @@ function BotaoApagar({ onClick, rotulo }: { onClick: () => void; rotulo: string 
       className="group flex size-11 shrink-0 items-center justify-center outline-none"
     >
       <span className="flex size-[30px] items-center justify-center rounded-mesa-sm text-mesa-text-secondary transition-colors duration-[var(--mesa-duration-micro)] group-hover:bg-mesa-error-50 group-hover:text-mesa-error-700 group-focus-visible:[box-shadow:var(--mesa-focus-ring-danger)] dark:group-hover:bg-mesa-error-500/15 dark:group-hover:text-mesa-error-500">
-        <Trash className="size-4" aria-hidden />
+        <Icone nome="delete" size={16} />
       </span>
     </button>
   )
@@ -92,10 +73,10 @@ function BotaoApagar({ onClick, rotulo }: { onClick: () => void; rotulo: string 
 
 function IndicadorSalvo({ salvo }: { salvo: boolean }) {
   return (
-    <span className="flex h-4 items-center gap-1 text-xs font-medium text-mesa-teal-600">
+    <span className="flex h-4 items-center gap-1 text-xs font-medium text-mesa-success-700 dark:text-mesa-success-500">
       {salvo && (
         <>
-          <Check className="size-3.5" aria-hidden />
+          <Icone nome="check" size={14} />
           Salvo
         </>
       )}
@@ -149,7 +130,7 @@ function InputPreco({ item }: { item: Item }) {
         className="w-28"
       />
       <span className="flex w-4 shrink-0 items-center justify-center">
-        {salvo && <Check className="size-4 text-mesa-teal-600" aria-label="Salvo" />}
+        {salvo && <Icone nome="check" size={16} className="text-mesa-success-700 dark:text-mesa-success-500" aria-label="Salvo" />}
       </span>
     </div>
   )
@@ -179,7 +160,7 @@ function MiniaturaItem({
       {fotoUrl ? (
         <img src={fotoUrl} alt="" className="size-full object-cover" />
       ) : (
-        <Image className={tamanho === 'lg' ? 'size-6' : 'size-4'} aria-hidden />
+        <Icone nome="image" size={tamanho === 'lg' ? 24 : 16} />
       )}
     </button>
   )
@@ -198,6 +179,9 @@ function BottomSheetDetalhesItem({
 }) {
   const [descricao, setDescricao] = useState(() => item?.descricao ?? '')
   const [fotoUrl, setFotoUrl] = useState<string | null>(() => item?.foto_url ?? null)
+  const [ncm, setNcm] = useState(() => item?.ncm ?? '')
+  const [cfop, setCfop] = useState(() => item?.cfop ?? '')
+  const [unidadeComercial, setUnidadeComercial] = useState(() => item?.unidade_comercial ?? '')
   const [enviandoFoto, setEnviandoFoto] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -236,7 +220,13 @@ function BottomSheetDetalhesItem({
     setSalvando(true)
     setErro(null)
 
-    const alteracoes = { foto_url: fotoUrl, descricao: descricao.trim() || null }
+    const alteracoes = {
+      foto_url: fotoUrl,
+      descricao: descricao.trim() || null,
+      ncm: ncm.trim() || null,
+      cfop: cfop.trim() || null,
+      unidade_comercial: unidadeComercial.trim() || null,
+    }
     const { error } = await supabase.from('itens').update(alteracoes).eq('id', item.id)
 
     setSalvando(false)
@@ -263,14 +253,14 @@ function BottomSheetDetalhesItem({
             {fotoUrl ? (
               <img src={fotoUrl} alt="" className="size-full object-cover" />
             ) : (
-              <Image className="size-6" aria-hidden />
+              <Icone nome="image" size={24} />
             )}
           </span>
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
               size="sm"
-              icon={<Camera className="size-4" aria-hidden />}
+              icon={<Icone nome="photo_camera" size={16} />}
               loading={enviandoFoto}
               onClick={() => inputArquivoRef.current?.click()}
             >
@@ -280,7 +270,7 @@ function BottomSheetDetalhesItem({
               <Button
                 variant="textDanger"
                 size="sm"
-                icon={<Trash className="size-4" aria-hidden />}
+                icon={<Icone nome="delete" size={16} />}
                 onClick={removerFoto}
               >
                 Remover foto
@@ -304,11 +294,43 @@ function BottomSheetDetalhesItem({
           rows={3}
         />
 
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mesa-text-secondary">
+            Dados fiscais (opcional, pra emissão de nota)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              label="NCM"
+              size="sm"
+              value={ncm}
+              onChange={(e) => setNcm(e.target.value)}
+              placeholder="Ex.: 21069090"
+              className="w-32"
+            />
+            <Input
+              label="CFOP"
+              size="sm"
+              value={cfop}
+              onChange={(e) => setCfop(e.target.value)}
+              placeholder="Ex.: 5101"
+              className="w-28"
+            />
+            <Input
+              label="Unidade"
+              size="sm"
+              value={unidadeComercial}
+              onChange={(e) => setUnidadeComercial(e.target.value)}
+              placeholder="Ex.: un"
+              className="w-24"
+            />
+          </div>
+        </div>
+
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
 
         <Button
           size="xl"
-          icon={<Check className="size-5" aria-hidden />}
+          icon={<Icone nome="check" size={20} />}
           loading={salvando}
           onClick={salvar}
           className="w-full"
@@ -587,6 +609,16 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
     }
   }
 
+  async function alternarEsgotado(item: Item) {
+    const novoEsgotado = !item.esgotado
+    setItens((atual) => atual.map((i) => (i.id === item.id ? { ...i, esgotado: novoEsgotado } : i)))
+    const { error } = await supabase.from('itens').update({ esgotado: novoEsgotado }).eq('id', item.id)
+
+    if (error) {
+      setItens((atual) => atual.map((i) => (i.id === item.id ? { ...i, esgotado: item.esgotado } : i)))
+    }
+  }
+
   function pedirExclusao(item: Item) {
     setItemParaExcluir(item)
     setNomeExclusao(item.nome)
@@ -625,11 +657,11 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <RotuloSecao icone={UtensilsCrossed}>Cardápio</RotuloSecao>
+        <RotuloSecao icone="restaurant">Cardápio</RotuloSecao>
         <button
           type="button"
           onClick={() => setGerenciandoCategorias(true)}
-          className="min-h-11 text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+          className="min-h-11 text-sm font-medium text-mesa-text-primary"
         >
           Categorias
         </button>
@@ -737,9 +769,9 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                     <button
                       type="button"
                       onClick={() => setItemDetalhes(item)}
-                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-text-primary"
                     >
-                      <Pencil className="size-3.5 shrink-0" aria-hidden />
+                      <Icone nome="edit" size={14} />
                       Editar Foto & Info
                     </button>
 
@@ -754,6 +786,12 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                       >
                         ⠿
                       </span>
+                      <span className="text-xs text-mesa-text-secondary">Esgotado</span>
+                      <Toggle
+                        checked={item.esgotado}
+                        onChange={() => alternarEsgotado(item)}
+                        aria-label={`${item.nome} esgotado`}
+                      />
                       <span className="text-xs text-mesa-text-secondary">
                         {item.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -824,7 +862,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
               <Button
                 variant="ghost"
                 size="md"
-                icon={<Plus className="size-4" aria-hidden />}
+                icon={<Icone nome="add" size={16} />}
                 onClick={() => setCriandoItem(true)}
                 className="mt-2 w-full"
               >
@@ -1104,20 +1142,20 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={Store}>Identidade da barraca</RotuloSecao>
+      <RotuloSecao icone="storefront">Identidade da barraca</RotuloSecao>
       <Card>
         <div className="flex items-center gap-3">
           <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
             {logoUrl ? (
               <img src={logoUrl} alt="" className="size-full object-cover" />
             ) : (
-              <Image className="size-6" aria-hidden />
+              <Icone nome="image" size={24} />
             )}
           </span>
           <Button
             variant="outline"
             size="sm"
-            icon={<Camera className="size-4" aria-hidden />}
+            icon={<Icone nome="photo_camera" size={16} />}
             loading={enviandoLogo}
             onClick={() => inputArquivoRef.current?.click()}
           >
@@ -1158,11 +1196,11 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
           Um link público, sem login, pro seu cliente ver o cardápio com foto e preço direto do
           celular.
         </p>
-        <p className="mt-2 truncate font-mesa-mono text-xs text-mesa-text-tertiary">{linkCardapio}</p>
+        <p className="mt-2 truncate text-xs text-mesa-text-tertiary">{linkCardapio}</p>
         <Button
           variant="outline"
           size="md"
-          icon={<Share2 className="size-4" aria-hidden />}
+          icon={<Icone nome="share" size={16} />}
           onClick={compartilharCardapio}
           className="mt-3 w-full"
         >
@@ -1211,7 +1249,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={Timer}>Faixas de tempo</RotuloSecao>
+      <RotuloSecao icone="timer">Faixas de tempo</RotuloSecao>
       <Card>
         <ul className="divide-y divide-mesa-border-subtle">
           <li className="flex items-center justify-between gap-3 py-2">
@@ -1439,7 +1477,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={CreditCard}>Pagamento e taxas</RotuloSecao>
+      <RotuloSecao icone="credit_card">Pagamento e taxas</RotuloSecao>
       <Card>
         {aviso && <AvisoInline>{aviso}</AvisoInline>}
 
@@ -1451,7 +1489,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
                 className="flex cursor-pointer items-center justify-between gap-3 py-3"
               >
                 <span className="inline-flex items-center gap-2 text-base text-mesa-text-primary">
-                  <metodo.icone className="size-4 shrink-0" aria-hidden />
+                  <Icone nome={metodo.icone} size={16} />
                   {metodo.label}
                 </span>
                 <Toggle
@@ -1516,7 +1554,7 @@ function SecaoAparencia() {
 
   return (
     <section>
-      <RotuloSecao icone={Palette}>Aparência</RotuloSecao>
+      <RotuloSecao icone="palette">Aparência</RotuloSecao>
       <Card>
         <div className="flex items-center justify-between gap-3">
           <span className="text-base text-mesa-text-primary">Tema</span>
@@ -1526,10 +1564,269 @@ function SecaoAparencia() {
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             className={classesBotaoIcone()}
           >
-            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
           </button>
         </div>
       </Card>
+    </section>
+  )
+}
+
+const REGIMES_TRIBUTARIOS: { valor: RegimeTributario; rotulo: string }[] = [
+  { valor: 'simples_nacional', rotulo: 'Simples Nacional' },
+  { valor: 'mei', rotulo: 'MEI' },
+]
+
+const AMBIENTES_FISCAIS: { valor: AmbienteFiscal; rotulo: string }[] = [
+  { valor: 'homologacao', rotulo: 'Homologação (teste)' },
+  { valor: 'producao', rotulo: 'Produção' },
+]
+
+/** A FocusNFe emite um token DIFERENTE por ambiente (token_homologacao e
+ * token_producao são credenciais distintas de verdade, não o mesmo valor
+ * com URL diferente) — confirmado na doc deles e na UI de um concorrente
+ * que já implementou (dois campos de token separados). Por isso esse
+ * sheet é parametrizado por ambiente em vez de ter um campo só. */
+function BottomSheetTokenFiscal({
+  barracaId,
+  ambiente,
+  open,
+  onClose,
+  onSucesso,
+}: {
+  barracaId: string
+  ambiente: AmbienteFiscal
+  open: boolean
+  onClose: () => void
+  onSucesso: (ambiente: AmbienteFiscal) => void
+}) {
+  const [token, setToken] = useState('')
+  const [processando, setProcessando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const rotuloAmbiente = ambiente === 'producao' ? 'Produção' : 'Homologação'
+
+  function fechar() {
+    setToken('')
+    setErro(null)
+    onClose()
+  }
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault()
+    if (processando) return
+
+    if (!token.trim()) {
+      setErro('Cole o token gerado no painel da FocusNFe')
+      return
+    }
+
+    setProcessando(true)
+    setErro(null)
+
+    const { error } = await supabase.rpc('definir_token_fiscal', {
+      p_barraca_id: barracaId,
+      p_ambiente: ambiente,
+      p_token: token.trim(),
+    })
+
+    setProcessando(false)
+
+    if (error) {
+      setErro('Não foi possível salvar. Tente novamente.')
+      return
+    }
+
+    fechar()
+    onSucesso(ambiente)
+  }
+
+  return (
+    <BottomSheet open={open} onClose={fechar} aria-label={`Token da FocusNFe — ${rotuloAmbiente}`}>
+      <h2 className="text-lg font-semibold text-mesa-text-primary">Token da FocusNFe — {rotuloAmbiente}</h2>
+      <p className="mt-1 text-sm text-mesa-text-secondary">
+        Gerado no painel da FocusNFe depois de cadastrar sua empresa lá — a FocusNFe emite um token
+        diferente pra cada ambiente. Fica guardado só pra uso do sistema, não é mostrado de novo
+        depois de salvo.
+      </p>
+
+      <form onSubmit={salvar} className="mt-4 flex flex-col gap-4">
+        <Input
+          label={`Token (${rotuloAmbiente})`}
+          type="password"
+          autoComplete="off"
+          autoFocus
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
+        <Button
+          type="submit"
+          size="xl"
+          icon={<Icone nome="check" size={20} />}
+          loading={processando}
+          className="w-full"
+        >
+          Salvar
+        </Button>
+      </form>
+    </BottomSheet>
+  )
+}
+
+/** Configuração fiscal (CLAUDE.md, roadmap 2026-09-26): FocusNFe como
+ * provedor fiscal-as-a-service. Certificado digital e CSC são
+ * cadastrados pelo dono direto no site da FocusNFe — o Sai aê nunca
+ * guarda o certificado, só o token da empresa. Emissão de verdade é
+ * rodada futura; aqui só a configuração. */
+function SecaoFiscal({ barraca }: { barraca: Barraca }) {
+  const [habilitado, setHabilitado] = useState(barraca.fiscal_habilitado)
+  const [regime, setRegime] = useState(barraca.fiscal_regime_tributario)
+  const [ambiente, setAmbiente] = useState(barraca.fiscal_ambiente)
+  const [cnpj, setCnpj] = useState(barraca.cnpj ?? '')
+  const [salvoCnpj, setSalvoCnpj] = useState(false)
+  const [tokensConfigurados, setTokensConfigurados] = useState({ homologacao: false, producao: false })
+  const [sheetTokenAmbiente, setSheetTokenAmbiente] = useState<AmbienteFiscal | null>(null)
+
+  useEffect(() => {
+    let cancelado = false
+
+    supabase
+      .rpc('token_fiscal_configurado', { p_barraca_id: barraca.id })
+      .then(({ data, error }) => {
+        if (cancelado || error) return
+        const linha = Array.isArray(data) ? data[0] : data
+        if (linha) {
+          setTokensConfigurados({
+            homologacao: Boolean(linha.homologacao),
+            producao: Boolean(linha.producao),
+          })
+        }
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [barraca.id])
+
+  async function alternarHabilitado(valor: boolean) {
+    setHabilitado(valor)
+    await supabase.from('barracas').update({ fiscal_habilitado: valor }).eq('id', barraca.id)
+  }
+
+  async function salvarCnpj() {
+    const limpo = cnpj.replace(/\D/g, '')
+    const { error } = await supabase.from('barracas').update({ cnpj: limpo || null }).eq('id', barraca.id)
+    if (!error) {
+      setSalvoCnpj(true)
+      window.setTimeout(() => setSalvoCnpj(false), 1000)
+    }
+  }
+
+  async function escolherRegime(valor: RegimeTributario) {
+    setRegime(valor)
+    await supabase.from('barracas').update({ fiscal_regime_tributario: valor }).eq('id', barraca.id)
+  }
+
+  async function escolherAmbiente(valor: AmbienteFiscal) {
+    setAmbiente(valor)
+    await supabase.from('barracas').update({ fiscal_ambiente: valor }).eq('id', barraca.id)
+  }
+
+  return (
+    <section>
+      <RotuloSecao icone="receipt_long">Fiscal</RotuloSecao>
+      <Card>
+        <p className="text-sm text-mesa-text-secondary">
+          Crie sua conta em focusnfe.com.br, faça o upload do certificado digital A1 diretamente no
+          painel deles e cole os tokens abaixo. O certificado fica sob custódia do provedor — o Sai
+          aê apenas orquestra a emissão.
+        </p>
+
+        <div className="mt-4 flex items-end gap-2">
+          <Input
+            label="CNPJ (emitente)"
+            value={cnpj}
+            onChange={(e) => {
+              setCnpj(e.target.value)
+              setSalvoCnpj(false)
+            }}
+            onBlur={salvarCnpj}
+            placeholder="00.000.000/0000-00"
+            className="max-w-xs"
+          />
+          <IndicadorSalvo salvo={salvoCnpj} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-base text-mesa-text-primary">Fiscal habilitado</span>
+          <Toggle checked={habilitado} onChange={alternarHabilitado} aria-label="Fiscal habilitado" />
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-mesa-text-primary">Regime tributário</p>
+          <div className="flex flex-wrap gap-1.5">
+            {REGIMES_TRIBUTARIOS.map((r) => (
+              <Chip key={r.valor} checked={regime === r.valor} onClick={() => escolherRegime(r.valor)}>
+                {r.rotulo}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-mesa-text-primary">Ambiente</p>
+          <div className="flex flex-wrap gap-1.5">
+            {AMBIENTES_FISCAIS.map((a) => (
+              <Chip key={a.valor} checked={ambiente === a.valor} onClick={() => escolherAmbiente(a.valor)}>
+                {a.rotulo}
+              </Chip>
+            ))}
+          </div>
+          {ambiente === 'producao' && (
+            <div className="mt-3">
+              <AvisoInline>Notas emitidas em produção têm validade fiscal real.</AvisoInline>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-mesa-text-primary">Token da FocusNFe</p>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-mesa-md border border-mesa-border-subtle p-3">
+              <div>
+                <p className="text-sm text-mesa-text-primary">Homologação</p>
+                <p className="text-xs text-mesa-text-secondary">
+                  {tokensConfigurados.homologacao ? 'Configurado' : 'Não configurado'}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSheetTokenAmbiente('homologacao')}>
+                {tokensConfigurados.homologacao ? 'Trocar' : 'Definir'}
+              </Button>
+            </div>
+            <div className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-mesa-md border border-mesa-border-subtle p-3">
+              <div>
+                <p className="text-sm text-mesa-text-primary">Produção</p>
+                <p className="text-xs text-mesa-text-secondary">
+                  {tokensConfigurados.producao ? 'Configurado' : 'Não configurado'}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSheetTokenAmbiente('producao')}>
+                {tokensConfigurados.producao ? 'Trocar' : 'Definir'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <BottomSheetTokenFiscal
+        barracaId={barraca.id}
+        ambiente={sheetTokenAmbiente ?? 'homologacao'}
+        open={sheetTokenAmbiente !== null}
+        onClose={() => setSheetTokenAmbiente(null)}
+        onSucesso={(ambienteSalvo) =>
+          setTokensConfigurados((atual) => ({ ...atual, [ambienteSalvo]: true }))
+        }
+      />
     </section>
   )
 }
@@ -1624,7 +1921,7 @@ function BottomSheetSenhaAdmin({
         <Button
           type="submit"
           size="xl"
-          icon={<Check className="size-5" aria-hidden />}
+          icon={<Icone nome="check" size={20} />}
           loading={processando}
           className="w-full"
         >
@@ -1691,7 +1988,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
 
   return (
     <section className="flex flex-col gap-1">
-      <RotuloSecao icone={ShieldCheck}>Segurança e operador</RotuloSecao>
+      <RotuloSecao icone="verified_user">Segurança e operador</RotuloSecao>
 
       {suportaFaceId && (
         <>
@@ -1715,7 +2012,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       </Button>
 
       {sucesso && (
-        <p className="text-center text-sm font-medium text-mesa-teal-600">
+        <p className="text-center text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
           Senha alterada com sucesso
         </p>
       )}
@@ -1733,7 +2030,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       </Button>
 
       {sucessoSenhaAdmin && (
-        <p className="text-center text-sm font-medium text-mesa-teal-600">
+        <p className="text-center text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
           Senha administrativa alterada
         </p>
       )}
@@ -1741,7 +2038,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       <Button
         variant="destructive"
         size="lg"
-        icon={<LogOut className="size-4" aria-hidden />}
+        icon={<Icone nome="logout" size={16} />}
         onClick={() => setConfirmandoSaida(true)}
         className="mt-3 w-full"
       >
@@ -1776,7 +2073,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
           <Button
             variant="destructive"
             size="xl"
-            icon={<LogOut className="size-5" aria-hidden />}
+            icon={<Icone nome="logout" size={20} />}
             className="w-full"
             onClick={async () => {
               await sair()
@@ -1799,6 +2096,45 @@ function Rodape({ barracaId }: { barracaId: string }) {
   )
 }
 
+// Só aparece pro dono — funcionário não assina nada, é liberado/bloqueado
+// pelo status do dono da barraca (ver assinatura_da_barraca no banco).
+function SecaoAssinatura({ slug }: { slug: string }) {
+  const navigate = useNavigate()
+  const { assinatura } = useAssinaturaBarraca(slug)
+
+  if (!assinatura?.eh_dono) return null
+
+  const rotuloStatus =
+    assinatura.status === 'trialing'
+      ? 'Teste grátis'
+      : assinatura.status === 'active'
+        ? 'Ativa'
+        : assinatura.status === 'past_due'
+          ? 'Pagamento pendente'
+          : assinatura.status === 'canceled'
+            ? 'Cancelada'
+            : 'Assinar agora'
+
+  return (
+    <section className="flex flex-col gap-1">
+      <RotuloSecao icone="auto_awesome">Assinatura</RotuloSecao>
+      <button
+        type="button"
+        onClick={() => navigate(`/${slug}/assinatura`)}
+        className="flex w-full items-center justify-between rounded-mesa-lg border border-mesa-border-default bg-mesa-surface px-4 py-3.5 text-left hover:bg-[var(--mesa-state-hover-bg)]"
+      >
+        <span>
+          <span className="block text-sm font-medium text-mesa-text-primary">
+            {assinatura.plano === 'pro' ? 'Plano Pro' : assinatura.plano === 'essencial' ? 'Plano Essencial' : 'Sai aê'}
+          </span>
+          <span className="block text-xs text-mesa-text-secondary">{rotuloStatus}</span>
+        </span>
+        <Icone nome="chevron_right" size={20} className="text-mesa-text-tertiary" />
+      </button>
+    </section>
+  )
+}
+
 export function Ajustes() {
   const barraca = useBarracaAtual()
 
@@ -1809,18 +2145,20 @@ export function Ajustes() {
           <Link
             to={`/${barraca.slug}`}
             aria-label="Voltar para o início"
-            className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
+            className="inline-flex items-center gap-2 text-mesa-text-primary"
           >
-            <ChevronLeft className="size-7 shrink-0" aria-hidden />
+            <Icone nome="chevron_left" size={28} />
             <h1 className="text-[32px] font-bold leading-[40px]">Ajustes</h1>
           </Link>
         </div>
 
         <div className="flex flex-col gap-8 px-6 pb-28 pt-2">
+          <SecaoAssinatura slug={barraca.slug} />
           <SecaoIdentidade barraca={barraca} />
           <SecaoCardapio barracaId={barraca.id} />
           <SecaoFaixas barraca={barraca} />
           <SecaoPagamento barraca={barraca} />
+          <SecaoFiscal barraca={barraca} />
           <SecaoAparencia />
           <Rodape barracaId={barraca.id} />
         </div>

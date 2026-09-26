@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { AtSign, KeyRound, LogIn, Lock, Mail } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { Button } from '../components/ui/Button'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 
 export function Login() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { entrar } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -30,6 +31,16 @@ export function Login() {
       return
     }
 
+    // /assinar redireciona pro login preservando plano/ciclo — depois de
+    // logar, volta exatamente pra lá em vez de cair na tela padrão.
+    const voltar = params.get('voltar')
+    if (voltar) {
+      const resto = new URLSearchParams(params)
+      resto.delete('voltar')
+      navigate(`${voltar}?${resto.toString()}`)
+      return
+    }
+
     navigate('/')
   }
 
@@ -44,21 +55,21 @@ export function Login() {
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-mesa-lg border border-mesa-border-subtle bg-mesa-surface p-3 shadow-mesa-1">
             <img
-              src="/brand/mesaagil-icone-cor.png"
+              src="/brand/saiae-icone-cor.svg"
               alt=""
               className="max-h-full max-w-full object-contain dark:hidden"
             />
             <img
-              src="/brand/mesaagil-icone-branco.png"
+              src="/brand/saiae-icone-branco.svg"
               alt=""
               className="hidden max-h-full max-w-full object-contain dark:block"
             />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-wide text-mesa-text-primary">
-            MESA ÁGIL
+            SAI AÊ
           </h1>
           <p className="mt-1 text-sm text-mesa-text-secondary">
-            Automação Inteligente para Atendimento
+            Comanda digital pra feira, food truck e lanchonete
           </p>
         </div>
 
@@ -67,10 +78,10 @@ export function Login() {
             <div className="flex flex-col gap-4">
               <div>
                 <div className="mb-1.5 flex items-center gap-1.5">
-                  <AtSign className="size-3.5 text-mesa-text-secondary" aria-hidden />
+                  <Icone nome="alternate_email" size={14} className="text-mesa-text-secondary" />
                   <label
                     htmlFor="login-email"
-                    className="font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary"
+                    className="text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary"
                   >
                     E-mail
                   </label>
@@ -78,7 +89,7 @@ export function Login() {
                 <Input
                   id="login-email"
                   type="email"
-                  icon={<Mail aria-hidden />}
+                  icon={<Icone nome="mail" size={16} />}
                   autoComplete="email"
                   autoFocus
                   required
@@ -90,17 +101,17 @@ export function Login() {
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <Lock className="size-3.5 text-mesa-text-secondary" aria-hidden />
+                    <Icone nome="lock" size={14} className="text-mesa-text-secondary" />
                     <label
                       htmlFor="login-senha"
-                      className="font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary"
+                      className="text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary"
                     >
                       Senha de acesso
                     </label>
                   </div>
                   <Link
                     to="/esqueci-senha"
-                    className="font-mesa-mono text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                    className="text-xs font-medium text-mesa-text-primary"
                   >
                     Esqueci minha senha
                   </Link>
@@ -108,7 +119,7 @@ export function Login() {
                 <Input
                   id="login-senha"
                   type="password"
-                  icon={<KeyRound aria-hidden />}
+                  icon={<Icone nome="key" size={16} />}
                   autoComplete="current-password"
                   required
                   value={senha}
@@ -123,9 +134,9 @@ export function Login() {
           <Button
             type="submit"
             size="xl"
-            icon={<LogIn className="size-5" aria-hidden />}
+            icon={<Icone nome="login" size={20} />}
             loading={entrando}
-            className="w-full shadow-[0_12px_28px_-8px_rgba(245,158,11,0.55)]"
+            className="w-full shadow-[0_12px_28px_-8px_rgba(255,194,26,0.55)]"
           >
             Entrar
           </Button>
@@ -133,7 +144,10 @@ export function Login() {
 
         <p className="mt-6 text-center text-sm text-mesa-text-secondary">
           Não tem conta?{' '}
-          <Link to="/cadastro" className="font-medium text-mesa-teal-700 dark:text-mesa-teal-300">
+          <Link
+            to={`/cadastro?${params.toString()}`}
+            className="font-medium text-mesa-text-primary"
+          >
             Criar conta
           </Link>
         </p>

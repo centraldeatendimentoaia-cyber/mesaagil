@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
-import { ChevronDown, ChevronLeft, ChevronUp, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -12,7 +10,6 @@ import { hojeISO } from '../lib/datas'
 import { calcularIntervalosRelatorio, calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import { useOcultarAoRolar } from '../hooks/useOcultarAoRolar'
 import type { TipoFiltroRelatorio } from '../lib/relatorio'
-import { PainelRelatorio } from '../components/PainelRelatorio'
 import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
@@ -20,6 +17,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import type { Item, PedidoComItens } from '../types/database'
@@ -33,7 +31,7 @@ function RotuloMetodo({ chave }: { chave: string | null }) {
   if (!metodo) return <>{humanizarMetodo(chave)}</>
   return (
     <span className="inline-flex items-center gap-1">
-      <metodo.icone className="size-3.5" aria-hidden />
+      <Icone nome={metodo.icone} size={14} />
       {metodo.label}
     </span>
   )
@@ -62,7 +60,7 @@ function minutosEntre(inicioIso: string, fimIso: string): number {
   return Math.round((new Date(fimIso).getTime() - new Date(inicioIso).getTime()) / 60000)
 }
 
-const COR_CABECALHO = 'FFF59E0B' // mesa-orange-500
+const COR_CABECALHO = 'FFFFC21A' // mesa-orange-500 (Sai aê / mostarda)
 const COR_FUNDO_CANCELADO = 'FFFEF2F2' // mesa-error-50
 const COR_TEXTO_CANCELADO = 'FFB91C1C' // mesa-error-700
 
@@ -85,7 +83,9 @@ async function gerarPlanilha(pedidos: PedidoComItens[]): Promise<ArrayBuffer> {
   ]
 
   const linhaCabecalho = planilha.getRow(1)
-  linhaCabecalho.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  // Mostarda é clara demais pra sustentar texto branco (regra da IDV
+  // "Sai aê": texto sobre mostarda é sempre tinta).
+  linhaCabecalho.font = { bold: true, color: { argb: 'FF18171C' } }
   linhaCabecalho.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COR_CABECALHO } }
   linhaCabecalho.alignment = { vertical: 'middle' }
   linhaCabecalho.height = 20
@@ -136,6 +136,55 @@ function ordenarPorEntregueEmDesc(lista: PedidoComItens[]): PedidoComItens[] {
   })
 }
 
+function BotaoEmitirNota({ pedido }: { pedido: PedidoComItens }) {
+  const [status, setStatus] = useState(pedido.nfce_status)
+  const [mensagem, setMensagem] = useState(pedido.nfce_mensagem)
+  const [chave, setChave] = useState(pedido.nfce_chave)
+  const [emitindo, setEmitindo] = useState(false)
+
+  async function emitir() {
+    setEmitindo(true)
+    setMensagem(null)
+
+    const { data, error } = await supabase.functions.invoke('emitir-nfce', {
+      body: { pedido_id: pedido.id },
+    })
+
+    setEmitindo(false)
+
+    if (error) {
+      const corpo = await error.context?.json?.().catch(() => null)
+      setStatus('erro')
+      setMensagem(corpo?.erro ?? 'Não foi possível emitir. Tente novamente.')
+      return
+    }
+
+    setStatus(data?.status ?? 'erro')
+    setMensagem(data?.mensagem ?? data?.erro ?? null)
+    setChave(data?.chave ?? null)
+  }
+
+  if (status === 'autorizado') {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-mesa-success-700 dark:text-mesa-success-500">
+        <Icone nome="task_alt" size={14} />
+        Nota fiscal emitida{chave ? ` — final ${chave.slice(-8)}` : ''}
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-3">
+      <Button variant="outline" size="sm" loading={emitindo} onClick={emitir}>
+        {status === 'erro' ? 'Tentar emitir nota de novo' : 'Emitir nota fiscal'}
+      </Button>
+      {status === 'erro' && mensagem && (
+        <p className="mt-1.5 text-xs text-mesa-error-500">{mensagem}</p>
+      )}
+    </div>
+  )
+}
+
 function CardHistorico({
   pedido,
   onRestaurar,
@@ -151,14 +200,14 @@ function CardHistorico({
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
+          <p className="font-mesa-display text-2xl font-black leading-none text-mesa-text-tertiary">
             {pedido.senha}
           </p>
           <p
             className={
               cancelado
-                ? 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-tertiary line-through'
-                : 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-primary'
+                ? 'mt-1.5 font-mesa-display text-base font-semibold text-mesa-text-tertiary line-through'
+                : 'mt-1.5 font-mesa-display text-base font-semibold text-mesa-text-primary'
             }
           >
             {formatarPrecoBR(calcularTotalPedido(pedido))}
@@ -217,6 +266,8 @@ function CardHistorico({
           ))}
         </div>
       )}
+
+      {!cancelado && <BotaoEmitirNota pedido={pedido} />}
 
       {!cancelado && (
         <Button
@@ -342,12 +393,7 @@ export function Historico() {
     itemFiltradoId || tipoConsumo !== 'todos' || metodoFiltrado || buscaNormalizada,
   )
 
-  const nomeItemFiltrado = itemFiltradoId
-    ? (itensCardapio.find((item) => item.id === itemFiltradoId)?.nome ?? null)
-    : null
-
-  const filtroRelatorio = { tipo: periodo, dataInicio, dataFim }
-  const intervaloAtual = calcularIntervalosRelatorio(filtroRelatorio).atual
+  const intervaloAtual = calcularIntervalosRelatorio({ tipo: periodo, dataInicio, dataFim }).atual
 
   async function restaurarPedido(pedido: PedidoComItens) {
     setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
@@ -435,16 +481,9 @@ export function Historico() {
         }`}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <BotaoHome className="-ml-2" />
-            <Link
-              to={`/${barraca.slug}/cozinha`}
-              aria-label="Voltar para Cozinha"
-              className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
-            >
-              <ChevronLeft className="size-7 shrink-0" aria-hidden />
-              <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
-            </Link>
+            <h1 className="text-2xl font-bold leading-tight text-mesa-text-primary">Histórico</h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
@@ -453,7 +492,7 @@ export function Historico() {
               aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
               className={classesBotaoIcone()}
             >
-              {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+              {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
             </button>
             <button
               type="button"
@@ -461,12 +500,12 @@ export function Historico() {
               aria-label="Ocultar barra de filtros"
               className={classesBotaoIcone()}
             >
-              <ChevronUp className="size-5" aria-hidden />
+              <Icone nome="expand_less" size={20} />
             </button>
             <Button
               variant="outline"
               size="sm"
-              icon={<Download className="size-4" aria-hidden />}
+              icon={<Icone nome="download" size={16} />}
               onClick={exportarPlanilha}
               disabled={pedidosExibidos.length === 0}
               loading={exportando}
@@ -561,7 +600,7 @@ export function Historico() {
                 onClick={() => setMetodoFiltrado(metodo.chave)}
               >
                 <span className="inline-flex items-center gap-1">
-                  <metodo.icone className="size-3.5" aria-hidden />
+                  <Icone nome={metodo.icone} size={14} />
                   {metodo.label}
                 </span>
               </Chip>
@@ -579,7 +618,7 @@ export function Historico() {
             disabled={pedidosExibidos.length === 0}
             className="flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-mesa-error-500 disabled:opacity-40"
           >
-            <Trash2 className="size-4 shrink-0" aria-hidden />
+            <Icone nome="delete" size={16} />
             Apagar período
           </button>
         </div>
@@ -595,20 +634,11 @@ export function Historico() {
             : 'pointer-events-none -top-16 -translate-x-1/2 opacity-0'
         }`}
       >
-        <ChevronDown className="size-4 shrink-0" aria-hidden />
+        <Icone nome="expand_more" size={16} />
         Filtros
       </button>
 
       <div className="px-6 pt-4">
-        <div className="mb-4">
-          <PainelRelatorio
-            barraca={barraca}
-            filtro={filtroRelatorio}
-            itemFiltradoId={itemFiltradoId}
-            nomeItemFiltrado={nomeItemFiltrado}
-          />
-        </div>
-
         {carregando && (
           <p className="py-8 text-center text-sm text-mesa-text-secondary">Carregando...</p>
         )}

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { Plus, Sun, Moon, Utensils, ClipboardCheck } from 'lucide-react'
 import { Button } from './Button'
+import { Icone } from './Icone'
 import { Input } from './Input'
 import { Textarea } from './Textarea'
 import { Toggle } from './Toggle'
@@ -36,7 +36,7 @@ export default function Playground() {
             <Button
               variant="outline"
               size="sm"
-              icon={dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              icon={dark ? <Icone nome="light_mode" size={16} /> : <Icone nome="dark_mode" size={16} />}
               onClick={() => setDark((v) => !v)}
             >
               {dark ? 'Claro' : 'Escuro'}
@@ -59,8 +59,8 @@ export default function Playground() {
               <Button size="xl">xl</Button>
             </Row>
             <Row>
-              <Button icon={<Plus className="size-4" />}>Adicionar</Button>
-              <Button icon={<Plus className="size-4" />} iconPosition="right">
+              <Button icon={<Icone nome="add" size={16} />}>Adicionar</Button>
+              <Button icon={<Icone nome="add" size={16} />} iconPosition="right">
                 Adicionar
               </Button>
               <Button loading={loading} onClick={() => setLoading((v) => !v)}>
@@ -154,8 +154,8 @@ export default function Playground() {
             <SegmentedControl
               aria-label="Colunas da cozinha"
               items={[
-                { label: 'A Fazer', count: 3, icon: <Utensils className="size-4" /> },
-                { label: 'Pronto', count: 1, icon: <ClipboardCheck className="size-4" /> },
+                { label: 'A Fazer', count: 3, icon: <Icone nome="skillet" size={16} /> },
+                { label: 'Pronto', count: 1, icon: <Icone nome="check_circle" size={16} /> },
               ]}
               activeIndex={segmentIndex}
               onChange={setSegmentIndex}

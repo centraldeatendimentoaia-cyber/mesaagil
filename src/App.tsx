@@ -11,6 +11,7 @@ import { LancarPedido } from './pages/LancarPedido'
 import { ConfirmarPedido } from './pages/ConfirmarPedido'
 import { Cozinha } from './pages/Cozinha'
 import { Historico } from './pages/Historico'
+import { Desktop } from './pages/Desktop'
 import { TelaChamada } from './pages/TelaChamada'
 import { Ajustes } from './pages/Ajustes'
 import { CardapioPublico } from './pages/CardapioPublico'
@@ -21,6 +22,9 @@ import { SelecionarBarraca } from './pages/SelecionarBarraca'
 import { EsqueciSenha } from './pages/EsqueciSenha'
 import { RedefinirSenha } from './pages/RedefinirSenha'
 import { Dispatcher } from './pages/Dispatcher'
+import { Assinar } from './pages/Assinar'
+import { Assinatura } from './pages/Assinatura'
+import { Planos } from './pages/Planos'
 
 function App() {
   // Fonte única de verdade do tema claro/escuro: preferência manual do
@@ -48,6 +52,7 @@ function App() {
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+          <Route path="/assinar" element={<Assinar />} />
 
           <Route path="/" element={<Dispatcher />} />
 
@@ -77,8 +82,11 @@ function App() {
             <Route path="confirmar" element={<ConfirmarPedido />} />
             <Route path="cozinha" element={<Cozinha />} />
             <Route path="historico" element={<Historico />} />
+            <Route path="desktop" element={<Desktop />} />
             <Route path="chamada" element={<TelaChamada />} />
             <Route path="ajustes" element={<Ajustes />} />
+            <Route path="planos" element={<Planos />} />
+            <Route path="assinatura" element={<Assinatura />} />
           </Route>
 
           <Route path="*" element={<NaoEncontrado />} />

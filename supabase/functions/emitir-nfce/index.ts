@@ -1,0 +1,274 @@
+// Emissão de verdade da NFC-e via FocusNFe — CLAUDE.md, roadmap de
+// 2026-09-26. Recebe { pedido_id }, valida os dados fiscais do pedido, dos
+// itens e da barraca, chama a API da FocusNFe e grava o resultado em
+// `pedidos` (ver migração 20260926170000_add_nfce_pedidos.sql).
+//
+// Usa a service role key (não a anon key): lê `barracas_fiscal_token`
+// direto, sem passar pelas funções SECURITY DEFINER pensadas pro client
+// autenticado (definir_token_fiscal/token_fiscal_configurado) — a service
+// role já ignora RLS.
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+
+const FOCUSNFE_URL_HOMOLOGACAO = 'https://homologacao.focusnfe.com.br/v2'
+const FOCUSNFE_URL_PRODUCAO = 'https://api.focusnfe.com.br/v2'
+
+// Tabela de formas de pagamento da NFC-e (Nota Técnica 2020.005/2021,
+// mesma usada pela FocusNFe). Só cobre os métodos que o Sai aê oferece
+// em Confirmar Pedido (ver src/lib/metodoPagamento.ts) — um método novo
+// lá precisa ganhar uma entrada aqui.
+const FORMA_PAGAMENTO_POR_METODO: Record<string, string> = {
+  dinheiro: '01',
+  credito: '03',
+  debito: '04',
+  pix: '17', // Pagamento Instantâneo (PIX) – Dinâmico
+}
+
+// Default razoável pro regime do primeiro cliente (Simples Nacional/MEI,
+// sem crédito de ICMS) — constante isolada de propósito, não espalhar
+// pelo payload se um cliente futuro precisar de outro CST.
+const ICMS_ORIGEM = '0'
+const ICMS_SITUACAO_TRIBUTARIA = '102'
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+  })
+}
+
+type ItemDoPedidoRow = {
+  id: string
+  item_id: string | null
+  nome_item: string
+  quantidade: number
+  preco_centavos_unitario: number
+  removido: boolean
+}
+
+type ItemCadastroRow = {
+  id: string
+  ncm: string | null
+  cfop: string | null
+  unidade_comercial: string | null
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS })
+  }
+
+  let pedidoId: string | undefined
+  try {
+    const body = await req.json()
+    pedidoId = body?.pedido_id
+  } catch {
+    return jsonResponse({ erro: 'JSON inválido' }, 400)
+  }
+
+  if (!pedidoId) {
+    return jsonResponse({ erro: 'pedido_id é obrigatório' }, 400)
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+
+  const { data: pedido, error: erroPedido } = await supabase
+    .from('pedidos')
+    .select(
+      'id, barraca_id, metodo_pagamento, nfce_status, nfce_chave, nfce_numero, ' +
+        'itens_do_pedido(id, item_id, nome_item, quantidade, preco_centavos_unitario, removido)',
+    )
+    .eq('id', pedidoId)
+    .single()
+
+  if (erroPedido || !pedido) {
+    return jsonResponse({ erro: 'Pedido não encontrado' }, 404)
+  }
+
+  if (pedido.nfce_status === 'autorizado') {
+    return jsonResponse({ status: pedido.nfce_status, chave: pedido.nfce_chave, numero: pedido.nfce_numero })
+  }
+
+  const { data: barraca, error: erroBarraca } = await supabase
+    .from('barracas')
+    .select('id, cnpj, fiscal_habilitado, fiscal_ambiente')
+    .eq('id', pedido.barraca_id)
+    .single()
+
+  if (erroBarraca || !barraca) {
+    return jsonResponse({ erro: 'Barraca não encontrada' }, 404)
+  }
+
+  if (!barraca.fiscal_habilitado) {
+    return jsonResponse({ erro: 'Emissão fiscal não habilitada para esta barraca' }, 422)
+  }
+
+  if (!barraca.cnpj) {
+    return jsonResponse({ erro: 'CNPJ da barraca não configurado' }, 422)
+  }
+
+  // A FocusNFe emite um token POR AMBIENTE (token_homologacao e
+  // token_producao são credenciais distintas, não o mesmo valor com URL
+  // diferente) — sempre lê a coluna que corresponde ao ambiente
+  // configurado na barraca, nunca mistura os dois.
+  const colunaToken = barraca.fiscal_ambiente === 'producao' ? 'token_producao' : 'token_homologacao'
+  const { data: tokenRow, error: erroToken } = await supabase
+    .from('barracas_fiscal_token')
+    .select(colunaToken)
+    .eq('barraca_id', barraca.id)
+    .maybeSingle()
+
+  const token = (tokenRow as Record<string, string | null> | null)?.[colunaToken]
+  if (erroToken || !token) {
+    return jsonResponse(
+      { erro: `Token de ${barraca.fiscal_ambiente === 'producao' ? 'produção' : 'homologação'} não configurado` },
+      422,
+    )
+  }
+
+  const itensAtivos = ((pedido.itens_do_pedido ?? []) as ItemDoPedidoRow[]).filter((item) => !item.removido)
+  if (itensAtivos.length === 0) {
+    return jsonResponse({ erro: 'Pedido sem itens para emitir' }, 422)
+  }
+
+  const formaPagamento = pedido.metodo_pagamento
+    ? FORMA_PAGAMENTO_POR_METODO[pedido.metodo_pagamento]
+    : undefined
+  if (!formaPagamento) {
+    return jsonResponse(
+      {
+        erro: `Forma de pagamento "${pedido.metodo_pagamento ?? 'não informada'}" não é suportada pra emissão fiscal`,
+      },
+      422,
+    )
+  }
+
+  const idsItens = itensAtivos.map((item) => item.item_id).filter((id): id is string => id !== null)
+  const { data: itensCadastro, error: erroItensCadastro } = await supabase
+    .from('itens')
+    .select('id, ncm, cfop, unidade_comercial')
+    .in('id', idsItens.length > 0 ? idsItens : ['00000000-0000-0000-0000-000000000000'])
+
+  if (erroItensCadastro) {
+    return jsonResponse({ erro: 'Falha ao carregar dados fiscais dos itens' }, 500)
+  }
+
+  const cadastroPorId = new Map<string, ItemCadastroRow>(
+    ((itensCadastro ?? []) as ItemCadastroRow[]).map((item) => [item.id, item]),
+  )
+
+  const faltando: string[] = []
+  for (const item of itensAtivos) {
+    if (!item.item_id) {
+      faltando.push(`"${item.nome_item}": sem item de cardápio vinculado`)
+      continue
+    }
+    const cadastro = cadastroPorId.get(item.item_id)
+    const camposFaltando: string[] = []
+    if (!cadastro?.ncm) camposFaltando.push('NCM')
+    if (!cadastro?.cfop) camposFaltando.push('CFOP')
+    if (!cadastro?.unidade_comercial) camposFaltando.push('unidade')
+    if (camposFaltando.length > 0) {
+      faltando.push(`"${item.nome_item}": falta ${camposFaltando.join(', ')}`)
+    }
+  }
+
+  if (faltando.length > 0) {
+    return jsonResponse({ erro: `Dados fiscais incompletos: ${faltando.join('; ')}` }, 422)
+  }
+
+  const itemsPayload = itensAtivos.map((item, indice) => {
+    const cadastro = cadastroPorId.get(item.item_id as string) as ItemCadastroRow
+    const valorUnitario = item.preco_centavos_unitario / 100
+    const valorBruto = (item.preco_centavos_unitario * item.quantidade) / 100
+
+    return {
+      numero_item: String(indice + 1),
+      codigo_produto: item.item_id,
+      descricao: item.nome_item,
+      codigo_ncm: cadastro.ncm,
+      cfop: cadastro.cfop,
+      quantidade_comercial: item.quantidade,
+      quantidade_tributavel: item.quantidade,
+      valor_unitario_comercial: valorUnitario,
+      valor_unitario_tributavel: valorUnitario,
+      valor_bruto: valorBruto,
+      unidade_comercial: cadastro.unidade_comercial,
+      unidade_tributavel: cadastro.unidade_comercial,
+      icms_origem: ICMS_ORIGEM,
+      icms_situacao_tributaria: ICMS_SITUACAO_TRIBUTARIA,
+    }
+  })
+
+  const valorTotal = itemsPayload.reduce((soma, item) => soma + item.valor_bruto, 0)
+
+  const payload = {
+    cnpj_emitente: barraca.cnpj.replace(/\D/g, ''),
+    data_emissao: new Date().toISOString(),
+    presenca_comprador: '1',
+    modalidade_frete: '9',
+    local_destino: '1',
+    natureza_operacao: 'VENDA AO CONSUMIDOR',
+    items: itemsPayload,
+    formas_pagamento: [{ forma_pagamento: formaPagamento, valor_pagamento: valorTotal }],
+  }
+
+  // Ambiente NUNCA forçado pra produção — respeita sempre o que a
+  // barraca configurou em Ajustes (default é homologação, sem validade
+  // fiscal, até o dono trocar conscientemente).
+  const baseUrl = barraca.fiscal_ambiente === 'producao' ? FOCUSNFE_URL_PRODUCAO : FOCUSNFE_URL_HOMOLOGACAO
+  const auth = btoa(`${token}:`)
+
+  let respostaFocusNFe: Response
+  try {
+    respostaFocusNFe = await fetch(`${baseUrl}/nfce?ref=${pedidoId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch (erroRede) {
+    return jsonResponse({ erro: `Falha ao contatar a FocusNFe: ${String(erroRede)}` }, 502)
+  }
+
+  const resultado = await respostaFocusNFe.json().catch(() => null)
+
+  if (!respostaFocusNFe.ok) {
+    const mensagem =
+      resultado?.mensagem ??
+      resultado?.erros?.map((e: { mensagem: string }) => e.mensagem).join('; ') ??
+      'Erro desconhecido na FocusNFe'
+    await supabase.from('pedidos').update({ nfce_status: 'erro', nfce_mensagem: mensagem }).eq('id', pedidoId)
+    return jsonResponse({ erro: mensagem, detalhe: resultado }, 502)
+  }
+
+  const status = resultado?.status ?? 'desconhecido'
+  const autorizado = status === 'autorizado'
+
+  await supabase
+    .from('pedidos')
+    .update({
+      nfce_status: status,
+      nfce_chave: resultado?.chave_nfe ?? null,
+      nfce_numero: resultado?.numero ?? null,
+      nfce_mensagem: resultado?.mensagem_sefaz ?? null,
+      nfce_emitida_em: autorizado ? new Date().toISOString() : null,
+    })
+    .eq('id', pedidoId)
+
+  return jsonResponse({
+    status,
+    chave: resultado?.chave_nfe ?? null,
+    numero: resultado?.numero ?? null,
+    mensagem: resultado?.mensagem_sefaz ?? null,
+  })
+})

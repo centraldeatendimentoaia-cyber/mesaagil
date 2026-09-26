@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent, MouseEvent } from 'react'
 import { useNavigate } from 'react-router'
-import { ArrowRight, Info, Plus, Store, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -9,6 +8,7 @@ import { useBarracasDoUsuario } from '../hooks/useBarracasDoUsuario'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { BottomSheet } from '../components/ui/BottomSheet'
 
@@ -40,7 +40,7 @@ function CartaoBarraca({
         {logoUrl ? (
           <img src={logoUrl} alt="" className="size-11 shrink-0 rounded-mesa-full object-cover" />
         ) : (
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-teal-50 text-lg font-bold text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-300">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-lg font-bold text-mesa-neutral-900 dark:bg-mesa-neutral-700 dark:text-mesa-neutral-50">
             {nome.charAt(0).toUpperCase()}
           </span>
         )}
@@ -55,7 +55,7 @@ function CartaoBarraca({
             aria-label={`Apagar ${nome}`}
             className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full text-mesa-text-tertiary outline-none hover:bg-[var(--mesa-state-hover-bg)] hover:text-mesa-error-500"
           >
-            <Trash2 className="size-5" aria-hidden />
+            <Icone nome="delete" size={20} />
           </button>
         )}
       </div>
@@ -64,11 +64,11 @@ function CartaoBarraca({
         <span
           className={clsx(
             'size-2 shrink-0 rounded-mesa-full',
-            emFila > 0 ? 'bg-mesa-teal-500' : 'bg-mesa-neutral-300 dark:bg-mesa-neutral-600',
+            emFila > 0 ? 'bg-mesa-neutral-900 dark:bg-mesa-neutral-50' : 'bg-mesa-neutral-300 dark:bg-mesa-neutral-600',
           )}
           aria-hidden
         />
-        <span className="font-mesa-mono text-xs text-mesa-text-secondary">
+        <span className="text-xs text-mesa-text-secondary">
           {emFila > 0 ? `${emFila} em fila` : 'Sem fila agora'}
         </span>
       </div>
@@ -76,7 +76,7 @@ function CartaoBarraca({
       <Button
         variant="confirm"
         size="lg"
-        icon={<ArrowRight className="size-4" aria-hidden />}
+        icon={<Icone nome="arrow_forward" size={16} />}
         iconPosition="right"
         onClick={onAcessar}
         className="w-full"
@@ -167,7 +167,7 @@ function BottomSheetNovaBarraca({
           required
           value={slug}
           onChange={(e) => aoMudarSlug(e.target.value)}
-          helpText={slug ? `mesaagil.pages.dev/${slug}` : 'só letras minúsculas, números e hífen'}
+          helpText={slug ? `saiae.com.br/${slug}` : 'só letras minúsculas, números e hífen'}
         />
 
         {erro && <p className="text-sm font-medium text-mesa-error-500">{erro}</p>}
@@ -321,8 +321,8 @@ export function SelecionarBarraca() {
   if (barracas.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-mesa-bg-base p-6 text-center">
-        <span className="flex size-16 items-center justify-center rounded-mesa-full bg-mesa-teal-50 dark:bg-mesa-teal-500/15">
-          <Store className="size-7 text-mesa-teal-700 dark:text-mesa-teal-300" aria-hidden />
+        <span className="flex size-16 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 dark:bg-mesa-neutral-800">
+          <Icone nome="storefront" size={28} className="text-mesa-neutral-900 dark:text-mesa-neutral-50" />
         </span>
         <div>
           <h1 className="text-xl font-bold text-mesa-text-primary">Vamos criar sua barraca</h1>
@@ -380,7 +380,7 @@ export function SelecionarBarraca() {
           className="flex items-center gap-3 rounded-mesa-lg border-2 border-dashed border-mesa-border-default p-4 text-left outline-none hover:bg-[var(--mesa-state-hover-bg)]"
         >
           <span className="flex size-11 shrink-0 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-secondary dark:bg-mesa-neutral-700">
-            <Plus className="size-5" aria-hidden />
+            <Icone nome="add" size={20} />
           </span>
           <span>
             <span className="block text-base font-semibold text-mesa-text-primary">Nova barraca</span>
@@ -391,7 +391,7 @@ export function SelecionarBarraca() {
         </button>
 
         <div className="flex items-start gap-2.5 rounded-mesa-lg bg-mesa-neutral-100 p-4 text-sm text-mesa-text-secondary dark:bg-mesa-neutral-800">
-          <Info className="mt-0.5 size-4 shrink-0 text-mesa-text-tertiary" aria-hidden />
+          <Icone nome="info" size={16} className="mt-0.5 text-mesa-text-tertiary" />
           <span>Cada barraca tem seu próprio cardápio, comandas e histórico — nada se mistura entre elas.</span>
         </div>
       </div>

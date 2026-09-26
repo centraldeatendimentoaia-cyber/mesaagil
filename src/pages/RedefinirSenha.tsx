@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { KeyRound, CheckCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'
 import { Button } from '../components/ui/Button'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 
 const ATRASO_REDIRECIONAMENTO_MS = 1500
@@ -49,15 +49,15 @@ export function RedefinirSenha() {
       <div className="w-full max-w-[420px]">
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-            <KeyRound className="size-7 text-mesa-orange-500" aria-hidden />
+            <Icone nome="key" size={28} className="text-mesa-orange-500" />
           </div>
           <h1 className="mt-4 text-[32px] font-bold leading-[40px] text-mesa-text-primary">
             Redefinir senha
           </h1>
           {salvo ? (
             <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-mesa-text-secondary">
-              <CheckCircle className="size-4 shrink-0 text-mesa-teal-600" aria-hidden />
-              Senha atualizada! Te levando pro MesaAgil...
+              <Icone nome="check_circle" size={16} className="text-mesa-success-700 dark:text-mesa-success-500" />
+              Senha atualizada! Te levando pro Sai aê...
             </p>
           ) : (
             <p className="mt-1 text-sm text-mesa-text-secondary">Escolha uma senha nova</p>
@@ -84,7 +84,7 @@ export function RedefinirSenha() {
                     <li
                       key={requisito.chave}
                       className={`flex items-center gap-1.5 text-xs ${
-                        atendido ? 'text-mesa-teal-600' : 'text-mesa-text-tertiary'
+                        atendido ? 'text-mesa-success-700 dark:text-mesa-success-500' : 'text-mesa-text-tertiary'
                       }`}
                     >
                       <span aria-hidden>{atendido ? '✓' : '✗'}</span>
@@ -109,7 +109,7 @@ export function RedefinirSenha() {
 
             <Link
               to="/login"
-              className="mt-4 block text-center text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+              className="mt-4 block text-center text-sm font-medium text-mesa-text-primary"
             >
               Voltar para o login
             </Link>

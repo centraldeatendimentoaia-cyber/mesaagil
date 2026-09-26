@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
-import { ScanFace } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { desbloquearComFaceId, emailFaceId, faceIdAtivado } from '../lib/faceId'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 
 function chaveSessao(usuarioId: string): string {
   return `mesaagil:faceid_ok:${usuarioId}`
@@ -75,10 +75,10 @@ export function GateFaceId({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col items-center justify-center p-6 text-center [background:var(--mesa-gradient-atmosphere)]">
       <div className="w-full max-w-[360px]">
         <div className="mx-auto flex size-16 items-center justify-center rounded-mesa-full bg-white shadow-mesa-1 dark:bg-mesa-neutral-800">
-          <ScanFace className="size-6 text-mesa-orange-500" aria-hidden />
+          <Icone nome="face" size={24} className="text-mesa-orange-500" />
         </div>
         <h1 className="mt-4 text-2xl font-bold leading-[32px] text-mesa-text-primary">
-          MesaAgil travado
+          Sai aê travado
         </h1>
         <p className="mt-1 text-sm text-mesa-text-secondary">
           {emailFaceId() ? `Desbloqueie como ${emailFaceId()}` : 'Use Face ID pra continuar'}
