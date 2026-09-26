@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -482,16 +481,9 @@ export function Historico() {
         }`}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <BotaoHome className="-ml-2" />
-            <Link
-              to={`/${barraca.slug}/cozinha`}
-              aria-label="Voltar para Cozinha"
-              className="inline-flex items-center gap-2 text-mesa-text-primary"
-            >
-              <Icone nome="chevron_left" size={28} />
-              <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
-            </Link>
+            <h1 className="text-2xl font-bold leading-tight text-mesa-text-primary">Histórico</h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
