@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme'
 import { hojeISO } from '../lib/datas'
 import type { TipoFiltroRelatorio } from '../lib/relatorio'
 import { PainelRelatorio } from '../components/PainelRelatorio'
+import { SecaoCaixa } from '../components/SecaoCaixa'
 import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { BotaoHome } from '../components/ui/BotaoHome'
 import { Icone } from '../components/ui/Icone'
@@ -146,6 +147,8 @@ export function Desktop() {
               nomeItemFiltrado={nomeItemFiltrado}
             />
           </div>
+
+          <SecaoCaixa barraca={barraca} />
         </div>
       </div>
     </GateSenhaAdmin>

@@ -39,6 +39,36 @@ export type CustoDiario = {
   valor_centavos: number
 }
 
+export type StatusCaixa = 'aberto' | 'fechado'
+
+export type Caixa = {
+  id: string
+  barraca_id: string
+  data: string
+  status: StatusCaixa
+  valor_abertura_centavos: number
+  observacao_abertura: string | null
+  aberto_em: string
+  valor_fechamento_centavos: number | null
+  valor_esperado_centavos: number | null
+  diferenca_centavos: number | null
+  observacao_fechamento: string | null
+  fechado_em: string | null
+  criado_em: string
+}
+
+export type TipoMovimentoCaixa = 'sangria' | 'suprimento'
+
+export type MovimentoCaixa = {
+  id: string
+  barraca_id: string
+  caixa_id: string
+  tipo: TipoMovimentoCaixa
+  valor_centavos: number
+  motivo: string | null
+  criado_em: string
+}
+
 export type StatusPedido = 'a_fazer' | 'pronto' | 'entregue' | 'cancelado'
 
 export type Pedido = {
