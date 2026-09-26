@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
 import clsx from 'clsx'
+import { Icone } from './Icone'
 
 export type ButtonVariant =
   | 'primary'
@@ -23,7 +23,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const baseClasses =
   'relative inline-flex select-none items-center justify-center gap-2 text-center font-medium ' +
   'transition-[background-color,color,transform,box-shadow] duration-[var(--mesa-duration-micro)] ease-mesa-standard ' +
-  'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 outline-none'
+  // "Pressionado" na IDV Sai aê é só scale(.97) — nenhum variant sólido
+  // troca de cor no press, só no hover (ver variantClasses abaixo).
+  'active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 outline-none'
 
 // Realce tátil sutil (inset de luz no topo) nos botões de ação sólidos —
 // traço do redesign "Speed Bento POS" (emula um switch físico). Cede
@@ -35,17 +37,25 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     // Mostarda é clara demais pra sustentar texto branco (regra da
     // IDV "Sai aê": texto sobre mostarda é sempre tinta) — daí o
-    // neutral-900 fixo em vez de text-white aqui.
-    `rounded-mesa-lg bg-mesa-orange-500 text-mesa-neutral-900 ${realceTatil} hover:bg-mesa-orange-600 active:bg-mesa-orange-700 ` +
+    // neutral-900 fixo em vez de text-white aqui. Hover CLAREIA
+    // (mostarda 400) em vez de escurecer — pressionado não troca de
+    // cor, só o scale(.97) do baseClasses.
+    `rounded-mesa-lg bg-mesa-orange-500 text-mesa-neutral-900 ${realceTatil} hover:bg-mesa-orange-400 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-primary)]',
+  // "Chamar senha" na IDV Sai aê: sólido em tinta (preto), não mais
+  // teal/esmeralda — a marca só tem duas cores (mostarda + tinta), o
+  // resto é apoio. Nome do variant mantido pra não precisar tocar em
+  // cada tela que já usa variant="confirm".
   confirm:
-    `rounded-mesa-lg bg-mesa-teal-500 text-white ${realceTatil} hover:bg-mesa-teal-600 active:bg-mesa-teal-700 ` +
+    `rounded-mesa-lg bg-mesa-neutral-900 text-white ${realceTatil} hover:bg-mesa-neutral-800 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
   destructive:
     `rounded-mesa-lg bg-mesa-error-500 text-white ${realceTatil} hover:bg-mesa-error-700 active:bg-mesa-error-700 ` +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-danger)]',
+  // "Ver cardápio" na IDV Sai aê: contorno em tinta, não mais teal.
   outline:
-    'rounded-mesa-lg border-[1.5px] border-mesa-teal-500 bg-transparent text-mesa-teal-500 ' +
+    'rounded-mesa-lg border-[1.5px] border-mesa-neutral-900 bg-transparent text-mesa-neutral-900 ' +
+    'dark:border-mesa-neutral-50 dark:text-mesa-neutral-50 ' +
     'hover:bg-[var(--mesa-state-hover-bg)] active:bg-[var(--mesa-state-active-bg)] ' +
     'focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
   outlineAmber:
@@ -70,11 +80,11 @@ const sizeClasses: Record<ButtonSize, string> = {
   xl: 'min-h-[60px] px-6 py-3 text-base font-semibold leading-snug',
 }
 
-const spinnerSizeClasses: Record<ButtonSize, string> = {
-  sm: 'size-4',
-  md: 'size-5',
-  lg: 'size-5',
-  xl: 'size-6',
+const spinnerSizePx: Record<ButtonSize, number> = {
+  sm: 16,
+  md: 20,
+  lg: 20,
+  xl: 24,
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -117,7 +127,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       </span>
       {loading && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className={clsx('animate-spin', spinnerSizeClasses[size])} aria-hidden />
+          <Icone nome="progress_activity" size={spinnerSizePx[size]} className="animate-spin" />
         </span>
       )}
     </button>

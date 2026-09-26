@@ -39,32 +39,19 @@
   --color-mesa-orange-800: #805E00;
   --color-mesa-orange-900: #4D3800;
 
-  /* ---------- Esmeralda (marca — confirmação) ----------
-     Substitui o teal pelo verde-esmeralda do redesign (#10B981/
-     #059669) — "confirmation engine" do design system novo, mesmo
-     papel semântico de confirmação de antes. */
-  --color-mesa-teal-50:  #ECFDF5;
-  --color-mesa-teal-100: #D1FAE5;
-  --color-mesa-teal-200: #A7F3D0;
-  --color-mesa-teal-300: #6EE7B7;
-  --color-mesa-teal-400: #34D399;
-  --color-mesa-teal-500: #10B981;
-  --color-mesa-teal-600: #059669;
-  --color-mesa-teal-700: #047857;
-  --color-mesa-teal-800: #065F46;
-  --color-mesa-teal-900: #064E3B;
-
-  /* ---------- Neutros (escala slate do redesign) ---------- */
-  --color-mesa-neutral-50:  #F8FAFC;
-  --color-mesa-neutral-100: #F1F5F9;
-  --color-mesa-neutral-200: #E2E8F0;
-  --color-mesa-neutral-300: #CBD5E1;
-  --color-mesa-neutral-400: #94A3B8;
-  --color-mesa-neutral-500: #64748B;
-  --color-mesa-neutral-600: #475569;
-  --color-mesa-neutral-700: #334155;
-  --color-mesa-neutral-800: #1E293B;
-  --color-mesa-neutral-900: #0F172A;
+  /* ---------- Neutros (escala Tinta da IDV "Sai aê", 2026-09-26) ----------
+     Substitui o slate do Tailwind herdado do redesign anterior — preto
+     mais quente, fonte: redesign_ux_ui_app/saiae/DESIGN.md. */
+  --color-mesa-neutral-50:  #F6F5F2;
+  --color-mesa-neutral-100: #ECEAE6;
+  --color-mesa-neutral-200: #D9D7DC;
+  --color-mesa-neutral-300: #B5B3BB;
+  --color-mesa-neutral-400: #8A8893;
+  --color-mesa-neutral-500: #5E5C66;
+  --color-mesa-neutral-600: #45434D;
+  --color-mesa-neutral-700: #2E2C35;
+  --color-mesa-neutral-800: #232229;
+  --color-mesa-neutral-900: #18171C;
 
   /* ---------- Semânticas ----------
      Rebrand "Sai aê" (2026-09-26): valores bg/texto/principal vêm
@@ -109,17 +96,20 @@
   --color-mesa-payment-unknown-fg: #55555E;
 
   /* ---------- Marca (aliases funcionais) ----------
-     Usar sempre estes em vez do hex direto ou da escala crua. */
+     Usar sempre estes em vez do hex direto ou da escala crua.
+     Botões · Sai aê (2026-09-26): só duas cores de marca (mostarda +
+     tinta) — teal/esmeralda saiu do app inteiro (Button/Badge/Chip/
+     links/gráficos migrados pra tinta ou pras cores operacionais).
+     Hover no primário CLAREIA (mostarda 400) em vez de escurecer —
+     pressionado é só scale(.97), sem 3º tom de cor (ver Button.tsx). */
   --color-mesa-brand: var(--color-mesa-orange-500);
   --color-mesa-action-primary:          var(--color-mesa-orange-500);
-  --color-mesa-action-primary-hover:    var(--color-mesa-orange-600);
-  --color-mesa-action-primary-active:   var(--color-mesa-orange-700);
-  --color-mesa-action-confirm:          var(--color-mesa-teal-500);
-  --color-mesa-action-confirm-hover:    var(--color-mesa-teal-600);
-  --color-mesa-action-confirm-active:   var(--color-mesa-teal-700);
+  --color-mesa-action-primary-hover:    var(--color-mesa-orange-400);
+  --color-mesa-action-confirm:          var(--color-mesa-neutral-900);
+  --color-mesa-action-confirm-hover:    var(--color-mesa-neutral-800);
   --color-mesa-action-destructive:       var(--color-mesa-error-500);
   --color-mesa-action-destructive-hover: var(--color-mesa-error-700);
-  --color-mesa-financial-positive:      var(--color-mesa-teal-700);
+  --color-mesa-financial-positive:      var(--color-mesa-success-700);
 
   /* ---------- Semânticos de superfície (LIGHT — default) ----------
      Redeclarados dentro de .dark, fora do @theme, para o valor
@@ -140,7 +130,7 @@
      "Sai aê": texto sobre mostarda é sempre tinta). */
   --color-mesa-text-on-brand:   var(--color-mesa-neutral-900);
   --color-mesa-text-on-confirm: #FFFFFF;
-  --color-mesa-text-link:       var(--color-mesa-teal-700);
+  --color-mesa-text-link:       var(--color-mesa-neutral-900);
 
   --color-mesa-border-subtle:  var(--color-mesa-neutral-100);
   --color-mesa-border-default: var(--color-mesa-neutral-200);
@@ -188,13 +178,15 @@
   --spacing-mesa-24: 96px;
 
   /* ---------- Tipografia — família (rebrand "Sai aê", 2026-09-26) ----------
-     Figtree pro corpo/UI, Outfit pra títulos/números grandes —
+     Figtree pro corpo/UI, Outfit pra títulos e números (a IDV só define
+     essas duas famílias, ver redesign_ux_ui_app/saiae/DESIGN.md) —
      substitui Hanken Grotesk/Space Grotesk do redesign "Speed Bento
-     POS" anterior. JetBrains Mono mantido pra valores monetários/
-     rótulos técnicos. Carregadas via Google Fonts em index.html. */
+     POS" anterior. JetBrains Mono desse redesign anterior saiu do app:
+     valores monetários/senha/contadores usam Outfit, rótulos de
+     legenda usam Figtree 700 com tracking. Carregadas via Google Fonts
+     em index.html. */
   --font-mesa-sans:    'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mesa-display: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mesa-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* =============================================================
@@ -270,11 +262,11 @@
   /* Estados (hover/active/selected) */
   --mesa-state-hover-bg:  rgba(15, 15, 20, 0.04);
   --mesa-state-active-bg: rgba(15, 15, 20, 0.08);
-  --mesa-state-selected-bg: var(--color-mesa-teal-50);
+  --mesa-state-selected-bg: var(--color-mesa-neutral-100);
 
   /* Focus ring (usar como box-shadow) */
   --mesa-focus-ring-primary: 0 0 0 3px rgba(255, 194, 26, 0.30);
-  --mesa-focus-ring-confirm: 0 0 0 3px rgba(16, 185, 129, 0.30);
+  --mesa-focus-ring-confirm: 0 0 0 3px rgba(24, 23, 28, 0.30);
   --mesa-focus-ring-danger:  0 0 0 3px rgba(239, 68, 68, 0.30);
 
   /* Gradiente atmosférico (LIGHT) — camada 0 das telas de gestão */
@@ -296,7 +288,7 @@
    DARK MODE
    Ativado pela classe .dark no <html> — mecanismo já existente
    neste projeto via `@custom-variant dark (&:where(.dark, .dark *))`
-   em src/index.css. Marca (laranja/teal) permanece idêntica em
+   em src/index.css. Marca (mostarda/tinta) permanece idêntica em
    ambos os temas — só superfície, texto e sombra mudam.
    ============================================================= */
 .dark {
@@ -316,7 +308,7 @@
   --color-mesa-text-tertiary:  var(--color-mesa-neutral-300);
   --color-mesa-text-disabled:  var(--color-mesa-neutral-500);
   --color-mesa-text-inverse:   var(--color-mesa-neutral-900);
-  --color-mesa-text-link:      var(--color-mesa-teal-300);
+  --color-mesa-text-link:      var(--color-mesa-neutral-50);
 
   --color-mesa-border-subtle:  var(--color-mesa-neutral-700);
   --color-mesa-border-default: var(--color-mesa-neutral-600);
@@ -324,7 +316,7 @@
 
   --mesa-state-hover-bg:  rgba(255, 255, 255, 0.06);
   --mesa-state-active-bg: rgba(255, 255, 255, 0.10);
-  --mesa-state-selected-bg: rgba(16, 185, 129, 0.15);
+  --mesa-state-selected-bg: rgba(255, 255, 255, 0.10);
 
   --mesa-gradient-atmosphere:
     radial-gradient(1200px 800px at 100% 0%,   rgba(58, 36, 16, 0.40), transparent 60%),

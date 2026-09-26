@@ -7,15 +7,24 @@
     <meta name="theme-color" id="app-theme-color" content="#FFC21A" />
 
     <!-- Rebrand "Sai aê" (redesign_ux_ui_app/saiae/DESIGN.md, 2026-09-26):
-         Figtree (corpo), Outfit (títulos/números) — substitui Hanken
-         Grotesk/Space Grotesk do redesign "Speed Bento POS" anterior.
-         JetBrains Mono (valores/rótulos técnicos) mantido — ver
-         src/styles/tokens.css. -->
+         Figtree (corpo/interface), Outfit (títulos e números) —
+         substitui Hanken Grotesk/Space Grotesk do redesign "Speed Bento
+         POS" anterior. A IDV só define essas duas famílias — o
+         JetBrains Mono do redesign anterior (valores/rótulos técnicos)
+         saiu do app: números tabulares agora usam Outfit, rótulos de
+         legenda usam Figtree 700 com tracking (ver src/styles/tokens.css). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap"
+    />
+    <!-- Ícones: Material Symbols Rounded, peso 500, preenchido = ativo
+         (ver src/components/ui/Icone.tsx). Variable font — a faixa FILL
+         0..1 é o que liga/desliga o preenchimento por elemento. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
     />
     <link rel="manifest" id="app-manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" id="app-apple-icon" href="/icons/apple-touch-icon.png" />

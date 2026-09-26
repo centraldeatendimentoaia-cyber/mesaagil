@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from 'react'
-import { Check, Minus } from 'lucide-react'
 import clsx from 'clsx'
+import { Icone } from './Icone'
 
 export interface CheckboxProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'onChange'> {
@@ -74,15 +74,15 @@ export function Checkbox({
             'duration-[var(--mesa-duration-short)] ease-mesa-spring-soft',
             'peer-focus-visible:[box-shadow:var(--mesa-focus-ring-confirm)]',
             checked || indeterminate
-              ? 'border-mesa-teal-500 bg-mesa-teal-500'
+              ? 'border-mesa-neutral-900 bg-mesa-neutral-900 dark:border-mesa-neutral-50 dark:bg-mesa-neutral-50'
               : 'border-mesa-neutral-300 bg-transparent dark:border-mesa-neutral-600',
             pulsing && 'scale-[1.15]',
           )}
         >
           {indeterminate ? (
-            <Minus className="size-3.5 text-white" strokeWidth={3} aria-hidden />
+            <Icone nome="remove" size={14} peso={700} className="text-white dark:text-mesa-neutral-900" />
           ) : checked ? (
-            <Check className="size-3.5 text-white" strokeWidth={3} aria-hidden />
+            <Icone nome="check" size={14} peso={700} className="text-white dark:text-mesa-neutral-900" />
           ) : null}
         </span>
       </span>

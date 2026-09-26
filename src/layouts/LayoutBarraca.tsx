@@ -44,9 +44,9 @@ export function LayoutBarraca() {
       .getElementById('app-manifest')
       ?.setAttribute('href', `/${barraca.slug}/manifest.webmanifest`)
 
-    // Cor de marca fixa do MesaAgil (âmbar 500, redesign "Speed Bento
+    // Cor de marca fixa do Sai aê (mostarda, IDV "Sai aê" — antes âmbar 500, redesign "Speed Bento
     // POS") — não é mais por barraca.
-    document.getElementById('app-theme-color')?.setAttribute('content', '#F59E0B')
+    document.getElementById('app-theme-color')?.setAttribute('content', '#FFC21A')
 
     document
       .getElementById('app-apple-icon')

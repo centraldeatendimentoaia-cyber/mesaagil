@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronDown, ChevronLeft, ChevronUp, Download, Moon, Sun, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -20,6 +19,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import type { Item, PedidoComItens } from '../types/database'
@@ -33,7 +33,7 @@ function RotuloMetodo({ chave }: { chave: string | null }) {
   if (!metodo) return <>{humanizarMetodo(chave)}</>
   return (
     <span className="inline-flex items-center gap-1">
-      <metodo.icone className="size-3.5" aria-hidden />
+      <Icone nome={metodo.icone} size={14} />
       {metodo.label}
     </span>
   )
@@ -153,14 +153,14 @@ function CardHistorico({
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
+          <p className="font-mesa-display text-2xl font-black leading-none text-mesa-text-tertiary">
             {pedido.senha}
           </p>
           <p
             className={
               cancelado
-                ? 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-tertiary line-through'
-                : 'mt-1.5 font-mesa-mono text-base font-semibold text-mesa-text-primary'
+                ? 'mt-1.5 font-mesa-display text-base font-semibold text-mesa-text-tertiary line-through'
+                : 'mt-1.5 font-mesa-display text-base font-semibold text-mesa-text-primary'
             }
           >
             {formatarPrecoBR(calcularTotalPedido(pedido))}
@@ -442,9 +442,9 @@ export function Historico() {
             <Link
               to={`/${barraca.slug}/cozinha`}
               aria-label="Voltar para Cozinha"
-              className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
+              className="inline-flex items-center gap-2 text-mesa-text-primary"
             >
-              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <Icone nome="chevron_left" size={28} />
               <h1 className="text-2xl font-bold leading-tight">Histórico</h1>
             </Link>
           </div>
@@ -455,7 +455,7 @@ export function Historico() {
               aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
               className={classesBotaoIcone()}
             >
-              {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+              {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
             </button>
             <button
               type="button"
@@ -463,12 +463,12 @@ export function Historico() {
               aria-label="Ocultar barra de filtros"
               className={classesBotaoIcone()}
             >
-              <ChevronUp className="size-5" aria-hidden />
+              <Icone nome="expand_less" size={20} />
             </button>
             <Button
               variant="outline"
               size="sm"
-              icon={<Download className="size-4" aria-hidden />}
+              icon={<Icone nome="download" size={16} />}
               onClick={exportarPlanilha}
               disabled={pedidosExibidos.length === 0}
               loading={exportando}
@@ -563,7 +563,7 @@ export function Historico() {
                 onClick={() => setMetodoFiltrado(metodo.chave)}
               >
                 <span className="inline-flex items-center gap-1">
-                  <metodo.icone className="size-3.5" aria-hidden />
+                  <Icone nome={metodo.icone} size={14} />
                   {metodo.label}
                 </span>
               </Chip>
@@ -581,7 +581,7 @@ export function Historico() {
             disabled={pedidosExibidos.length === 0}
             className="flex min-h-11 items-center gap-1.5 px-2 text-sm font-semibold text-mesa-error-500 disabled:opacity-40"
           >
-            <Trash2 className="size-4 shrink-0" aria-hidden />
+            <Icone nome="delete" size={16} />
             Apagar período
           </button>
         </div>
@@ -597,7 +597,7 @@ export function Historico() {
             : 'pointer-events-none -top-16 -translate-x-1/2 opacity-0'
         }`}
       >
-        <ChevronDown className="size-4 shrink-0" aria-hidden />
+        <Icone nome="expand_more" size={16} />
         Filtros
       </button>
 

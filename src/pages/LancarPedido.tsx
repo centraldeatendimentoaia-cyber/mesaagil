@@ -1,20 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import {
-  ArrowRight,
-  Check,
-  FileText,
-  Image,
-  LayoutGrid,
-  List,
-  Minus,
-  Moon,
-  Plus,
-  Star,
-  Sun,
-  type LucideIcon,
-} from 'lucide-react'
 import clsx from 'clsx'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
@@ -38,6 +24,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Textarea } from '../components/ui/Textarea'
@@ -69,11 +56,11 @@ type SenhaConfirmada = {
  * de fundo mora só no <span> interno; o <button> em si é transparente.
  */
 function BotaoStepper({
-  icone: Icone,
+  icone,
   onClick,
   rotulo,
 }: {
-  icone: LucideIcon
+  icone: string
   onClick: () => void
   rotulo: string
 }) {
@@ -84,8 +71,8 @@ function BotaoStepper({
       aria-label={rotulo}
       className="flex size-11 shrink-0 items-center justify-center outline-none"
     >
-      <span className="flex size-10 items-center justify-center rounded-mesa-full bg-mesa-teal-500 text-white transition-transform active:scale-90">
-        <Icone className="size-4" aria-hidden />
+      <span className="flex size-10 items-center justify-center rounded-mesa-full bg-mesa-neutral-900 text-white transition-transform active:scale-90">
+        <Icone nome={icone} size={16} />
       </span>
     </button>
   )
@@ -114,7 +101,7 @@ function CardItemCardapio({
     <Card
       className={clsx(
         'flex gap-3 border-2',
-        selecionado ? 'border-mesa-teal-500' : 'border-transparent',
+        selecionado ? 'border-mesa-neutral-900 dark:border-mesa-neutral-50' : 'border-transparent',
       )}
     >
       <div className="relative shrink-0">
@@ -122,12 +109,12 @@ function CardItemCardapio({
           <img src={item.foto_url} alt="" className="size-[72px] rounded-mesa-md object-cover" />
         ) : (
           <span className="flex size-[72px] items-center justify-center rounded-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
-            <Image className="size-6" aria-hidden />
+            <Icone nome="image" size={24} />
           </span>
         )}
         {posicaoPopular !== null && (
           <span className="absolute -left-1.5 -top-1.5 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-mesa-neutral-900 shadow-mesa-1">
-            <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
+            <Icone nome="star" size={10} preenchido />
             {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
           </span>
         )}
@@ -138,18 +125,18 @@ function CardItemCardapio({
           <p className="min-w-0 flex-1 text-base font-semibold text-mesa-text-primary">{item.nome}</p>
           <div className="shrink-0">
             {selecionado ? (
-              <div className="flex items-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1 pr-1 dark:bg-mesa-teal-500/15">
-                <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
-                <span className="min-w-[1.5ch] text-center font-mesa-mono text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
+              <div className="flex items-center gap-1 rounded-mesa-full bg-mesa-neutral-100 py-1 pr-1 dark:bg-mesa-neutral-800">
+                <BotaoStepper icone="remove" onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
+                <span className="min-w-[1.5ch] text-center font-mesa-display text-base font-bold text-mesa-text-primary">
                   {quantidade}
                 </span>
-                <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
+                <BotaoStepper icone="add" onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
               </div>
             ) : (
               <Button
                 variant="outline"
                 size="sm"
-                icon={<Plus className="size-4" aria-hidden />}
+                icon={<Icone nome="add" size={16} />}
                 onClick={onIncrementar}
               >
                 Adicionar
@@ -161,7 +148,7 @@ function CardItemCardapio({
         {item.descricao && (
           <p className="mt-0.5 line-clamp-2 text-xs text-mesa-text-secondary">{item.descricao}</p>
         )}
-        <p className="mt-1 font-mesa-mono text-sm font-semibold text-mesa-text-primary">
+        <p className="mt-1 font-mesa-display text-sm font-semibold text-mesa-text-primary">
           {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : 'Sem preço'}
         </p>
 
@@ -172,11 +159,11 @@ function CardItemCardapio({
               onClick={onAbrirObservacao}
               className="flex min-h-11 min-w-0 items-center gap-1 truncate text-xs font-medium text-mesa-text-secondary"
             >
-              <FileText className="size-3.5 shrink-0" aria-hidden />
+              <Icone nome="description" size={14} />
               <span className="truncate">{observacao ? `Obs: ${observacao}` : 'Adicionar observação'}</span>
             </button>
             {item.preco_centavos > 0 && (
-              <span className="shrink-0 font-mesa-mono text-xs font-semibold text-mesa-teal-700 dark:text-mesa-teal-400">
+              <span className="shrink-0 font-mesa-display text-xs font-semibold text-mesa-text-primary">
                 Total: {formatarPrecoBR(item.preco_centavos * quantidade)}
               </span>
             )}
@@ -209,7 +196,7 @@ function CardItemCardapioGrade({
     <Card
       className={clsx(
         'flex flex-col overflow-hidden border-2',
-        selecionado ? 'border-mesa-teal-500' : 'border-transparent',
+        selecionado ? 'border-mesa-neutral-900 dark:border-mesa-neutral-50' : 'border-transparent',
       )}
     >
       <div className="relative -mx-4 -mt-4 mb-3">
@@ -221,12 +208,12 @@ function CardItemCardapioGrade({
           />
         ) : (
           <span className="flex aspect-[4/3] w-[calc(100%+2rem)] items-center justify-center rounded-t-mesa-md bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
-            <Image className="size-6" aria-hidden />
+            <Icone nome="image" size={24} />
           </span>
         )}
         {posicaoPopular !== null && (
           <span className="absolute left-2 top-2 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-mesa-neutral-900 shadow-mesa-1">
-            <Star className="size-2.5 shrink-0" fill="currentColor" aria-hidden />
+            <Icone nome="star" size={10} preenchido />
             {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
           </span>
         )}
@@ -236,24 +223,24 @@ function CardItemCardapioGrade({
       {item.descricao && (
         <p className="mt-0.5 line-clamp-2 text-xs text-mesa-text-secondary">{item.descricao}</p>
       )}
-      <p className="mt-1 font-mesa-mono text-sm font-semibold text-mesa-text-primary">
+      <p className="mt-1 font-mesa-display text-sm font-semibold text-mesa-text-primary">
         {item.preco_centavos > 0 ? formatarPrecoBR(item.preco_centavos) : 'Sem preço'}
       </p>
 
       <div className="mt-3">
         {selecionado ? (
-          <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-teal-50 py-1.5 dark:bg-mesa-teal-500/15">
-            <BotaoStepper icone={Minus} onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
-            <span className="min-w-[1.5ch] text-center font-mesa-mono text-base font-bold text-mesa-teal-700 dark:text-mesa-teal-300">
+          <div className="flex items-center justify-center gap-1 rounded-mesa-full bg-mesa-neutral-100 py-1.5 dark:bg-mesa-neutral-800">
+            <BotaoStepper icone="remove" onClick={onDecrementar} rotulo={`Remover uma unidade de ${item.nome}`} />
+            <span className="min-w-[1.5ch] text-center font-mesa-display text-base font-bold text-mesa-text-primary">
               {quantidade}
             </span>
-            <BotaoStepper icone={Plus} onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
+            <BotaoStepper icone="add" onClick={onIncrementar} rotulo={`Adicionar uma unidade de ${item.nome}`} />
           </div>
         ) : (
           <Button
             variant="outline"
             size="md"
-            icon={<Plus className="size-4" aria-hidden />}
+            icon={<Icone nome="add" size={16} />}
             onClick={onIncrementar}
             className="w-full"
           >
@@ -634,7 +621,7 @@ export function LancarPedido() {
         </span>
         <span
           className={`text-[96px] font-bold leading-[104px] tracking-tight ${
-            senha.provisoria ? 'text-mesa-text-tertiary' : 'text-mesa-teal-700 dark:text-mesa-teal-400'
+            senha.provisoria ? 'text-mesa-text-tertiary' : 'text-mesa-success-700 dark:text-mesa-success-500'
           }`}
         >
           {senha.valor}
@@ -651,8 +638,8 @@ export function LancarPedido() {
             </span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-2 rounded-mesa-full bg-mesa-teal-50 px-4 py-2 text-sm font-semibold text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400">
-            <Check className="size-4 shrink-0" aria-hidden />
+          <span className="inline-flex items-center gap-2 rounded-mesa-full bg-mesa-success-50 px-4 py-2 text-sm font-semibold text-mesa-success-700 dark:bg-mesa-success-500/15 dark:text-mesa-success-500">
+            <Icone nome="check" size={16} />
             Enviado para a cozinha
           </span>
         )}
@@ -676,7 +663,7 @@ export function LancarPedido() {
       <div className="flex items-start justify-between gap-3 px-6 pt-[calc(env(safe-area-inset-top)+20px)]">
         <div className="flex items-center gap-1">
           <BotaoHome className="-ml-2" />
-          <h1 className="text-[32px] font-bold leading-[40px] text-mesa-teal-700 dark:text-mesa-teal-300">
+          <h1 className="text-[32px] font-bold leading-[40px] text-mesa-text-primary">
             Lançar Pedido
           </h1>
         </div>
@@ -697,7 +684,7 @@ export function LancarPedido() {
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             className={classesBotaoIcone()}
           >
-            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
           </button>
         </div>
       </div>
@@ -786,7 +773,7 @@ export function LancarPedido() {
                   onClick={() => setFiltroAtivo('mais-pedidos')}
                   className="shrink-0"
                 >
-                  <Star className="size-3.5 shrink-0" aria-hidden />
+                  <Icone nome="star" size={14} />
                   Mais Pedidos
                 </Chip>
               )}
@@ -806,7 +793,7 @@ export function LancarPedido() {
 
           {!carregandoItens && !erroItens && !buscaItem.trim() && nomeSecaoAtiva && itensFiltrados.length > 0 && (
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-orange-700 dark:text-mesa-teal-400">
+              <h2 className="flex items-center gap-1.5 font-mesa-sans text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
                 <span className="size-1.5 shrink-0 rounded-mesa-full bg-current" aria-hidden />
                 {nomeSecaoAtiva}
                 <span className="text-mesa-text-tertiary">
@@ -816,13 +803,7 @@ export function LancarPedido() {
               <Button
                 variant="outline"
                 size="sm"
-                icon={
-                  modoVisualizacao === 'lista' ? (
-                    <LayoutGrid className="size-4" aria-hidden />
-                  ) : (
-                    <List className="size-4" aria-hidden />
-                  )
-                }
+                icon={<Icone nome={modoVisualizacao === 'lista' ? 'grid_view' : 'list'} size={16} />}
                 onClick={alternarModoVisualizacao}
                 className="shrink-0"
                 aria-label={
@@ -890,7 +871,7 @@ export function LancarPedido() {
             </p>
           )}
 
-          <div className="overflow-hidden rounded-mesa-lg bg-mesa-teal-700 shadow-mesa-3 dark:bg-mesa-teal-600">
+          <div className="overflow-hidden rounded-mesa-lg bg-mesa-neutral-900 shadow-mesa-3">
             <div className="flex justify-center border-b border-white/10">
               <button
                 type="button"
@@ -907,16 +888,18 @@ export function LancarPedido() {
               className="flex w-full items-center justify-between gap-3 py-4 pl-5 pr-2 text-left text-white outline-none transition-transform active:scale-[0.99]"
             >
               <span>
-                <span className="block font-mesa-mono text-sm text-white/80">
+                <span className="block text-sm text-white/80">
                   {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
                 </span>
-                <span className="block font-mesa-mono text-2xl font-bold leading-tight">
+                <span className="block font-mesa-display text-2xl font-bold leading-tight">
                   {formatarPrecoBR(totalCentavos)}
                 </span>
               </span>
-              <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-teal-600 px-4 py-2.5 text-sm font-semibold dark:bg-mesa-teal-500">
+              {/* Único elemento mostarda desta tela ("um primário por
+                  tela") — tudo o mais nessa barra é tinta/branco. */}
+              <span className="flex shrink-0 items-center gap-1.5 rounded-mesa-full bg-mesa-orange-500 px-4 py-2.5 text-sm font-semibold text-mesa-neutral-900 hover:bg-mesa-orange-400">
                 Ver nota
-                <ArrowRight className="size-4 shrink-0" aria-hidden />
+                <Icone nome="arrow_forward" size={16} />
               </span>
             </button>
           </div>

@@ -1,19 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import {
-  ChefHat,
-  ChevronDown,
-  Clock,
-  History,
-  ListOrdered,
-  LogOut,
-  Moon,
-  Settings,
-  ShoppingBag,
-  Sun,
-  Volume2,
-  type LucideIcon,
-} from 'lucide-react'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
@@ -26,6 +12,7 @@ import { calcularTotalBruto } from '../lib/relatorio'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Icone } from '../components/ui/Icone'
 import { BottomSheet } from '../components/ui/BottomSheet'
 
 function formatarSenha(senha: number): string {
@@ -42,10 +29,10 @@ function calcularEsperaMediaMinutos(emFila: { criado_em: string }[]): number | n
   return Math.round(somaMinutos / emFila.length)
 }
 
-function IconeCard({ icone: Icone }: { icone: LucideIcon }) {
+function IconeCard({ icone }: { icone: string }) {
   return (
-    <span className="flex size-11 items-center justify-center rounded-mesa-md bg-mesa-teal-50 text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400">
-      <Icone className="size-5" aria-hidden />
+    <span className="flex size-11 items-center justify-center rounded-mesa-md bg-mesa-neutral-100 text-mesa-neutral-900 dark:bg-mesa-neutral-700 dark:text-mesa-neutral-50">
+      <Icone nome={icone} size={20} />
     </span>
   )
 }
@@ -57,7 +44,7 @@ function CardDashboard({
   badge,
   onClick,
 }: {
-  icone: LucideIcon
+  icone: string
   titulo: string
   subtitulo: string
   badge?: number
@@ -140,7 +127,7 @@ export function Dashboard() {
               <h1 className="min-w-0 truncate text-[28px] font-bold leading-[36px] text-mesa-text-primary">
                 {barraca.nome}
               </h1>
-              <ChevronDown className="size-5 shrink-0 text-mesa-text-secondary" aria-hidden />
+              <Icone nome="expand_more" size={20} className="text-mesa-text-secondary" />
             </button>
           ) : (
             <h1 className="text-[28px] font-bold leading-[36px] text-mesa-text-primary">
@@ -161,14 +148,14 @@ export function Dashboard() {
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             className={classesBotaoIcone()}
           >
-            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
           </button>
           <Link
             to={`/${barraca.slug}/ajustes`}
             aria-label="Ajustes"
             className={classesBotaoIcone()}
           >
-            <Settings className="size-5" aria-hidden />
+            <Icone nome="settings" size={20} />
           </Link>
           <button
             type="button"
@@ -176,7 +163,7 @@ export function Dashboard() {
             aria-label="Conta"
             className={classesBotaoIcone('danger')}
           >
-            <LogOut className="size-5" aria-hidden />
+            <Icone nome="logout" size={20} />
           </button>
         </div>
       </div>
@@ -190,20 +177,20 @@ export function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 px-6 pb-4 pt-4">
         <CardDashboard
-          icone={ShoppingBag}
+          icone="receipt_long"
           titulo="Caixa"
           subtitulo="Lançar pedidos"
           onClick={() => navigate(`/${barraca.slug}/lancar`)}
         />
         <CardDashboard
-          icone={ChefHat}
+          icone="skillet"
           titulo="Cozinha"
           subtitulo={`${contagemAFazer} pedido${contagemAFazer === 1 ? '' : 's'} em preparo`}
           badge={contagemAFazer}
           onClick={() => navigate(`/${barraca.slug}/cozinha`)}
         />
         <CardDashboard
-          icone={Volume2}
+          icone="campaign"
           titulo="Chamada"
           subtitulo={
             ultimaChamada ? `Última: senha ${formatarSenha(ultimaChamada.senha)}` : 'Nenhuma senha ainda'
@@ -211,7 +198,7 @@ export function Dashboard() {
           onClick={() => navigate(`/${barraca.slug}/chamada`)}
         />
         <CardDashboard
-          icone={History}
+          icone="bar_chart"
           titulo="Histórico"
           subtitulo={`${vendasHojeCount} venda${vendasHojeCount === 1 ? '' : 's'} · ${formatarPrecoBR(totalHojeCentavos)} hoje`}
           onClick={() => navigate(`/${barraca.slug}/historico`)}
@@ -222,26 +209,26 @@ export function Dashboard() {
         <Card className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-semibold text-mesa-text-primary">
-              <span className="size-2 rounded-mesa-full bg-mesa-teal-500" aria-hidden />
+              <span className="size-2 rounded-mesa-full bg-mesa-neutral-900 dark:bg-mesa-neutral-50" aria-hidden />
               Ritmo da Operação
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
-              <p className="flex items-center gap-1 font-mesa-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
-                <Clock className="size-3" aria-hidden />
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+                <Icone nome="schedule" size={12} />
                 Espera média
               </p>
-              <p className="mt-1 font-mesa-mono text-lg font-bold text-mesa-text-primary">
+              <p className="mt-1 font-mesa-display text-lg font-bold text-mesa-text-primary">
                 {esperaMediaMinutos === null ? '—' : `${esperaMediaMinutos} min`}
               </p>
             </div>
             <div className="rounded-mesa-md bg-mesa-surface-alt p-3">
-              <p className="flex items-center gap-1 font-mesa-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
-                <ListOrdered className="size-3" aria-hidden />
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-mesa-text-tertiary">
+                <Icone nome="format_list_numbered" size={12} />
                 Em fila
               </p>
-              <p className="mt-1 font-mesa-mono text-lg font-bold text-mesa-text-primary">
+              <p className="mt-1 font-mesa-display text-lg font-bold text-mesa-text-primary">
                 {contagemAFazer} comanda{contagemAFazer === 1 ? '' : 's'}
               </p>
             </div>
@@ -293,7 +280,7 @@ export function Dashboard() {
           <Button
             variant="destructive"
             size="xl"
-            icon={<LogOut className="size-5" aria-hidden />}
+            icon={<Icone nome="logout" size={20} />}
             className="w-full"
             onClick={async () => {
               await sair()

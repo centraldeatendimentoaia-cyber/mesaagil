@@ -3,7 +3,7 @@ import clsx from 'clsx'
 
 export type PontoGrafico = { chave: string; rotulo: string; valor: number }
 
-/** Gráfico de colunas de série única (um hue só, mesa-teal) — sem paleta
+/** Gráfico de colunas de série única (um hue só, mesa-success) — sem paleta
  * categórica porque não há identidade a distinguir, só magnitude ao longo
  * do tempo. Rótulo abaixo do gráfico troca ao tocar/passar o mouse numa
  * barra, em vez de um tooltip flutuante posicionado em cima do SVG
@@ -63,8 +63,8 @@ export function GraficoBarras({
               className={clsx(
                 'cursor-pointer transition-colors',
                 indiceExibido === indice
-                  ? 'fill-mesa-teal-600 dark:fill-mesa-teal-400'
-                  : 'fill-mesa-teal-200 dark:fill-mesa-teal-500/30',
+                  ? 'fill-mesa-success-700 dark:fill-mesa-success-500'
+                  : 'fill-mesa-success-500/30 dark:fill-mesa-success-500/20',
               )}
               onMouseEnter={() => setAtivo(indice)}
               onMouseLeave={() => setAtivo(null)}
@@ -74,7 +74,7 @@ export function GraficoBarras({
         })}
       </svg>
 
-      <div className="mt-1 flex font-mesa-mono text-[10px] text-mesa-text-tertiary">
+      <div className="mt-1 flex text-[10px] text-mesa-text-tertiary">
         {pontos.map((ponto, indice) =>
           indice % passoRotulo === 0 || indice === pontos.length - 1 ? (
             <span key={ponto.chave} style={{ width: `${100 / pontos.length}%` }} className="text-center">
@@ -88,7 +88,7 @@ export function GraficoBarras({
 
       {pontoExibido && (
         <p className="mt-2 text-sm font-medium text-mesa-text-primary">
-          {pontoExibido.rotulo} — <span className="font-mesa-mono">{formatarValor(pontoExibido.valor)}</span>
+          {pontoExibido.rotulo} — <span className="font-mesa-display font-semibold">{formatarValor(pontoExibido.valor)}</span>
         </p>
       )}
     </div>

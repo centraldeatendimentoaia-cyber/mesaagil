@@ -1,15 +1,18 @@
 import { NavLink } from 'react-router'
-import { ShoppingBag, ChefHat, Volume2, History, Settings, type LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
+import { Icone } from './ui/Icone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 
-const ITENS: { rotulo: string; rota: string; icone: LucideIcon }[] = [
-  { rotulo: 'Lançar', rota: 'lancar', icone: ShoppingBag },
-  { rotulo: 'Cozinha', rota: 'cozinha', icone: ChefHat },
-  { rotulo: 'Chamada', rota: 'chamada', icone: Volume2 },
-  { rotulo: 'Histórico', rota: 'historico', icone: History },
-  { rotulo: 'Ajustes', rota: 'ajustes', icone: Settings },
+// Ícones da barra inferior: mesmo conjunto que a IDV Sai aê especifica
+// pra navegação principal (receipt_long/skillet/campaign/bar_chart) —
+// ver redesign_ux_ui_app/saiae/DESIGN.md.
+const ITENS: { rotulo: string; rota: string; icone: string }[] = [
+  { rotulo: 'Lançar', rota: 'lancar', icone: 'receipt_long' },
+  { rotulo: 'Cozinha', rota: 'cozinha', icone: 'skillet' },
+  { rotulo: 'Chamada', rota: 'chamada', icone: 'campaign' },
+  { rotulo: 'Histórico', rota: 'historico', icone: 'bar_chart' },
+  { rotulo: 'Ajustes', rota: 'ajustes', icone: 'settings' },
 ]
 
 export function BarraNavegacao() {
@@ -24,7 +27,6 @@ export function BarraNavegacao() {
       )}
     >
       {ITENS.map((item) => {
-        const Icone = item.icone
         const mostrarBadge = item.rota === 'cozinha' && contagemAFazer > 0
 
         return (
@@ -35,12 +37,15 @@ export function BarraNavegacao() {
               clsx(
                 'flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5',
                 'transition-colors duration-[var(--mesa-duration-micro)]',
-                isActive ? 'text-mesa-teal-700 dark:text-mesa-teal-400' : 'text-mesa-neutral-500',
+                // Tinta pro estado ativo, não mostarda — a cor de marca
+                // não pode vazar pra dentro da tela da Cozinha, e essa
+                // barra também aparece lá.
+                isActive ? 'text-mesa-neutral-900 dark:text-mesa-neutral-50' : 'text-mesa-neutral-500',
               )
             }
           >
             <span className="relative inline-flex">
-              <Icone size={24} aria-hidden />
+              <Icone nome={item.icone} size={24} />
               {mostrarBadge && (
                 <span
                   aria-hidden

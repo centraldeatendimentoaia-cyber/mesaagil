@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Check, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { usePedidosAtual } from '../layouts/contextoPedidos'
 import { tocarSomPedidoNaChamada } from '../lib/sons'
+import { Icone } from '../components/ui/Icone'
 
 const OPACIDADES_ANTERIORES = [0.7, 0.5, 0.3]
 
@@ -80,7 +80,7 @@ export function TelaChamada() {
         aria-label="Sair da tela de chamada"
         className="absolute right-3 top-3 z-10 flex size-11 items-center justify-center text-mesa-neutral-400 opacity-40 outline-none transition-opacity duration-[var(--mesa-duration-micro)] hover:opacity-70 focus-visible:opacity-70"
       >
-        <X className="size-5" aria-hidden />
+        <Icone nome="close" size={20} />
       </button>
 
       <div className="flex justify-center pt-2">
@@ -98,7 +98,7 @@ export function TelaChamada() {
             <span
               aria-live="polite"
               className={clsx(
-                'font-mesa-mono text-[96px] font-bold leading-[104px] tracking-tight text-white',
+                'font-mesa-display text-[96px] font-extrabold leading-[104px] tracking-tight text-white',
                 'transition-opacity duration-[250ms]',
                 visivel ? 'opacity-100' : 'opacity-0',
               )}
@@ -111,7 +111,7 @@ export function TelaChamada() {
               </span>
             )}
             <span className="mt-2 inline-flex items-center gap-2 rounded-mesa-full bg-mesa-orange-500/15 px-4 py-2 text-sm font-semibold text-mesa-orange-500">
-              <Check className="size-4 shrink-0" aria-hidden />
+              <Icone nome="check" size={16} />
               Pedido pronto — retire no balcão
             </span>
           </>
@@ -129,7 +129,7 @@ export function TelaChamada() {
             {anteriores.map((pedido, indice) => (
               <span
                 key={pedido.id}
-                className="font-mesa-mono text-2xl font-bold text-white"
+                className="font-mesa-display text-2xl font-bold text-white"
                 style={{ opacity: OPACIDADES_ANTERIORES[indice] }}
               >
                 {formatarSenha(pedido.senha)}

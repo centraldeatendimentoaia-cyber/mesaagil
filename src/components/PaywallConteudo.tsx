@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Check, Star } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 import { PLANOS, formatarPreco, linkAssinar } from '../lib/planos'
 import { textoTempoRestante } from '../lib/tempoTrial'
 import type { AssinaturaBarraca } from '../types/database'
@@ -81,18 +81,18 @@ export function PaywallConteudo({ assinatura }: { assinatura: AssinaturaBarraca 
                 <h3 className="text-base font-bold text-mesa-text-primary">{info.nome}</h3>
                 {info.selo && (
                   <span className="inline-flex items-center gap-1 rounded-mesa-full bg-mesa-orange-50 px-2.5 py-1 text-xs font-semibold text-mesa-orange-700">
-                    <Star className="size-3 fill-current" aria-hidden /> Mais completo
+                    <Icone nome="star" size={12} preenchido /> Mais completo
                   </span>
                 )}
               </div>
               <p className="mt-1 text-sm text-mesa-text-secondary">{info.descricao}</p>
 
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-mesa-text-primary">{formatarPreco(preco)}</span>
+                <span className="font-mesa-display text-2xl font-bold text-mesa-text-primary">{formatarPreco(preco)}</span>
                 <span className="text-sm text-mesa-text-secondary">/mês</span>
               </div>
               {ciclo === 'anual' && (
-                <p className="mt-0.5 text-xs font-medium text-mesa-teal-600">
+                <p className="mt-0.5 text-xs font-medium text-mesa-success-700 dark:text-mesa-success-500">
                   {formatarPreco(info.anual.total)}/ano · economia de {formatarPreco(info.anual.economia)} (
                   {info.anual.off})
                 </p>
@@ -101,7 +101,7 @@ export function PaywallConteudo({ assinatura }: { assinatura: AssinaturaBarraca 
               <ul className="mt-4 flex flex-col gap-2">
                 {info.itens.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-mesa-text-primary">
-                    <Check className="mt-0.5 size-4 shrink-0 text-mesa-teal-500" aria-hidden />
+                    <Icone nome="check" size={16} className="mt-0.5 text-mesa-neutral-900 dark:text-mesa-neutral-50" />
                     {item}
                   </li>
                 ))}

@@ -8,31 +8,34 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   dot?: boolean
 }
 
+// success/successOutline usam mesa-success-* (verde operacional "No
+// prazo" da IDV Sai aê) — não são mais teal/esmeralda, que deixou de
+// ser cor de marca (ver DESIGN.md, "só duas cores").
 const variantClasses: Record<BadgeVariant, string> = {
   neutral: 'bg-mesa-neutral-100 text-mesa-neutral-700 dark:bg-mesa-neutral-700 dark:text-mesa-neutral-200',
-  success: 'bg-mesa-teal-50 text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400',
-  warning: 'bg-mesa-orange-50 text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400',
+  success: 'bg-mesa-success-50 text-mesa-success-700 dark:bg-mesa-success-500/15 dark:text-mesa-success-500',
+  warning: 'bg-mesa-warning-50 text-mesa-warning-700 dark:bg-mesa-warning-500/15 dark:text-mesa-warning-500',
   danger: 'bg-mesa-error-50 text-mesa-error-700 dark:bg-mesa-error-500/15 dark:text-mesa-error-400',
   info: 'bg-mesa-info-50 text-mesa-info-700 dark:bg-mesa-info-500/15 dark:text-mesa-info-400',
   highlight: 'bg-mesa-orange-500 text-mesa-neutral-900',
-  successOutline: 'border border-mesa-teal-500 bg-transparent text-mesa-teal-700 dark:text-mesa-teal-300',
+  successOutline: 'border border-mesa-success-500 bg-transparent text-mesa-success-700 dark:text-mesa-success-500',
 }
 
 const dotClasses: Record<BadgeVariant, string> = {
   neutral: 'bg-mesa-neutral-500',
-  success: 'bg-mesa-teal-500',
-  warning: 'bg-mesa-orange-500',
+  success: 'bg-mesa-success-500',
+  warning: 'bg-mesa-warning-500',
   danger: 'bg-mesa-error-500',
   info: 'bg-mesa-info-500',
   highlight: 'bg-white',
-  successOutline: 'bg-mesa-teal-500',
+  successOutline: 'bg-mesa-success-500',
 }
 
 export function Badge({ variant = 'neutral', dot = false, className, children, ...rest }: BadgeProps) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-mesa-full px-3 py-1 font-mesa-mono text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-mesa-full px-3 py-1 text-xs font-medium',
         variantClasses[variant],
         className,
       )}

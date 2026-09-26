@@ -6,29 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import clsx from 'clsx'
-import {
-  Camera,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  Image,
-  LogOut,
-  Moon,
-  Pencil,
-  Plus,
-  Palette,
-  Share2,
-  ShieldCheck,
-  Sparkles,
-  Store,
-  Sun,
-  Timer,
-  Trash,
-  TriangleAlert,
-  UtensilsCrossed,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
@@ -46,6 +23,7 @@ import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Toggle } from '../components/ui/Toggle'
@@ -56,10 +34,10 @@ function textoPrecoInicial(centavos: number): string {
   return centavos > 0 ? centavosParaReais(centavos).toFixed(2).replace('.', ',') : ''
 }
 
-function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children: ReactNode }) {
+function RotuloSecao({ icone, children }: { icone?: string; children: ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
-      {Icone && <Icone className="size-3.5 shrink-0" aria-hidden />}
+    <h2 className="mb-3 flex items-center gap-1.5 font-mesa-sans text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+      {icone && <Icone nome={icone} size={14} />}
       {children}
     </h2>
   )
@@ -67,8 +45,8 @@ function RotuloSecao({ icone: Icone, children }: { icone?: LucideIcon; children:
 
 function AvisoInline({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 text-sm font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
-      <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+    <p className="mb-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-warning-500 bg-mesa-warning-50 p-3 text-sm font-medium text-mesa-warning-700 dark:bg-mesa-warning-500/15">
+      <Icone nome="warning" size={16} className="mt-0.5" />
       {children}
     </p>
   )
@@ -87,7 +65,7 @@ function BotaoApagar({ onClick, rotulo }: { onClick: () => void; rotulo: string 
       className="group flex size-11 shrink-0 items-center justify-center outline-none"
     >
       <span className="flex size-[30px] items-center justify-center rounded-mesa-sm text-mesa-text-secondary transition-colors duration-[var(--mesa-duration-micro)] group-hover:bg-mesa-error-50 group-hover:text-mesa-error-700 group-focus-visible:[box-shadow:var(--mesa-focus-ring-danger)] dark:group-hover:bg-mesa-error-500/15 dark:group-hover:text-mesa-error-500">
-        <Trash className="size-4" aria-hidden />
+        <Icone nome="delete" size={16} />
       </span>
     </button>
   )
@@ -95,10 +73,10 @@ function BotaoApagar({ onClick, rotulo }: { onClick: () => void; rotulo: string 
 
 function IndicadorSalvo({ salvo }: { salvo: boolean }) {
   return (
-    <span className="flex h-4 items-center gap-1 text-xs font-medium text-mesa-teal-600">
+    <span className="flex h-4 items-center gap-1 text-xs font-medium text-mesa-success-700 dark:text-mesa-success-500">
       {salvo && (
         <>
-          <Check className="size-3.5" aria-hidden />
+          <Icone nome="check" size={14} />
           Salvo
         </>
       )}
@@ -152,7 +130,7 @@ function InputPreco({ item }: { item: Item }) {
         className="w-28"
       />
       <span className="flex w-4 shrink-0 items-center justify-center">
-        {salvo && <Check className="size-4 text-mesa-teal-600" aria-label="Salvo" />}
+        {salvo && <Icone nome="check" size={16} className="text-mesa-success-700 dark:text-mesa-success-500" aria-label="Salvo" />}
       </span>
     </div>
   )
@@ -182,7 +160,7 @@ function MiniaturaItem({
       {fotoUrl ? (
         <img src={fotoUrl} alt="" className="size-full object-cover" />
       ) : (
-        <Image className={tamanho === 'lg' ? 'size-6' : 'size-4'} aria-hidden />
+        <Icone nome="image" size={tamanho === 'lg' ? 24 : 16} />
       )}
     </button>
   )
@@ -266,14 +244,14 @@ function BottomSheetDetalhesItem({
             {fotoUrl ? (
               <img src={fotoUrl} alt="" className="size-full object-cover" />
             ) : (
-              <Image className="size-6" aria-hidden />
+              <Icone nome="image" size={24} />
             )}
           </span>
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
               size="sm"
-              icon={<Camera className="size-4" aria-hidden />}
+              icon={<Icone nome="photo_camera" size={16} />}
               loading={enviandoFoto}
               onClick={() => inputArquivoRef.current?.click()}
             >
@@ -283,7 +261,7 @@ function BottomSheetDetalhesItem({
               <Button
                 variant="textDanger"
                 size="sm"
-                icon={<Trash className="size-4" aria-hidden />}
+                icon={<Icone nome="delete" size={16} />}
                 onClick={removerFoto}
               >
                 Remover foto
@@ -311,7 +289,7 @@ function BottomSheetDetalhesItem({
 
         <Button
           size="xl"
-          icon={<Check className="size-5" aria-hidden />}
+          icon={<Icone nome="check" size={20} />}
           loading={salvando}
           onClick={salvar}
           className="w-full"
@@ -628,11 +606,11 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <RotuloSecao icone={UtensilsCrossed}>Cardápio</RotuloSecao>
+        <RotuloSecao icone="restaurant">Cardápio</RotuloSecao>
         <button
           type="button"
           onClick={() => setGerenciandoCategorias(true)}
-          className="min-h-11 text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+          className="min-h-11 text-sm font-medium text-mesa-text-primary"
         >
           Categorias
         </button>
@@ -740,9 +718,9 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
                     <button
                       type="button"
                       onClick={() => setItemDetalhes(item)}
-                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-300"
+                      className="flex min-h-11 items-center gap-1 text-xs font-medium text-mesa-text-primary"
                     >
-                      <Pencil className="size-3.5 shrink-0" aria-hidden />
+                      <Icone nome="edit" size={14} />
                       Editar Foto & Info
                     </button>
 
@@ -827,7 +805,7 @@ function SecaoCardapio({ barracaId }: { barracaId: string }) {
               <Button
                 variant="ghost"
                 size="md"
-                icon={<Plus className="size-4" aria-hidden />}
+                icon={<Icone nome="add" size={16} />}
                 onClick={() => setCriandoItem(true)}
                 className="mt-2 w-full"
               >
@@ -1107,20 +1085,20 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={Store}>Identidade da barraca</RotuloSecao>
+      <RotuloSecao icone="storefront">Identidade da barraca</RotuloSecao>
       <Card>
         <div className="flex items-center gap-3">
           <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-mesa-full bg-mesa-neutral-100 text-mesa-text-tertiary dark:bg-mesa-neutral-700">
             {logoUrl ? (
               <img src={logoUrl} alt="" className="size-full object-cover" />
             ) : (
-              <Image className="size-6" aria-hidden />
+              <Icone nome="image" size={24} />
             )}
           </span>
           <Button
             variant="outline"
             size="sm"
-            icon={<Camera className="size-4" aria-hidden />}
+            icon={<Icone nome="photo_camera" size={16} />}
             loading={enviandoLogo}
             onClick={() => inputArquivoRef.current?.click()}
           >
@@ -1161,11 +1139,11 @@ function SecaoIdentidade({ barraca }: { barraca: Barraca }) {
           Um link público, sem login, pro seu cliente ver o cardápio com foto e preço direto do
           celular.
         </p>
-        <p className="mt-2 truncate font-mesa-mono text-xs text-mesa-text-tertiary">{linkCardapio}</p>
+        <p className="mt-2 truncate text-xs text-mesa-text-tertiary">{linkCardapio}</p>
         <Button
           variant="outline"
           size="md"
-          icon={<Share2 className="size-4" aria-hidden />}
+          icon={<Icone nome="share" size={16} />}
           onClick={compartilharCardapio}
           className="mt-3 w-full"
         >
@@ -1214,7 +1192,7 @@ function SecaoFaixas({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={Timer}>Faixas de tempo</RotuloSecao>
+      <RotuloSecao icone="timer">Faixas de tempo</RotuloSecao>
       <Card>
         <ul className="divide-y divide-mesa-border-subtle">
           <li className="flex items-center justify-between gap-3 py-2">
@@ -1442,7 +1420,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
 
   return (
     <section>
-      <RotuloSecao icone={CreditCard}>Pagamento e taxas</RotuloSecao>
+      <RotuloSecao icone="credit_card">Pagamento e taxas</RotuloSecao>
       <Card>
         {aviso && <AvisoInline>{aviso}</AvisoInline>}
 
@@ -1454,7 +1432,7 @@ function SecaoPagamento({ barraca }: { barraca: Barraca }) {
                 className="flex cursor-pointer items-center justify-between gap-3 py-3"
               >
                 <span className="inline-flex items-center gap-2 text-base text-mesa-text-primary">
-                  <metodo.icone className="size-4 shrink-0" aria-hidden />
+                  <Icone nome={metodo.icone} size={16} />
                   {metodo.label}
                 </span>
                 <Toggle
@@ -1519,7 +1497,7 @@ function SecaoAparencia() {
 
   return (
     <section>
-      <RotuloSecao icone={Palette}>Aparência</RotuloSecao>
+      <RotuloSecao icone="palette">Aparência</RotuloSecao>
       <Card>
         <div className="flex items-center justify-between gap-3">
           <span className="text-base text-mesa-text-primary">Tema</span>
@@ -1529,7 +1507,7 @@ function SecaoAparencia() {
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             className={classesBotaoIcone()}
           >
-            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
           </button>
         </div>
       </Card>
@@ -1627,7 +1605,7 @@ function BottomSheetSenhaAdmin({
         <Button
           type="submit"
           size="xl"
-          icon={<Check className="size-5" aria-hidden />}
+          icon={<Icone nome="check" size={20} />}
           loading={processando}
           className="w-full"
         >
@@ -1694,7 +1672,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
 
   return (
     <section className="flex flex-col gap-1">
-      <RotuloSecao icone={ShieldCheck}>Segurança e operador</RotuloSecao>
+      <RotuloSecao icone="verified_user">Segurança e operador</RotuloSecao>
 
       {suportaFaceId && (
         <>
@@ -1718,7 +1696,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       </Button>
 
       {sucesso && (
-        <p className="text-center text-sm font-medium text-mesa-teal-600">
+        <p className="text-center text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
           Senha alterada com sucesso
         </p>
       )}
@@ -1736,7 +1714,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       </Button>
 
       {sucessoSenhaAdmin && (
-        <p className="text-center text-sm font-medium text-mesa-teal-600">
+        <p className="text-center text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
           Senha administrativa alterada
         </p>
       )}
@@ -1744,7 +1722,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
       <Button
         variant="destructive"
         size="lg"
-        icon={<LogOut className="size-4" aria-hidden />}
+        icon={<Icone nome="logout" size={16} />}
         onClick={() => setConfirmandoSaida(true)}
         className="mt-3 w-full"
       >
@@ -1779,7 +1757,7 @@ function Rodape({ barracaId }: { barracaId: string }) {
           <Button
             variant="destructive"
             size="xl"
-            icon={<LogOut className="size-5" aria-hidden />}
+            icon={<Icone nome="logout" size={20} />}
             className="w-full"
             onClick={async () => {
               await sair()
@@ -1823,7 +1801,7 @@ function SecaoAssinatura({ slug }: { slug: string }) {
 
   return (
     <section className="flex flex-col gap-1">
-      <RotuloSecao icone={Sparkles}>Assinatura</RotuloSecao>
+      <RotuloSecao icone="auto_awesome">Assinatura</RotuloSecao>
       <button
         type="button"
         onClick={() => navigate(`/${slug}/assinatura`)}
@@ -1831,11 +1809,11 @@ function SecaoAssinatura({ slug }: { slug: string }) {
       >
         <span>
           <span className="block text-sm font-medium text-mesa-text-primary">
-            {assinatura.plano === 'pro' ? 'Plano Pro' : assinatura.plano === 'essencial' ? 'Plano Essencial' : 'MesaAgil'}
+            {assinatura.plano === 'pro' ? 'Plano Pro' : assinatura.plano === 'essencial' ? 'Plano Essencial' : 'Sai aê'}
           </span>
           <span className="block text-xs text-mesa-text-secondary">{rotuloStatus}</span>
         </span>
-        <ChevronRight className="size-5 shrink-0 text-mesa-text-tertiary" aria-hidden />
+        <Icone nome="chevron_right" size={20} className="text-mesa-text-tertiary" />
       </button>
     </section>
   )
@@ -1851,9 +1829,9 @@ export function Ajustes() {
           <Link
             to={`/${barraca.slug}`}
             aria-label="Voltar para o início"
-            className="inline-flex items-center gap-2 text-mesa-teal-700 dark:text-mesa-teal-300"
+            className="inline-flex items-center gap-2 text-mesa-text-primary"
           >
-            <ChevronLeft className="size-7 shrink-0" aria-hidden />
+            <Icone nome="chevron_left" size={28} />
             <h1 className="text-[32px] font-bold leading-[40px]">Ajustes</h1>
           </Link>
         </div>

@@ -5,8 +5,8 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react'
-import { Eye, EyeOff, Search, X, AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
+import { Icone } from './Icone'
 
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'currency' | 'percentage' | 'search'
 export type InputSize = 'sm' | 'md' | 'lg'
@@ -73,15 +73,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   let rightAffix: ReactNode = null
 
   if (type === 'currency') {
-    leftAffix = <span className="font-mesa-mono text-mesa-text-secondary">R$</span>
+    leftAffix = <span className="font-mesa-display font-semibold text-mesa-text-secondary">R$</span>
   } else if (type === 'search') {
-    leftAffix = <Search className="size-4 text-mesa-text-secondary" aria-hidden />
+    leftAffix = <Icone nome="search" size={16} className="text-mesa-text-secondary" />
   } else if (icon) {
     leftAffix = <span className="text-mesa-text-secondary [&>svg]:size-4">{icon}</span>
   }
 
   if (type === 'percentage') {
-    rightAffix = <span className="font-mesa-mono text-mesa-text-secondary">%</span>
+    rightAffix = <span className="font-mesa-display font-semibold text-mesa-text-secondary">%</span>
   } else if (type === 'password') {
     rightAffix = (
       <button
@@ -91,7 +91,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-label={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
         className="flex size-11 -mr-3 shrink-0 items-center justify-center text-mesa-text-secondary disabled:cursor-not-allowed"
       >
-        {passwordVisible ? <EyeOff className="size-[18px]" aria-hidden /> : <Eye className="size-[18px]" aria-hidden />}
+        {passwordVisible ? <Icone nome="visibility_off" size={18} /> : <Icone nome="visibility" size={18} />}
       </button>
     )
   } else if (showClear) {
@@ -102,11 +102,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-label="Limpar campo"
         className="flex size-11 -mr-3 shrink-0 items-center justify-center text-mesa-text-secondary"
       >
-        <X className="size-4" aria-hidden />
+        <Icone nome="close" size={16} />
       </button>
     )
   } else if (hasError && (type === 'text' || type === 'email' || type === 'number' || type === 'currency')) {
-    rightAffix = <AlertCircle className="size-4 text-mesa-error-500" aria-hidden />
+    rightAffix = <Icone nome="error" size={16} className="text-mesa-error-500" />
   }
 
   return (
@@ -139,7 +139,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           aria-describedby={helpText || error ? helpId : undefined}
           className={clsx(
             'h-full min-w-0 flex-1 bg-transparent text-sm text-mesa-text-primary placeholder:text-mesa-text-tertiary outline-none disabled:cursor-not-allowed',
-            (type === 'currency' || type === 'number' || type === 'percentage') && 'font-mesa-mono',
+            (type === 'currency' || type === 'number' || type === 'percentage') && 'font-mesa-display font-semibold',
           )}
           {...rest}
         />

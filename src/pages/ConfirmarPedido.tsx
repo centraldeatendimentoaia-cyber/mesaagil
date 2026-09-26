@@ -1,17 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import {
-  ChevronLeft,
-  ClipboardList,
-  CreditCard,
-  Hash,
-  Moon,
-  Plane,
-  Rocket,
-  Sun,
-  Truck,
-  type LucideIcon,
-} from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { classesBotaoIcone } from '../lib/estiloBotaoIcone'
@@ -32,6 +20,7 @@ import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Checkbox } from '../components/ui/Checkbox'
+import { Icone } from '../components/ui/Icone'
 import { Textarea } from '../components/ui/Textarea'
 import type { Item } from '../types/database'
 
@@ -78,7 +67,7 @@ function LinhaItemConfirmar({
           {marcado && ' · Entregar direto sem passar na cozinha'}
         </p>
         {observacao && (
-          <span className="mt-1 inline-block rounded-mesa-full bg-mesa-orange-50 px-2 py-0.5 text-[11px] font-medium text-mesa-orange-700 dark:bg-mesa-orange-500/15 dark:text-mesa-orange-400">
+          <span className="mt-1 inline-block rounded-mesa-full bg-mesa-warning-50 px-2 py-0.5 text-[11px] font-medium text-mesa-warning-700">
             {observacao}
           </span>
         )}
@@ -91,18 +80,18 @@ function LinhaItemConfirmar({
 }
 
 function LinhaMeta({
-  icone: Icone,
+  icone,
   label,
   valor,
 }: {
-  icone: LucideIcon
+  icone: string
   label: string
   valor: string
 }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-mesa-border-subtle py-3 last:border-b-0">
       <span className="flex items-center gap-2 text-sm text-mesa-text-secondary">
-        <Icone className="size-4 shrink-0" aria-hidden />
+        <Icone nome={icone} size={16} />
         {label}
       </span>
       <span className="text-sm font-semibold text-mesa-text-primary">{valor}</span>
@@ -245,9 +234,9 @@ export function ConfirmarPedido() {
             <button
               type="button"
               onClick={voltarEEditar}
-              className="inline-flex items-center gap-2 text-mesa-teal-700 outline-none dark:text-mesa-teal-300"
+              className="inline-flex items-center gap-2 text-mesa-text-primary outline-none"
             >
-              <ChevronLeft className="size-7 shrink-0" aria-hidden />
+              <Icone nome="chevron_left" size={28} />
               <h1 className="text-[32px] font-bold leading-[40px]">Confirmar pedido</h1>
             </button>
           </div>
@@ -261,13 +250,13 @@ export function ConfirmarPedido() {
           aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
           className={classesBotaoIcone()}
         >
-          {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+          {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
         </button>
       </div>
 
       <div className="flex-1 px-6 pb-10 pt-5">
-        <h2 className="mb-3 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
-          <ClipboardList className="size-3.5 shrink-0" aria-hidden />
+        <h2 className="mb-3 flex items-center gap-1.5 font-mesa-sans text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <Icone nome="receipt_long" size={14} />
           Itens do pedido
           <span className="flex h-5 min-w-5 items-center justify-center rounded-mesa-full bg-mesa-neutral-100 px-1.5 text-[11px] font-bold normal-case tracking-normal text-mesa-text-secondary dark:bg-mesa-neutral-700">
             {linhas.length}
@@ -298,22 +287,22 @@ export function ConfirmarPedido() {
         {(mesa.trim() || viagem) && (
           <Card className="mt-4">
             {viagem ? (
-              <LinhaMeta icone={Plane} label="Viagem" valor="sim" />
+              <LinhaMeta icone="takeout_dining" label="Viagem" valor="sim" />
             ) : mesa.trim() ? (
-              <LinhaMeta icone={Hash} label="Mesa" valor={mesa.trim()} />
+              <LinhaMeta icone="tag" label="Mesa" valor={mesa.trim()} />
             ) : null}
           </Card>
         )}
 
-        <div className="mt-4 flex items-center justify-between rounded-mesa-lg bg-mesa-teal-50 px-5 py-4 dark:bg-mesa-teal-500/15">
+        <div className="mt-4 flex items-center justify-between rounded-mesa-lg bg-mesa-neutral-100 px-5 py-4 dark:bg-mesa-neutral-800">
           <span className="text-base font-semibold text-mesa-text-primary">Total</span>
-          <span className="font-mesa-mono text-2xl font-bold text-mesa-teal-700 dark:text-mesa-teal-400">
+          <span className="font-mesa-display text-2xl font-bold text-mesa-text-primary">
             {formatarPrecoBR(totalCentavos)}
           </span>
         </div>
 
-        <h2 className="mb-3 mt-6 flex items-center gap-1.5 font-mesa-mono text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
-          <CreditCard className="size-3.5 shrink-0" aria-hidden />
+        <h2 className="mb-3 mt-6 flex items-center gap-1.5 font-mesa-sans text-xs font-semibold uppercase tracking-wider text-mesa-text-secondary">
+          <Icone nome="credit_card" size={14} />
           Forma de pagamento
         </h2>
         {opcoesPagamento.length === 0 ? (
@@ -334,7 +323,7 @@ export function ConfirmarPedido() {
                   className={clsx(
                     'flex items-center gap-3 rounded-mesa-lg border-2 p-4 text-left outline-none transition-colors',
                     selecionado
-                      ? 'border-mesa-teal-500 bg-mesa-teal-50 dark:bg-mesa-teal-500/15'
+                      ? 'border-mesa-neutral-900 bg-mesa-neutral-100 dark:border-mesa-neutral-50 dark:bg-mesa-neutral-800'
                       : 'border-mesa-border-subtle bg-mesa-surface',
                   )}
                 >
@@ -342,18 +331,18 @@ export function ConfirmarPedido() {
                     className={clsx(
                       'flex size-10 shrink-0 items-center justify-center rounded-mesa-md',
                       selecionado
-                        ? 'bg-mesa-teal-500 text-white'
+                        ? 'bg-mesa-neutral-900 text-white dark:bg-mesa-neutral-50 dark:text-mesa-neutral-900'
                         : 'bg-mesa-neutral-100 text-mesa-text-secondary dark:bg-mesa-neutral-700',
                     )}
                   >
-                    <metodo.icone className="size-5" aria-hidden />
+                    <Icone nome={metodo.icone} size={20} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-mesa-text-primary">
                       {metodo.label}
                     </span>
                     {selecionado && (
-                      <span className="block text-xs font-medium text-mesa-teal-700 dark:text-mesa-teal-400">
+                      <span className="block text-xs font-medium text-mesa-text-secondary">
                         Selecionado
                       </span>
                     )}
@@ -368,7 +357,7 @@ export function ConfirmarPedido() {
           <Button
             variant="confirm"
             size="xl"
-            icon={<Rocket className="size-5" aria-hidden />}
+            icon={<Icone nome="rocket_launch" size={20} />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => enviarPedido(false)}
@@ -379,7 +368,7 @@ export function ConfirmarPedido() {
           <Button
             variant="outlineAmber"
             size="xl"
-            icon={<Truck className="size-5" aria-hidden />}
+            icon={<Icone nome="local_shipping" size={20} />}
             disabled={!podeEnviar}
             loading={enviando}
             onClick={() => setConfirmandoEntregaDireta(true)}
@@ -391,7 +380,7 @@ export function ConfirmarPedido() {
           <button
             type="button"
             onClick={voltarEEditar}
-            className="min-h-11 text-center text-sm font-semibold text-mesa-teal-700 dark:text-mesa-teal-300"
+            className="min-h-11 text-center text-sm font-semibold text-mesa-text-secondary"
           >
             Voltar e editar
           </button>
@@ -432,7 +421,7 @@ export function ConfirmarPedido() {
           <Button
             variant="outlineAmber"
             size="xl"
-            icon={<Truck className="size-5" aria-hidden />}
+            icon={<Icone nome="local_shipping" size={20} />}
             loading={enviando}
             onClick={() => {
               setConfirmandoEntregaDireta(false)

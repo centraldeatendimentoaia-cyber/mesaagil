@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { KeyRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { REQUISITOS_SENHA, validarSenhaForte } from '../lib/senha'
 import { BottomSheet } from './ui/BottomSheet'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 import { Input } from './ui/Input'
 
 const MENSAGENS_ERRO_ATUALIZAR: Record<string, string> = {
@@ -99,8 +99,8 @@ export function ModalTrocarSenha({
             return (
               <li
                 key={requisito.chave}
-                className={`flex items-center gap-1.5 font-mesa-mono text-xs ${
-                  atendido ? 'text-mesa-teal-600 dark:text-mesa-teal-400' : 'text-mesa-text-tertiary'
+                className={`flex items-center gap-1.5 text-xs ${
+                  atendido ? 'text-mesa-success-700 dark:text-mesa-success-500' : 'text-mesa-text-tertiary'
                 }`}
               >
                 <span aria-hidden>{atendido ? '✓' : '✗'}</span>
@@ -123,7 +123,7 @@ export function ModalTrocarSenha({
 
         <Button
           size="xl"
-          icon={<KeyRound className="size-5" aria-hidden />}
+          icon={<Icone nome="key" size={20} />}
           disabled={!podeTrocar}
           loading={processando}
           onClick={trocarSenha}

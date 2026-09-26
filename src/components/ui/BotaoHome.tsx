@@ -1,7 +1,7 @@
-import { Home } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import clsx from 'clsx'
 import { useBarracaAtual } from '../../layouts/contextoBarraca'
+import { Icone } from './Icone'
 
 /**
  * Ícone de 20px, área de toque 44×44 (regra do CLAUDE.md). Por padrão
@@ -23,7 +23,7 @@ export function BotaoHome({ onClick, className }: { onClick?: () => void; classN
         className,
       )}
     >
-      <Home className="size-5" aria-hidden />
+      <Icone nome="home" size={20} />
     </button>
   )
 }

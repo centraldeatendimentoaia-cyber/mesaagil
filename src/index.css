@@ -3,16 +3,31 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Redesign "Speed Bento POS" (redesign_ux_ui_app/): corpo em Hanken
-   Grotesk, títulos em Space Grotesk. Números tabulares/monoespaçados
-   (JetBrains Mono, font-mesa-mono) ficam por conta de cada componente
-   que exibe preço/senha, não é global. */
+/* Rebrand "Sai aê" (redesign_ux_ui_app/saiae/DESIGN.md): corpo em
+   Figtree, títulos em Outfit. Números tabulares (preço/senha/
+   contador) usam font-mesa-display (Outfit) por componente — não é
+   global porque nem todo <h1-3> é numérico e nem todo número está
+   dentro de um heading. */
 body {
   font-family: var(--font-mesa-sans);
 }
 
 h1, h2, h3 {
   font-family: var(--font-mesa-display);
+}
+
+/* Ícones — Material Symbols Rounded (ver src/components/ui/Icone.tsx).
+   Boilerplate padrão do Google pra fonte de ícone via ligature: sem
+   isso o navegador tenta quebrar linha/kernear o nome do símbolo como
+   texto normal em vez de renderizar o glifo. */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Rolagem horizontal (fileira de chips etc.) sem a barra de scroll do

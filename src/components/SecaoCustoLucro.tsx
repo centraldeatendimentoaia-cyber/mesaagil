@@ -173,7 +173,7 @@ export function SecaoCustoLucro({
         <p className="mt-2">
           <span
             className={`text-2xl font-black ${
-              lucroLiquidoCentavos >= 0 ? 'text-mesa-teal-600' : 'text-mesa-error-500'
+              lucroLiquidoCentavos >= 0 ? 'text-mesa-success-700 dark:text-mesa-success-500' : 'text-mesa-error-500'
             }`}
           >
             {formatarPrecoBR(lucroLiquidoCentavos)}

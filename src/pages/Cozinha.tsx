@@ -1,18 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import {
-  Check,
-  CheckCheck,
-  ChefHat,
-  CircleCheck,
-  Clock,
-  ListChecks,
-  Moon,
-  ShoppingBag,
-  Sun,
-  TriangleAlert,
-  Undo2,
-} from 'lucide-react'
 import clsx from 'clsx'
 import { useBarracaAtual, useSincronizacaoAtual } from '../layouts/contextoBarraca'
 import { useTheme } from '../hooks/useTheme'
@@ -27,6 +14,7 @@ import { BotaoHome } from '../components/ui/BotaoHome'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { Icone } from '../components/ui/Icone'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { ModalCancelamento } from '../components/ModalCancelamento'
 import { ModalEntregaDireta } from '../components/ModalEntregaDireta'
@@ -92,11 +80,11 @@ function BotaoChecklist({
       aria-label="Ver detalhes da comanda"
       className="relative flex size-11 shrink-0 items-center justify-center outline-none"
     >
-      <span className="flex size-[34px] items-center justify-center rounded-mesa-sm bg-mesa-teal-50 text-mesa-teal-700 dark:bg-mesa-teal-500/15 dark:text-mesa-teal-400">
-        <ListChecks className="size-[18px]" aria-hidden />
+      <span className="flex size-[34px] items-center justify-center rounded-mesa-sm bg-mesa-neutral-100 text-mesa-neutral-900 dark:bg-mesa-neutral-700 dark:text-mesa-neutral-50">
+        <Icone nome="checklist" size={18} />
       </span>
       {contador > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-mesa-full bg-mesa-teal-500 px-0.5 text-[10px] font-bold leading-none text-white">
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-mesa-full bg-mesa-neutral-900 px-0.5 text-[10px] font-bold leading-none text-white">
           {contador}/{total}
         </span>
       )}
@@ -113,7 +101,7 @@ function BotaoChecklist({
 function ChipEntregaDireta({ item }: { item: ItemDoPedido }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-mesa-full bg-mesa-neutral-100 px-3 py-2 text-sm font-medium text-mesa-text-tertiary line-through dark:bg-mesa-neutral-700">
-      <ShoppingBag className="size-3.5 shrink-0" aria-hidden />
+      <Icone nome="shopping_bag" size={14} />
       {item.quantidade}× {item.nome_item}
     </span>
   )
@@ -161,7 +149,7 @@ function CardPedido({
   return (
     <Card className={clsx(coluna === 'a_fazer' && ['border-l-4', CORES_BORDA[cor]])}>
       <div className="flex items-center gap-2">
-        <span className="font-mesa-mono text-2xl font-black leading-none text-mesa-text-tertiary">
+        <span className="font-mesa-display text-2xl font-black leading-none text-mesa-text-tertiary">
           {pedido.senha}
         </span>
         {mostrarIdentificacao && (
@@ -174,11 +162,11 @@ function CardPedido({
         )}
         <span
           className={clsx(
-            'ml-auto flex items-center gap-1 font-mesa-mono text-sm font-semibold',
+            'ml-auto flex items-center gap-1 font-mesa-display text-sm font-semibold',
             coluna === 'a_fazer' ? CORES_TEXTO[cor] : 'text-mesa-text-secondary',
           )}
         >
-          <Clock className="size-3.5 shrink-0" aria-hidden />
+          <Icone nome="schedule" size={14} />
           {coluna === 'a_fazer'
             ? formatarHora(pedido.criado_em)
             : `Pronto às ${pedido.pronto_em ? formatarHora(pedido.pronto_em) : '--:--'}`}
@@ -193,9 +181,9 @@ function CardPedido({
       </div>
 
       {tudoEntregue && (
-        <div className="mt-3 flex h-9 items-center justify-center gap-2 rounded-mesa-md bg-mesa-teal-50 dark:bg-mesa-teal-500/15">
-          <Check className="size-4 shrink-0 text-mesa-teal-700 dark:text-mesa-teal-400" strokeWidth={3} aria-hidden />
-          <span className="text-sm font-medium text-mesa-teal-700 dark:text-mesa-teal-400">
+        <div className="mt-3 flex h-9 items-center justify-center gap-2 rounded-mesa-md bg-mesa-success-50 dark:bg-mesa-success-500/15">
+          <Icone nome="check" size={16} peso={700} className="text-mesa-success-700 dark:text-mesa-success-500" />
+          <span className="text-sm font-medium text-mesa-success-700 dark:text-mesa-success-500">
             Tudo entregue — finalizar?
           </span>
         </div>
@@ -214,15 +202,15 @@ function CardPedido({
                 className={clsx(
                   'flex shrink-0 items-center gap-2 rounded-mesa-md border px-3 py-2',
                   item.entregue
-                    ? 'border-mesa-teal-200 bg-mesa-teal-50 dark:border-mesa-teal-500/30 dark:bg-mesa-teal-500/15'
+                    ? 'border-mesa-success-500/30 bg-mesa-success-50 dark:border-mesa-success-500/30 dark:bg-mesa-success-500/15'
                     : 'border-mesa-border-subtle bg-mesa-neutral-100 dark:bg-mesa-neutral-800',
                 )}
               >
                 <span
                   className={clsx(
-                    'shrink-0 font-mesa-mono text-sm font-bold',
+                    'shrink-0 font-mesa-display text-sm font-bold',
                     item.entregue
-                      ? 'text-mesa-teal-700 dark:text-mesa-teal-400'
+                      ? 'text-mesa-success-700 dark:text-mesa-success-500'
                       : coluna === 'a_fazer'
                         ? CORES_TEXTO[cor]
                         : 'text-mesa-text-secondary',
@@ -234,14 +222,14 @@ function CardPedido({
                   className={clsx(
                     'text-sm font-medium',
                     item.entregue
-                      ? 'text-mesa-teal-700 line-through dark:text-mesa-teal-400'
+                      ? 'text-mesa-success-700 line-through dark:text-mesa-success-500'
                       : 'text-mesa-text-primary',
                   )}
                 >
                   {item.nome_item}
                 </span>
                 {categoria && (
-                  <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 font-mesa-mono text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
+                  <span className="shrink-0 rounded-mesa-sm bg-mesa-neutral-200 px-2 py-1 text-[11px] font-medium text-mesa-text-secondary dark:bg-mesa-neutral-700 dark:text-mesa-neutral-300">
                     {categoria}
                   </span>
                 )}
@@ -252,10 +240,13 @@ function CardPedido({
       )}
 
       {(pedido.observacao || itensComObservacao.length > 0) && (
-        <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-orange-500 bg-mesa-orange-50 p-3 dark:bg-mesa-orange-500/15">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-mesa-orange-700 dark:text-mesa-orange-400" aria-hidden />
+        // mesa-warning, não mesa-orange: cor de marca nunca aparece na
+        // Cozinha (CLAUDE.md) — esse alerta usa a cor operacional de
+        // atenção da IDV, que por coincidência não é mais mostarda.
+        <div className="mt-3 flex items-start gap-2 rounded-mesa-md border-l-[3px] border-mesa-warning-500 bg-mesa-warning-50 p-3 dark:bg-mesa-warning-500/15">
+          <Icone nome="warning" size={16} className="mt-0.5 text-mesa-warning-700" />
           <div className="flex flex-col gap-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-orange-700 dark:text-mesa-orange-400">
+            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-mesa-warning-700">
               Atenção
             </p>
             {pedido.observacao && <p className="text-sm text-mesa-text-primary">{pedido.observacao}</p>}
@@ -274,7 +265,7 @@ function CardPedido({
             <Button
               variant="outline"
               size="md"
-              icon={<Check className="size-4" aria-hidden />}
+              icon={<Icone nome="check" size={16} />}
               className="flex-1"
               onClick={() => onMoverParaPronto(pedido)}
             >
@@ -283,7 +274,7 @@ function CardPedido({
             <Button
               variant="confirm"
               size="md"
-              icon={<CheckCheck className="size-4" aria-hidden />}
+              icon={<Icone nome="done_all" size={16} />}
               className="flex-1"
               onClick={() => onAtalhoEntregar(pedido)}
             >
@@ -295,7 +286,7 @@ function CardPedido({
             <Button
               variant="outline"
               size="md"
-              icon={<Undo2 className="size-4" aria-hidden />}
+              icon={<Icone nome="undo" size={16} />}
               className="flex-1"
               onClick={() => onVoltar(pedido)}
             >
@@ -304,7 +295,7 @@ function CardPedido({
             <Button
               variant="confirm"
               size="md"
-              icon={<CheckCheck className="size-4" aria-hidden />}
+              icon={<Icone nome="done_all" size={16} />}
               className="flex-1"
               onClick={() => onEntregar(pedido)}
             >
@@ -318,7 +309,7 @@ function CardPedido({
         <button
           type="button"
           onClick={() => onCancelar(pedido)}
-          className="min-h-11 px-2 font-mesa-mono text-sm font-semibold text-mesa-error-500"
+          className="min-h-11 px-2 text-sm font-semibold text-mesa-error-500"
         >
           {coluna === 'a_fazer' ? 'Cancelar comanda' : 'Cancelar pedido'}
         </button>
@@ -364,10 +355,10 @@ function SecaoDespachados({ pedidos }: { pedidos: PedidoComItens[] }) {
   return (
     <div className="mt-6">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-mesa-mono text-xs font-bold uppercase tracking-wider text-mesa-text-tertiary">
+        <h3 className="font-mesa-sans text-xs font-bold uppercase tracking-wider text-mesa-text-tertiary">
           Despachados recentemente
         </h3>
-        <span className="font-mesa-mono text-xs text-mesa-text-tertiary">{turnoAtual()}</span>
+        <span className="text-xs text-mesa-text-tertiary">{turnoAtual()}</span>
       </div>
       <ul className="flex flex-col gap-2">
         {pedidos.map((pedido) => {
@@ -378,13 +369,13 @@ function SecaoDespachados({ pedidos }: { pedidos: PedidoComItens[] }) {
           return (
             <li key={pedido.id} className="flex items-center justify-between gap-2 text-sm">
               <span className="min-w-0 flex-1 truncate text-mesa-text-secondary">
-                <span className="font-mesa-mono font-bold text-mesa-teal-600 dark:text-mesa-teal-400">
+                <span className="font-mesa-display font-bold text-mesa-text-primary">
                   #{pedido.senha}
                 </span>{' '}
                 {pedido.viagem ? 'Viagem' : pedido.mesa ? `Mesa ${pedido.mesa}` : 'Balcão'}
                 {resumoItens && ` · ${resumoItens}`}
               </span>
-              <span className="shrink-0 font-mesa-mono text-xs text-mesa-text-tertiary">
+              <span className="shrink-0 font-mesa-display font-semibold text-xs text-mesa-text-tertiary">
                 {formatarHora(pedido.entregue_em!)}
               </span>
             </li>
@@ -731,7 +722,7 @@ export function Cozinha() {
             aria-label={escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
             className={classesBotaoIcone()}
           >
-            {escuro ? <Sun className="size-5" aria-hidden /> : <Moon className="size-5" aria-hidden />}
+            {escuro ? <Icone nome="light_mode" size={20} /> : <Icone nome="dark_mode" size={20} />}
           </button>
           <Link
             to={`/${barraca.slug}/historico`}
@@ -746,8 +737,8 @@ export function Cozinha() {
         <SegmentedControl
           aria-label="Colunas da cozinha"
           items={[
-            { label: 'A Fazer', count: pedidosAFazer.length, icon: <ChefHat className="size-4" /> },
-            { label: 'Pronto', count: pedidosProntos.length, icon: <CircleCheck className="size-4" /> },
+            { label: 'A Fazer', count: pedidosAFazer.length, icon: <Icone nome="skillet" size={16} /> },
+            { label: 'Pronto', count: pedidosProntos.length, icon: <Icone nome="check_circle" size={16} /> },
           ]}
           activeIndex={aba === 'a_fazer' ? 0 : 1}
           onChange={(indice) => setAba(indice === 0 ? 'a_fazer' : 'pronto')}

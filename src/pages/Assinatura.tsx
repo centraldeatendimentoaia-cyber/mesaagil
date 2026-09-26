@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { ArrowLeft, CircleCheck, Clock, MessageCircle } from 'lucide-react'
 import { useBarracaAtual } from '../layouts/contextoBarraca'
 import { supabase } from '../lib/supabase'
 import { PLANOS } from '../lib/planos'
 import { Button } from '../components/ui/Button'
+import { Icone } from '../components/ui/Icone'
 import type { Assinatura as TipoAssinatura } from '../types/database'
 
 const NOME_STATUS: Record<string, string> = {
@@ -70,7 +70,7 @@ export function Assinatura() {
           className="flex size-11 items-center justify-center rounded-mesa-full text-mesa-text-secondary hover:bg-[var(--mesa-state-hover-bg)]"
           aria-label="Voltar"
         >
-          <ArrowLeft className="size-5" aria-hidden />
+          <Icone nome="arrow_back" size={20} />
         </button>
         <h1 className="text-xl font-bold text-mesa-text-primary">Minha assinatura</h1>
       </div>
@@ -79,7 +79,7 @@ export function Assinatura() {
         <p className="text-mesa-text-secondary">Carregando...</p>
       ) : aindaProcessando ? (
         <div className="flex flex-col items-center gap-3 rounded-mesa-2xl border border-mesa-border-default bg-mesa-surface p-6 text-center">
-          <Clock className="size-8 animate-pulse text-mesa-orange-500" aria-hidden />
+          <Icone nome="schedule" size={32} className="animate-pulse text-mesa-orange-500" />
           <p className="font-medium text-mesa-text-primary">Confirmando seu pagamento...</p>
           <p className="text-sm text-mesa-text-secondary">
             Isso costuma levar só alguns segundos. Não feche esta tela.
@@ -89,13 +89,14 @@ export function Assinatura() {
         <>
           <div className="rounded-mesa-2xl border border-mesa-border-default bg-mesa-surface p-5">
             <div className="flex items-center gap-2">
-              <CircleCheck
+              <Icone
+                nome="check_circle"
+                size={20}
                 className={
                   assinatura?.status === 'active' || assinatura?.status === 'trialing'
-                    ? 'size-5 text-mesa-teal-500'
-                    : 'size-5 text-mesa-error-500'
+                    ? 'text-mesa-success-700 dark:text-mesa-success-500'
+                    : 'text-mesa-error-500'
                 }
-                aria-hidden
               />
               <span className="font-semibold text-mesa-text-primary">
                 {NOME_STATUS[assinatura?.status ?? ''] ?? 'Sem assinatura'}
@@ -135,7 +136,7 @@ export function Assinatura() {
             <Button
               variant="outline"
               size="lg"
-              icon={<MessageCircle className="size-5" aria-hidden />}
+              icon={<Icone nome="chat" size={20} />}
               className="mt-4 w-full"
               onClick={() => window.open('https://wa.me/', '_blank', 'noopener')}
             >

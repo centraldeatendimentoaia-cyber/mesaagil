@@ -1,12 +1,12 @@
-import { Banknote, CreditCard, QrCode, type LucideIcon } from 'lucide-react'
-
 export type MetodoPagamento = 'dinheiro' | 'debito' | 'credito' | 'pix'
 
-export const METODOS_DISPONIVEIS: { chave: MetodoPagamento; label: string; icone: LucideIcon }[] = [
-  { chave: 'dinheiro', label: 'Dinheiro', icone: Banknote },
-  { chave: 'debito', label: 'Débito', icone: CreditCard },
-  { chave: 'credito', label: 'Crédito', icone: CreditCard },
-  { chave: 'pix', label: 'Pix', icone: QrCode },
+// Nomes do Material Symbols Rounded — mesmos da IDV Sai aê (payments/
+// credit_card/qr_code_2, ver DESIGN.md "Ícones-chave").
+export const METODOS_DISPONIVEIS: { chave: MetodoPagamento; label: string; icone: string }[] = [
+  { chave: 'dinheiro', label: 'Dinheiro', icone: 'payments' },
+  { chave: 'debito', label: 'Débito', icone: 'credit_card' },
+  { chave: 'credito', label: 'Crédito', icone: 'credit_card' },
+  { chave: 'pix', label: 'Pix', icone: 'qr_code_2' },
 ]
 
 export function humanizarMetodo(chave: string | null): string {

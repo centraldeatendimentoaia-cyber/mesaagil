@@ -1,10 +1,10 @@
 import { useRef } from 'react'
 import type { MouseEvent, PointerEvent } from 'react'
-import { Check, Clock, ShoppingBag, Trash } from 'lucide-react'
 import clsx from 'clsx'
 import { BottomSheet } from './ui/BottomSheet'
 import { Button } from './ui/Button'
 import { Badge } from './ui/Badge'
+import { Icone } from './ui/Icone'
 import type { Barraca, ItemDoPedido, PedidoComItens } from '../types/database'
 
 const DURACAO_LONGO_TOQUE_MS = 1000
@@ -91,7 +91,7 @@ function LinhaItemDetalhe({
           className="flex size-11 shrink-0 items-center justify-center text-mesa-text-tertiary"
           aria-label={`${item.nome_item} entregue direto, sem passar na cozinha`}
         >
-          <ShoppingBag className="size-4" aria-hidden />
+          <Icone nome="shopping_bag" size={16} />
         </span>
       ) : (
         <button
@@ -108,11 +108,13 @@ function LinhaItemDetalhe({
             className={clsx(
               'flex size-7 items-center justify-center rounded-mesa-full border-2 transition-colors',
               marcado
-                ? 'border-mesa-teal-500 bg-mesa-teal-500'
+                ? 'border-mesa-neutral-900 bg-mesa-neutral-900 dark:border-mesa-neutral-50 dark:bg-mesa-neutral-50'
                 : 'border-mesa-neutral-300 bg-transparent dark:border-mesa-neutral-600',
             )}
           >
-            {marcado && <Check className="size-4 text-white" strokeWidth={3} aria-hidden />}
+            {marcado && (
+              <Icone nome="check" size={16} peso={700} className="text-white dark:text-mesa-neutral-900" />
+            )}
           </span>
         </button>
       )}
@@ -131,7 +133,8 @@ function LinhaItemDetalhe({
           {item.nome_item}
         </span>
         {item.observacao && !item.removido && (
-          <span className="block truncate text-xs text-mesa-orange-700 dark:text-mesa-orange-400">
+          // mesa-warning, não mesa-orange — sem cor de marca na Cozinha.
+          <span className="block truncate text-xs text-mesa-warning-700">
             Obs: {item.observacao}
           </span>
         )}
@@ -153,7 +156,7 @@ function LinhaItemDetalhe({
           className="group flex size-11 shrink-0 items-center justify-center outline-none"
         >
           <span className="flex size-[30px] items-center justify-center rounded-mesa-sm text-mesa-text-secondary transition-colors group-hover:bg-mesa-error-50 group-hover:text-mesa-error-700 dark:group-hover:bg-mesa-error-500/15 dark:group-hover:text-mesa-error-500">
-            <Trash className="size-4" aria-hidden />
+            <Icone nome="delete" size={16} />
           </span>
         </button>
       )}
@@ -196,7 +199,7 @@ export function DetalheComanda({
       {pedido && (
         <>
           <div className="flex items-center gap-3">
-            <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
+            <span className="font-mesa-display text-3xl font-black leading-none text-mesa-text-tertiary">
               {pedido.senha}
             </span>
             {(pedido.viagem || pedido.mesa) && (
@@ -207,8 +210,8 @@ export function DetalheComanda({
                 <Badge variant="neutral">{pedido.viagem ? 'Viagem' : `Mesa ${pedido.mesa}`}</Badge>
               </>
             )}
-            <span className={clsx('ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold', TEXTO_COR[cor])}>
-              <Clock className="size-4 shrink-0" aria-hidden />
+            <span className={clsx('ml-auto flex items-center gap-1.5 font-mesa-display text-sm font-semibold', TEXTO_COR[cor])}>
+              <Icone nome="schedule" size={16} />
               {formatarMinutos(minutos)} em preparo
             </span>
           </div>
@@ -240,11 +243,11 @@ export function DetalheComanda({
             <div className="mt-2 flex items-center gap-3">
               <div className="h-2 flex-1 overflow-hidden rounded-mesa-full bg-mesa-neutral-100 dark:bg-mesa-neutral-700">
                 <div
-                  className="h-full rounded-mesa-full bg-mesa-teal-500 transition-[width] duration-[var(--mesa-duration-short)]"
+                  className="h-full rounded-mesa-full bg-mesa-success-500 transition-[width] duration-[var(--mesa-duration-short)]"
                   style={{ width: `${progresso}%` }}
                 />
               </div>
-              <span className="shrink-0 font-mesa-mono text-sm font-medium text-mesa-text-secondary">
+              <span className="shrink-0 font-mesa-display text-sm font-semibold text-mesa-text-secondary">
                 {entreguesCount} de {totalAtivos}
               </span>
             </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Sparkles } from 'lucide-react'
 import { PaywallModal } from './PaywallModal'
+import { Icone } from './ui/Icone'
 import { textoTempoRestante } from '../lib/tempoTrial'
 import type { AssinaturaBarraca } from '../types/database'
 
@@ -19,7 +19,7 @@ export function BannerTrial({ assinatura }: { assinatura: AssinaturaBarraca }) {
         onClick={() => setAbertoPaywall(true)}
         className="flex min-h-11 w-full items-center justify-center gap-2 bg-mesa-orange-500 px-4 py-2 text-center text-sm font-medium text-mesa-neutral-900"
       >
-        <Sparkles className="size-4 shrink-0" aria-hidden />
+        <Icone nome="auto_awesome" size={16} />
         {texto} · Assinar agora
       </button>
       <PaywallModal open={abertoPaywall} onClose={() => setAbertoPaywall(false)} assinatura={assinatura} />

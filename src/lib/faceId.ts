@@ -15,7 +15,7 @@
 
 const CHAVE_CREDENCIAL_ID = 'mesaagil:faceid:credencial_id'
 const CHAVE_EMAIL = 'mesaagil:faceid:email'
-const RP_NAME = 'MesaAgil'
+const RP_NAME = 'Sai aê'
 
 function base64UrlParaBuffer(base64url: string): Uint8Array {
   const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/').padEnd(

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Clock, X } from 'lucide-react'
 import clsx from 'clsx'
 import { BottomSheet } from './ui/BottomSheet'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
+import { Icone } from './ui/Icone'
 import { Radio } from './ui/Radio'
 import { MOTIVOS_CANCELAMENTO } from '../lib/cancelamento'
 import type { MotivoCancelamento } from '../lib/cancelamento'
@@ -60,7 +60,7 @@ export function ModalCancelamento({
   return (
     <BottomSheet open onClose={onFechar} aria-label="Cancelar comanda">
       <div className="flex items-center gap-3">
-        <span className="font-mesa-mono text-3xl font-black leading-none text-mesa-text-tertiary">
+        <span className="font-mesa-display text-3xl font-black leading-none text-mesa-text-tertiary">
           {pedido.senha}
         </span>
         {(pedido.viagem || pedido.mesa) && (
@@ -73,11 +73,11 @@ export function ModalCancelamento({
         )}
         <span
           className={clsx(
-            'ml-auto flex items-center gap-1.5 font-mesa-mono text-sm font-semibold',
+            'ml-auto flex items-center gap-1.5 font-mesa-display text-sm font-semibold',
             TEXTO_COR[cor],
           )}
         >
-          <Clock className="size-4 shrink-0" aria-hidden />
+          <Icone nome="schedule" size={16} />
           {formatarMinutos(minutos)} {rotuloTempo}
         </span>
       </div>
@@ -103,7 +103,7 @@ export function ModalCancelamento({
         <Button
           variant="destructive"
           size="xl"
-          icon={<X className="size-5" aria-hidden />}
+          icon={<Icone nome="close" size={20} />}
           disabled={!motivo}
           loading={cancelando}
           onClick={() => motivo && onConfirmar(motivo)}

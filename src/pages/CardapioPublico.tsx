@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router'
-import { Image, Plus, Search, Star, Trophy, UtensilsCrossed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatarPrecoBR } from '../lib/preco'
 import { Button } from '../components/ui/Button'
 import { BottomSheet } from '../components/ui/BottomSheet'
 import { Chip } from '../components/ui/Chip'
+import { Icone } from '../components/ui/Icone'
 import { Input } from '../components/ui/Input'
 
 type LinhaCardapioPublico = {
@@ -58,11 +58,11 @@ function CardItemPublico({
           {item.item_foto_url ? (
             <img src={item.item_foto_url} alt="" className="size-full object-cover" />
           ) : (
-            <Image className="size-5" aria-hidden />
+            <Icone nome="image" size={20} />
           )}
           {posicaoPopular !== null && (
             <span className="absolute left-0.5 top-0.5 flex items-center gap-0.5 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-1.5 py-0.5 text-[9px] font-bold text-mesa-neutral-900 shadow-mesa-1">
-              <Star className="size-2 shrink-0" fill="currentColor" aria-hidden />
+              <Icone nome="star" size={8} preenchido />
               {posicaoPopular === 0 ? 'Top 1' : 'Popular'}
             </span>
           )}
@@ -75,13 +75,13 @@ function CardItemPublico({
             </p>
           )}
           <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="font-mesa-mono text-sm font-semibold text-mesa-text-primary">
+            <span className="font-mesa-display text-sm font-semibold text-mesa-text-primary">
               {item.item_preco_centavos > 0 ? formatarPrecoBR(item.item_preco_centavos) : 'Sob consulta'}
             </span>
             <Button
               variant="outline"
               size="sm"
-              icon={<Plus className="size-4" aria-hidden />}
+              icon={<Icone nome="add" size={16} />}
               onClick={() => setMostrarEmBreve(true)}
             >
               Adicionar
@@ -106,11 +106,11 @@ function CardDestaque({ item }: { item: LinhaCardapioPublico }) {
             <img src={item.item_foto_url} alt="" className="size-full object-cover" />
           ) : (
             <span className="flex size-full items-center justify-center text-mesa-text-tertiary">
-              <Image className="size-8" aria-hidden />
+              <Icone nome="image" size={32} />
             </span>
           )}
           <span className="absolute left-3 top-3 flex items-center gap-1 whitespace-nowrap rounded-mesa-full bg-mesa-orange-500 px-2.5 py-1 text-xs font-bold text-mesa-neutral-900 shadow-mesa-1">
-            <Trophy className="size-3.5 shrink-0" fill="currentColor" aria-hidden />
+            <Icone nome="trophy" size={14} preenchido />
             Mais pedido do cardápio
           </span>
         </div>
@@ -120,13 +120,13 @@ function CardDestaque({ item }: { item: LinhaCardapioPublico }) {
             <p className="mt-1 text-sm text-mesa-text-secondary">{item.item_descricao}</p>
           )}
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="font-mesa-mono text-xl font-bold text-mesa-text-primary">
+            <span className="font-mesa-display text-xl font-bold text-mesa-text-primary">
               {item.item_preco_centavos > 0 ? formatarPrecoBR(item.item_preco_centavos) : 'Sob consulta'}
             </span>
             <Button
               variant="confirm"
               size="md"
-              icon={<Plus className="size-4" aria-hidden />}
+              icon={<Icone nome="add" size={16} />}
               onClick={() => setMostrarEmBreve(true)}
             >
               Adicionar
@@ -227,7 +227,7 @@ export function CardapioPublico() {
   if (estado.status === 'erro') {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-mesa-bg-base p-6 text-center">
-        <UtensilsCrossed className="size-8 text-mesa-text-tertiary" aria-hidden />
+        <Icone nome="restaurant" size={32} className="text-mesa-text-tertiary" />
         <p className="text-base font-semibold text-mesa-text-primary">Cardápio não encontrado</p>
         <p className="text-sm text-mesa-text-secondary">
           Confira se o link está certo ou pergunte pra barraca se o cardápio já está publicado.
@@ -246,7 +246,7 @@ export function CardapioPublico() {
           {logoUrl ? (
             <img src={logoUrl} alt="" className="size-full object-cover" />
           ) : (
-            <UtensilsCrossed className="size-6 text-mesa-text-tertiary" aria-hidden />
+            <Icone nome="restaurant" size={24} className="text-mesa-text-tertiary" />
           )}
         </span>
         <div>
@@ -271,7 +271,7 @@ export function CardapioPublico() {
           onClear={() => setBusca('')}
           placeholder="Buscar item do cardápio"
           aria-label="Buscar item do cardápio"
-          icon={<Search className="size-4" aria-hidden />}
+          icon={<Icone nome="search" size={16} />}
         />
       </div>
 
@@ -289,7 +289,7 @@ export function CardapioPublico() {
             checked={filtroEfetivo === 'mais-pedidos'}
             onClick={() => setFiltroAtivo('mais-pedidos')}
           >
-            <Star className="size-3.5 shrink-0" aria-hidden /> Mais Pedidos
+            <Icone nome="star" size={14} /> Mais Pedidos
           </Chip>
         )}
         {categorias.map((categoria) => (
@@ -326,8 +326,8 @@ export function CardapioPublico() {
         )}
       </div>
 
-      <p className="mt-8 text-center font-mesa-mono text-xs text-mesa-text-tertiary">
-        Feito com MesaAgil
+      <p className="mt-8 text-center text-xs text-mesa-text-tertiary">
+        Feito com Sai aê
       </p>
     </div>
   )
