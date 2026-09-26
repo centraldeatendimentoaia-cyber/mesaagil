@@ -23,9 +23,9 @@ implementar essas três áreas. Direção nova: separar em duas
 superfícies — uma versão **desktop web** completa (estoque, caixa,
 faturamento, fiscal, configurações) pro dono da barraca gerenciar, e
 a versão **mobile enxuta atual** (lançar/cozinha/chamada) focada só
-no operacional de balcão + maquininha. Detalhes de escopo de cada
-peça (estoque completo vs. só "esgotado"; caixa com ou sem
-sangria/suprimento) ainda **a definir** — ver "Roadmap de produto".
+no operacional de balcão + maquininha. Escopo de estoque e caixa
+definido com o dono do produto em 2026-09-26 — ver "Roadmap de
+produto".
 
 Impressão de comprovante/nota continua fora de escopo standalone —
 decisão revertida em 2026-09-19 (a decisão de 2026-09-17 de
@@ -116,25 +116,38 @@ nenhum item daqui sozinho, só quando for pedido explicitamente.
   de senha e ajustes básicos, "mais ou menos o que temos hoje".
   Faturamento/Relatório sai do Histórico mobile e vira exclusivo de
   uma versão **desktop web** nova, que também reúne Estoque, Caixa e
-  Fiscal. Recomendação técnica (ainda não confirmada): estender o
-  mesmo app React/Supabase com rotas e layout desktop, não criar um
-  segundo app — mesmo padrão que Cozinha.tsx já usa hoje (mobile por
-  abas, desktop em grid, mesmo componente).
-  - Caixa (abrir/fechar o dia): fundação simples, necessária pra
-    Faturamento e Fiscal baterem. Escopo exato (com ou sem
-    sangria/suprimento) ainda a definir.
+  Fiscal. Decisão de arquitetura confirmada em 2026-09-26: estender o
+  mesmo app React/Supabase com uma rota nova (`/:slug/desktop`, hub
+  desktop-only), não criar um segundo app. Diferente do padrão de
+  Cozinha.tsx (mesma rota, mobile vira abas/desktop vira grid): aqui a
+  rota em si só existe de fato em telas largas — em mobile mostra um
+  aviso "abra num desktop" (conteúdo de tabela/gráfico não foi
+  desenhado pra caber ali). Implementado em `src/pages/Desktop.tsx`,
+  com o painel de Faturamento/Relatório (`PainelRelatorio`) movido de
+  dentro do Histórico pra lá; a lista de comandas continua em
+  `/:slug/historico` no mobile. Item "Faturamento" na
+  `BarraNavegacao` some em telas estreitas (`apenasDesktop`). Caixa,
+  Estoque e Fiscal entram como novas seções nesse mesmo hub, ainda não
+  implementadas.
+  - Caixa (abrir/fechar o dia): decidido em 2026-09-26 — inclui
+    sangria/suprimento desde já, além da abertura/fechamento com
+    conferência de troco. Fundação necessária pra Faturamento e
+    Fiscal baterem.
   - Fiscal / NFC-e: em vez de integração direta com a SEFAZ (que foi
     o motivo original de tirar isso de escopo), usar um provedor
     fiscal-as-a-service (ex.: FocusNFe, como o concorrente fez) — o
     dono da barraca cria a própria conta no provedor, sobe o
     certificado digital lá (custódia fica com o provedor, nunca com o
-    MesaAgil) e cola token/CSC nas configurações da barraca. UF/regime
-    tributário alvo ainda a definir.
+    MesaAgil) e cola token/CSC nas configurações da barraca. Regimes
+    tributários alvo definidos em 2026-09-26: Simples Nacional (regime
+    do primeiro cliente, Sabor Kawashima — primeira UF/certificado a
+    validar é a dele) **e MEI**, comum entre donos de barraca de
+    feira.
   - Estoque: item mais delicado por reverter a regra mais antiga do
-    projeto. Nível de profundidade ainda a definir — controle
-    completo com baixa automática por venda, ou algo mais simples
-    (ex.: toggle "esgotado" por item, já citado no
-    redesign_ux_ui_app/saiae/DESIGN.md).
+    projeto. Profundidade definida em 2026-09-26: começar pelo mais
+    simples — toggle "esgotado" por item, já citado no
+    redesign_ux_ui_app/saiae/DESIGN.md — em vez de controle completo
+    com baixa automática por venda.
   - WhatsApp pra leads (o concorrente tem, manda mensagem automática
     pro cliente): fora de escopo por enquanto, avaliar depois que o
     resto acima estiver de pé.
