@@ -11,7 +11,6 @@ import { hojeISO } from '../lib/datas'
 import { calcularIntervalosRelatorio, calcularTotalPedido, ehEntregaDireta } from '../lib/relatorio'
 import { useOcultarAoRolar } from '../hooks/useOcultarAoRolar'
 import type { TipoFiltroRelatorio } from '../lib/relatorio'
-import { PainelRelatorio } from '../components/PainelRelatorio'
 import { GateSenhaAdmin } from '../components/GateSenhaAdmin'
 import { Badge } from '../components/ui/Badge'
 import { BotaoHome } from '../components/ui/BotaoHome'
@@ -344,12 +343,7 @@ export function Historico() {
     itemFiltradoId || tipoConsumo !== 'todos' || metodoFiltrado || buscaNormalizada,
   )
 
-  const nomeItemFiltrado = itemFiltradoId
-    ? (itensCardapio.find((item) => item.id === itemFiltradoId)?.nome ?? null)
-    : null
-
-  const filtroRelatorio = { tipo: periodo, dataInicio, dataFim }
-  const intervaloAtual = calcularIntervalosRelatorio(filtroRelatorio).atual
+  const intervaloAtual = calcularIntervalosRelatorio({ tipo: periodo, dataInicio, dataFim }).atual
 
   async function restaurarPedido(pedido: PedidoComItens) {
     setPedidos((atual) => atual.filter((p) => p.id !== pedido.id))
@@ -602,15 +596,6 @@ export function Historico() {
       </button>
 
       <div className="px-6 pt-4">
-        <div className="mb-4">
-          <PainelRelatorio
-            barraca={barraca}
-            filtro={filtroRelatorio}
-            itemFiltradoId={itemFiltradoId}
-            nomeItemFiltrado={nomeItemFiltrado}
-          />
-        </div>
-
         {carregando && (
           <p className="py-8 text-center text-sm text-mesa-text-secondary">Carregando...</p>
         )}
