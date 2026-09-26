@@ -13,7 +13,7 @@ const FOCUSNFE_URL_HOMOLOGACAO = 'https://homologacao.focusnfe.com.br/v2'
 const FOCUSNFE_URL_PRODUCAO = 'https://api.focusnfe.com.br/v2'
 
 // Tabela de formas de pagamento da NFC-e (Nota Técnica 2020.005/2021,
-// mesma usada pela FocusNFe). Só cobre os métodos que o MesaAgil oferece
+// mesma usada pela FocusNFe). Só cobre os métodos que o Sai aê oferece
 // em Confirmar Pedido (ver src/lib/metodoPagamento.ts) — um método novo
 // lá precisa ganhar uma entrada aqui.
 const FORMA_PAGAMENTO_POR_METODO: Record<string, string> = {
@@ -114,14 +114,23 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ erro: 'CNPJ da barraca não configurado' }, 422)
   }
 
+  // A FocusNFe emite um token POR AMBIENTE (token_homologacao e
+  // token_producao são credenciais distintas, não o mesmo valor com URL
+  // diferente) — sempre lê a coluna que corresponde ao ambiente
+  // configurado na barraca, nunca mistura os dois.
+  const colunaToken = barraca.fiscal_ambiente === 'producao' ? 'token_producao' : 'token_homologacao'
   const { data: tokenRow, error: erroToken } = await supabase
     .from('barracas_fiscal_token')
-    .select('token')
+    .select(colunaToken)
     .eq('barraca_id', barraca.id)
     .maybeSingle()
 
-  if (erroToken || !tokenRow?.token) {
-    return jsonResponse({ erro: 'Token fiscal não configurado' }, 422)
+  const token = (tokenRow as Record<string, string | null> | null)?.[colunaToken]
+  if (erroToken || !token) {
+    return jsonResponse(
+      { erro: `Token de ${barraca.fiscal_ambiente === 'producao' ? 'produção' : 'homologação'} não configurado` },
+      422,
+    )
   }
 
   const itensAtivos = ((pedido.itens_do_pedido ?? []) as ItemDoPedidoRow[]).filter((item) => !item.removido)
@@ -215,7 +224,7 @@ Deno.serve(async (req: Request) => {
   // barraca configurou em Ajustes (default é homologação, sem validade
   // fiscal, até o dono trocar conscientemente).
   const baseUrl = barraca.fiscal_ambiente === 'producao' ? FOCUSNFE_URL_PRODUCAO : FOCUSNFE_URL_HOMOLOGACAO
-  const auth = btoa(`${tokenRow.token}:`)
+  const auth = btoa(`${token}:`)
 
   let respostaFocusNFe: Response
   try {
