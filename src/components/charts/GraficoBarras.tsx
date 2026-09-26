@@ -24,7 +24,13 @@ export function GraficoBarras({
   const maximo = Math.max(1, ...pontos.map((p) => p.valor))
   const largura = Math.max(pontos.length * 10, 100)
   const altura = 48
-  const larguraBarra = (largura / pontos.length) * 0.6
+  // Com poucos pontos (1-3), (largura/pontos.length)*0.6 dá uma barra
+  // enorme (até 60% da largura do gráfico só pra 1 ponto) — depois do
+  // preserveAspectRatio="none" esticar o SVG, uma barra tão larga com
+  // cantos proporcionalmente arredondados vira uma cápsula/pílula em vez
+  // de coluna. Teto de 16 evita isso sem afetar o caso de muitos pontos
+  // (com 4+ pontos o valor natural já fica abaixo do teto).
+  const larguraBarra = Math.min((largura / pontos.length) * 0.6, 16)
   const espacoBarra = largura / pontos.length
 
   const passoRotulo = Math.max(1, Math.ceil(pontos.length / 6))
